@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SpeedFeet Analyzer V1</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root { color-scheme: dark; --bg:#0f1115; --card:#191d24; --muted:#9aa4b2; --line:#2a303a; --accent:#5aa9ff; }
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:#fff}
+header{padding:16px 16px 8px;max-width:1100px;margin:auto}
+h1{font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:14px}
+main{max-width:1100px;margin:auto;padding:10px 14px 28px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:5px}
+input,select,button{font:inherit}
+input[type=file],input[type=number],select{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:#10141a;color:#fff}
+button{padding:11px 14px;border:0;border-radius:11px;background:var(--accent);color:#07111f;font-weight:700}
+button.secondary{background:#2a303a;color:#fff}
+button:disabled{opacity:.45}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+#map{height:55vh;min-height:350px;border-radius:14px;overflow:hidden;background:#111}
+.stat{padding:12px;background:#10141a;border:1px solid var(--line);border-radius:12px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-size:21px;font-weight:750;margin-top:3px}
+#timeline{width:100%}
+.playbar{display:grid;grid-template-columns:auto auto 1fr;gap:8px;align-items:center;margin-top:10px}
+.live{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:10px}
+@media(max-width:760px){.live{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.badge{display:inline-block;padding:5px 8px;border-radius:99px;background:#10141a;border:1px solid var(--line);font-size:12px;color:#cbd3dc}
+#message{font-size:14px;color:#cbd3dc;white-space:pre-line}
+.hidden{display:none}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:12px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>⛵ SpeedFeet Analyzer V1</h1>
+  <div class="sub">Charge un fichier Velocitek .VCC, saisis le vent, puis analyse la sortie.</div>
+</header>
+<main>
+  <section class="card">
+    <div class="grid">
+      <div style="grid-column:span 2">
+        <label>Fichier Velocitek</label>
+        <input id="file" type="file" accept=".vcc,.xml,text/xml,application/xml">
+      </div>
+      <div>
+        <label>Direction du vent (vient de…)</label>
+        <input id="windDir" type="number" min="0" max="359" value="0">
+      </div>
+      <div>
+        <label>Vent moyen (nœuds)</label>
+        <input id="windSpeed" type="number" min="0" step="0.1" value="6">
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="analyze" disabled>Analyser</button>
+      <select id="session" class="hidden"></select>
+      <span id="status" class="badge">Aucun fichier chargé</span>
+    </div>
+    <div id="message" style="margin-top:8px"></div>
+  </section>
+
+  <section id="results" class="hidden">
+    <section class="card">
+      <div class="grid">
+        <div class="stat"><div class="k">Date</div><div class="v" id="sDate">—</div></div>
+        <div class="stat"><div class="k">Durée</div><div class="v" id="sDuration">—</div></div>
+        <div class="stat"><div class="k">Distance</div><div class="v" id="sDistance">—</div></div>
+        <div class="stat"><div class="k">Vitesse max</div><div class="v" id="sMax">—</div></div>
+        <div class="stat"><div class="k">Vitesse moyenne en mouvement</div><div class="v" id="sAvg">—</div></div>
+        <div class="stat"><div class="k">Virements estimés</div><div class="v" id="sTacks">—</div></div>
+        <div class="stat"><div class="k">Empannages estimés</div><div class="v" id="sGybes">—</div></div>
+        <div class="stat"><div class="k">Points GPS</div><div class="v" id="sPoints">—</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div id="map"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:#2166f3"></i>&lt;2 nd</span>
+        <span><i class="dot" style="background:#00bcd4"></i>2–4 nd</span>
+        <span><i class="dot" style="background:#2ecc71"></i>4–5,5 nd</span>
+        <span><i class="dot" style="background:#ffd32a"></i>5,5–6,5 nd</span>
+        <span><i class="dot" style="background:#ff3b30"></i>&gt;6,5 nd</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <input id="timeline" type="range" min="0" max="0" value="0">
+      <div class="playbar">
+        <button id="play">▶ Lecture</button>
+        <button id="reset" class="secondary">↺ Début</button>
+        <select id="rate">
+          <option value="1">x1</option>
+          <option value="5">x5</option>
+          <option value="10" selected>x10</option>
+          <option value="20">x20</option>
+          <option value="50">x50</option>
+        </select>
+      </div>
+      <div class="live">
+        <div class="stat"><div class="k">Heure</div><div class="v" id="lTime">—</div></div>
+        <div class="stat"><div class="k">Vitesse</div><div class="v" id="lSpeed">—</div></div>
+        <div class="stat"><div class="k">Cap</div><div class="v" id="lHeading">—</div></div>
+        <div class="stat"><div class="k">Angle au vent</div><div class="v" id="lTwa">—</div></div>
+        <div class="stat"><div class="k">Allure estimée</div><div class="v" id="lMode">—</div></div>
+      </div>
+    </section>
+  </section>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let allSessions=[], current=[], map=null, marker=null, trail=null, timer=null, playing=false, idx=0;
+
+const $=id=>document.getElementById(id);
+const norm360=a=>((a%360)+360)%360;
+const angDiff=(a,b)=>{let d=Math.abs(norm360(a)-norm360(b));return d>180?360-d:d};
+const signedWindSide=(heading,wind)=>{let d=norm360(heading-wind);return d>180?d-360:d};
+
+function parseTime(s){
+  if(!s) return null;
+  const d=new Date(s);
+  return isNaN(d)?null:d;
+}
+function havNm(a,b){
+  const R=3440.065, rad=Math.PI/180;
+  const dLat=(b.lat-a.lat)*rad, dLon=(b.lon-a.lon)*rad;
+  const la1=a.lat*rad, la2=b.lat*rad;
+  const h=Math.sin(dLat/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function fmtDuration(sec){
+  sec=Math.max(0,Math.round(sec)); const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+  return h?`${h} h ${String(m).padStart(2,'0')} min`:`${m} min ${String(s).padStart(2,'0')} s`;
+}
+function colorForSpeed(v){
+  if(v<2)return '#2166f3'; if(v<4)return '#00bcd4'; if(v<5.5)return '#2ecc71'; if(v<6.5)return '#ffd32a'; return '#ff3b30';
+}
+function mode(twa){
+  if(twa<50)return 'Près';
+  if(twa<90)return 'Bon plein';
+  if(twa<120)return 'Travers';
+  if(twa<155)return 'Largue';
+  return 'Portant';
+}
+function parseVcc(text){
+  const xml=new DOMParser().parseFromString(text,'application/xml');
+  if(xml.querySelector('parsererror')) throw new Error('Le fichier VCC/XML ne peut pas être lu.');
+  const nodes=[...xml.getElementsByTagName('*')].filter(n=>n.localName==='Trackpoint');
+  const pts=nodes.map(n=>({
+    lat:Number(n.getAttribute('latitude')),
+    lon:Number(n.getAttribute('longitude')),
+    speed:Number(n.getAttribute('speed')||0),
+    heading:Number(n.getAttribute('heading')||0),
+    time:parseTime(n.getAttribute('dateTime')||'')
+  })).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+  if(!pts.length) throw new Error('Aucun point GPS trouvé dans ce fichier.');
+  return splitSessions(pts);
+}
+function splitSessions(pts){
+  const out=[]; let cur=[pts[0]];
+  for(let i=1;i<pts.length;i++){
+    const a=pts[i-1],b=pts[i];
+    const gap=(a.time&&b.time)?(b.time-a.time)/1000:0;
+    if(gap>1800){out.push(cur);cur=[b]} else cur.push(b);
+  }
+  out.push(cur);
+  return out.filter(s=>s.length>3);
+}
+function sessionLabel(s,i){
+  const a=s[0],b=s[s.length-1];
+  const date=a.time?a.time.toLocaleDateString('fr-FR'):`Session ${i+1}`;
+  const dur=(a.time&&b.time)?fmtDuration((b.time-a.time)/1000):`${s.length} points`;
+  return `${date} — ${dur}`;
+}
+function stats(s,wind){
+  let distance=0,max=0,sum=0,n=0;
+  for(let i=1;i<s.length;i++) distance+=havNm(s[i-1],s[i]);
+  for(const p of s){max=Math.max(max,p.speed);if(p.speed>.5){sum+=p.speed;n++}}
+  const duration=(s[0].time&&s.at(-1).time)?(s.at(-1).time-s[0].time)/1000:0;
+  let tacks=0,gybes=0,lastSide=null,lastChange=-9999;
+  for(let i=0;i<s.length;i+=3){
+    if(s[i].speed<1)continue;
+    const side=signedWindSide(s[i].heading,wind);
+    const abs=Math.abs(side);
+    const cls=abs<105?'up':(abs>125?'down':'mid');
+    const sign=Math.sign(side);
+    if(cls!=='mid'&&lastSide&&lastSide.cls===cls&&sign!==lastSide.sign&&i-lastChange>12){
+      if(cls==='up')tacks++; else gybes++;
+      lastChange=i;
+    }
+    if(cls!=='mid')lastSide={cls,sign};
+  }
+  return {distance,max,avg:n?sum/n:0,duration,tacks,gybes};
+}
+function draw(s){
+  if(map){map.remove();map=null}
+  map=L.map('map',{preferCanvas:true});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  const latlng=s.map(p=>[p.lat,p.lon]);
+  map.fitBounds(latlng,{padding:[20,20]});
+  for(let i=1;i<s.length;i++){
+    L.polyline([[s[i-1].lat,s[i-1].lon],[s[i].lat,s[i].lon]],{color:colorForSpeed((s[i-1].speed+s[i].speed)/2),weight:4,opacity:.9}).addTo(map);
+  }
+  L.circleMarker(latlng[0],{radius:7,color:'#fff',weight:2,fillColor:'#20c35a',fillOpacity:1}).bindTooltip('Départ').addTo(map);
+  L.circleMarker(latlng.at(-1),{radius:7,color:'#fff',weight:2,fillColor:'#ff3b30',fillOpacity:1}).bindTooltip('Arrivée').addTo(map);
+  trail=L.polyline([],{color:'#fff',weight:5,opacity:.9}).addTo(map);
+  marker=L.circleMarker(latlng[0],{radius:9,color:'#fff',weight:3,fillColor:'#111',fillOpacity:1}).addTo(map);
+  setTimeout(()=>map.invalidateSize(),100);
+}
+function update(i,pan=false){
+  if(!current.length)return;
+  idx=Math.max(0,Math.min(current.length-1,Number(i)));
+  $('timeline').value=idx;
+  const p=current[idx],wind=Number($('windDir').value)||0,twa=angDiff(p.heading,wind);
+  marker.setLatLng([p.lat,p.lon]);
+  trail.setLatLngs(current.slice(Math.max(0,idx-120),idx+1).map(q=>[q.lat,q.lon]));
+  if(pan)map.panTo([p.lat,p.lon],{animate:false});
+  $('lTime').textContent=p.time?p.time.toLocaleTimeString('fr-FR'):'—';
+  $('lSpeed').textContent=p.speed.toFixed(1)+' nd';
+  $('lHeading').textContent=Math.round(p.heading)+'°';
+  $('lTwa').textContent=Math.round(twa)+'°';
+  $('lMode').textContent=mode(twa);
+}
+function stop(){playing=false;$('play').textContent='▶ Lecture';if(timer)clearInterval(timer)}
+function start(){
+  playing=true;$('play').textContent='⏸ Pause';
+  const rate=Number($('rate').value);
+  timer=setInterval(()=>{idx+=rate;if(idx>=current.length){idx=current.length-1;stop()}update(idx,true)},100);
+}
+function analyze(){
+  stop();
+  current=allSessions[Number($('session').value)||0];
+  const wind=Number($('windDir').value)||0,st=stats(current,wind);
+  $('results').classList.remove('hidden');
+  $('sDate').textContent=current[0].time?current[0].time.toLocaleDateString('fr-FR'):'—';
+  $('sDuration').textContent=fmtDuration(st.duration);
+  $('sDistance').textContent=st.distance.toFixed(2)+' nm';
+  $('sMax').textContent=st.max.toFixed(2)+' nd';
+  $('sAvg').textContent=st.avg.toFixed(2)+' nd';
+  $('sTacks').textContent=st.tacks;
+  $('sGybes').textContent=st.gybes;
+  $('sPoints').textContent=current.length.toLocaleString('fr-FR');
+  $('timeline').max=current.length-1;$('timeline').value=0;
+  draw(current);update(0);
+  $('message').textContent='Analyse terminée. Les virements et empannages sont des estimations basées sur le cap GPS et le vent saisi.';
+}
+$('file').addEventListener('change',async e=>{
+  try{
+    const f=e.target.files[0];if(!f)return;
+    $('status').textContent='Lecture en cours…';
+    allSessions=parseVcc(await f.text());
+    $('session').innerHTML=allSessions.map((s,i)=>`<option value="${i}">${sessionLabel(s,i)}</option>`).join('');
+    $('session').classList.toggle('hidden',allSessions.length<=1);
+    $('analyze').disabled=false;
+    $('status').textContent=`${allSessions.length} session${allSessions.length>1?'s':''} détectée${allSessions.length>1?'s':''}`;
+    $('message').textContent=allSessions.length>1?'Le fichier contient plusieurs sorties. Choisis la session à analyser.':'Fichier prêt.';
+  }catch(err){$('status').textContent='Erreur';$('message').textContent=err.message;$('analyze').disabled=true}
+});
+$('analyze').onclick=analyze;
+$('session').onchange=analyze;
+$('timeline').oninput=e=>{stop();update(e.target.value,true)};
+$('play').onclick=()=>playing?stop():start();
+$('reset').onclick=()=>{stop();update(0,true)};
+</script>
+</body>
+</html>
