@@ -1,0 +1,9 @@
+{
+  "name": "SpeedFeet Analyzer V2.1.0",
+  "short_name": "SpeedFeet",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "description": "Carnet et analyseur de navigation pour Speed Feet 18"
+}
