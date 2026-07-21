@@ -2024,3 +2024,23 @@ body {
 .trimVerdict.positive { color:var(--good); }
 .trimVerdict.negative { color:var(--bad); }
 @media (max-width:560px) { .navigationDashboardLive { grid-template-columns:1fr 1fr; } .markerChoiceGrid { grid-template-columns:1fr; } .markerChoiceButton:last-child { grid-column:auto; } }
+
+/* V2.5 */
+.navigationStatusLine{display:flex;align-items:center;justify-content:center;gap:9px}
+.gpsMiniDot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#8b98a8;box-shadow:0 0 0 3px rgba(139,152,168,.15)}
+.gpsMiniDot.active{background:#32d583;box-shadow:0 0 10px #32d583}
+.gpsMiniDot.error{background:#f97066;box-shadow:0 0 10px #f97066}
+.gpsMiniDot.searching{background:#8b98a8}
+.navigationDashboardLive{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.navigationDashboardLive .speedHeroCard{grid-column:1/-1;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.navigationDashboardLive .speedHeroCard #navSpeed{font-size:clamp(3.4rem,16vw,6rem);line-height:1;font-variant-numeric:tabular-nums}
+.weatherThumbnailButton{display:block;width:min(100%,360px);padding:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#081524;cursor:zoom-in}
+.weatherThumbnailButton img{display:block;width:100%;height:150px;object-fit:cover}
+.imageViewerModal{align-items:center!important;padding:10px!important}
+.imageViewerContent{width:100%;height:100%;max-width:none!important;background:#02060b!important;overflow:auto!important;touch-action:pan-x pan-y pinch-zoom}
+.imageViewerToolbar{position:sticky;top:0;z-index:2;display:flex;justify-content:flex-end;padding:8px;background:#02060bcc}
+.imageViewerImage{display:block;max-width:none;min-width:100%;height:auto;margin:auto;transform-origin:center center}
+.historyActionBar{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.historyActionBar button{flex:1;min-width:180px}
+.vccStatus{padding:12px;border:1px solid var(--border);border-radius:12px;background:rgba(66,165,245,.08);margin-top:10px}
+@media(max-width:520px){.navigationDashboardLive{gap:10px}.navigationDashboardLive .dataCard{padding:14px 10px}.weatherThumbnailButton img{height:120px}}

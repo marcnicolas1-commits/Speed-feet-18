@@ -1,4 +1,4 @@
-SpeedFeet Analyzer v2.4.0
+SpeedFeet Analyzer v2.5.0
 
 # ⛵ SpeedFeet Analyzer
 
@@ -116,4 +116,4 @@ Tous droits réservés.
 © 2026 SpeedFeet Analyzer
 
 
-Mise à jour v2.4.0 : écran navigation simplifié, cap GPS, heure du téléphone, marqueurs de manœuvres, réglages numérotés 1 à 5, analyse après 2 minutes de stabilisation et carte satellite dans l’historique.
+Mise à jour v2.5.0 : écran navigation simplifié, cap GPS, heure du téléphone, marqueurs de manœuvres, réglages numérotés 1 à 5, analyse après 2 minutes de stabilisation et carte satellite dans l’historique.

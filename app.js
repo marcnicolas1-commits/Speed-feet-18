@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "2.4.0";
+    const APP_VERSION = "2.5.0";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -384,6 +384,9 @@
         const previousImageName =
             state.preparation?.weatherImageName ||
             "";
+        const previousImageData =
+            state.preparation?.weatherImageData ||
+            "";
 
         const selectedImage =
             getElement("weatherImage")
@@ -393,6 +396,9 @@
             weatherImageName:
                 selectedImage?.name ||
                 previousImageName,
+
+            weatherImageData:
+                previousImageData,
 
             windAverage:
                 toNumberOrNull(
@@ -1113,30 +1119,57 @@
         return (toDeg(Math.atan2(y, x)) + 360) % 360;
     }
 
+    function getPolarTargetSpeed(navigation) {
+        const polar = state.settings?.polarData;
+        const wind = navigation?.windRecords?.slice(-1)[0]?.speed ?? navigation?.preparation?.windAverage;
+        const windDirection = navigation?.windRecords?.slice(-1)[0]?.direction ?? navigation?.preparation?.windDirection;
+        const heading = navigation?.currentHeading;
+        if (!Array.isArray(polar) || !polar.length || !Number.isFinite(Number(wind)) || !Number.isFinite(Number(windDirection)) || !Number.isFinite(Number(heading))) return null;
+        const twa = calculateSmallestAngle(Number(heading), Number(windDirection));
+        let best = null;
+        polar.forEach(row => {
+            const ws = Number(row.windSpeed ?? row.tws ?? row.wind);
+            const angle = Number(row.angle ?? row.twa);
+            const speed = Number(row.speed ?? row.boatSpeed ?? row.target);
+            if (![ws, angle, speed].every(Number.isFinite)) return;
+            const distance = Math.abs(ws - Number(wind)) * 4 + Math.abs(angle - twa);
+            if (!best || distance < best.distance) best = { distance, speed };
+        });
+        return best?.speed ?? null;
+    }
+
+    function updateGPSIndicator(status) {
+        const dot = getElement("navGPSDot");
+        if (!dot) return;
+        dot.className = "gpsMiniDot " + (status === "active" ? "active" : status === "error" ? "error" : "searching");
+        const label = status === "active" ? "GPS actif" : status === "error" ? "GPS indisponible" : "GPS en recherche";
+        dot.setAttribute("aria-label", label);
+        dot.title = label;
+    }
+
     function updateNavigationDashboard() {
         const navigation = state.currentNavigation;
         const now = new Date();
         setText("navClock", now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }));
 
         if (!navigation) {
-            setText("navGPS", "Recherche…");
+            updateGPSIndicator("searching");
             setText("navSpeed", "0.0 nd");
             setText("navHeading", "---°");
             setText("navPolar", "— %");
+            setText("navTargetSpeed", "— nd");
             return;
         }
 
-        const gpsLabel = navigation.gpsStatus === "active"
-            ? "● Actif"
-            : navigation.gpsStatus === "error"
-                ? "● Indisponible"
-                : "Recherche…";
-        setText("navGPS", gpsLabel);
-        setText("navSpeed", Number(navigation.currentSpeedKn || 0).toFixed(1) + " nd");
+        updateGPSIndicator(navigation.gpsStatus);
+        const speed = Number(navigation.currentSpeedKn || 0);
+        const target = getPolarTargetSpeed(navigation);
+        setText("navSpeed", speed.toFixed(1) + " nd");
         setText("navHeading", Number.isFinite(navigation.currentHeading)
             ? Math.round(navigation.currentHeading).toString().padStart(3, "0") + "°"
             : "---°");
-        setText("navPolar", "— %");
+        setText("navTargetSpeed", Number.isFinite(target) ? target.toFixed(1) + " nd" : "— nd");
+        setText("navPolar", Number.isFinite(target) && target > 0 ? Math.round(speed / target * 100) + " %" : "— %");
     }
 
     function setText(id, value) {
@@ -1527,7 +1560,7 @@
         }
 
         const recentNavigations =
-            state.history.slice(0, 3);
+            state.history.slice(0, 1);
 
         if (
             recentNavigations.length === 0
@@ -1718,8 +1751,11 @@
 
     function analyzeTrimRecords(navigation) {
         const track = navigation.track || [];
-        return (navigation.trimRecords || []).map(record => {
+        const records = navigation.trimRecords || [];
+        return records.map((record, recordIndex) => {
             const t = new Date(record.timestamp).getTime();
+            const nextRecordTime = records[recordIndex + 1] ? new Date(records[recordIndex + 1].timestamp).getTime() : null;
+            const interrupted = Number.isFinite(nextRecordTime) && nextRecordTime < t + 240000;
             const before = averageSpeedInWindow(track, t - 120000, t);
             const after = averageSpeedInWindow(track, t + 120000, t + 240000);
             const changes = [];
@@ -1729,8 +1765,8 @@
                     if (record.previousSettings[key] !== record[key]) changes.push(`${labels[key]} ${record.previousSettings[key]} → ${record[key]}`);
                 });
             }
-            const gain = before !== null && after !== null ? after - before : null;
-            return { record, before, after, gain, changes };
+            const gain = !interrupted && before !== null && after !== null ? after - before : null;
+            return { record, before, after, gain, changes, interrupted };
         });
     }
 
@@ -1738,9 +1774,9 @@
         const analyses = analyzeTrimRecords(navigation).filter(item => item.changes.length);
         if (!analyses.length) return `<p>Aucun changement de réglage comparable.</p>`;
         return analyses.map(item => {
-            let verdict = "Données insuffisantes";
+            let verdict = item.interrupted ? "Analyse annulée : nouveau réglage avant la fin de la stabilisation" : "Données insuffisantes";
             let cls = "";
-            if (item.gain !== null) {
+            if (!item.interrupted && item.gain !== null) {
                 if (item.gain > 0.08) { verdict = "Amélioration probable"; cls = "positive"; }
                 else if (item.gain < -0.08) { verdict = "Dégradation probable"; cls = "negative"; }
                 else verdict = "Effet peu significatif";
@@ -1889,6 +1925,10 @@
                     État de mer :
                     ${escapeHTML(preparation.seaState || "Non renseigné")}
                 </p>
+                ${preparation.weatherNotes ? `<p>${escapeHTML(preparation.weatherNotes)}</p>` : ""}
+                ${preparation.weatherImageData
+                    ? `<button type="button" class="weatherThumbnailButton" id="btnWeatherThumbnail"><img src="${preparation.weatherImageData}" alt="${escapeHTML(preparation.weatherImageName || "Capture météo")}"></button>`
+                    : `<p>Aucune capture météo enregistrée pour cette navigation.</p>`}
             </section>
 
             <section class="historyDetailSection">
@@ -1924,6 +1964,15 @@
                 ${createHistoricalTrackSVG(navigation)}
             </section>
 
+            <section class="historyDetailSection">
+                <h3>Source GPS</h3>
+                <div class="vccStatus">${navigation.speedPuck ? `SpeedPuck — ${escapeHTML(navigation.speedPuck.fileName)} · ${navigation.speedPuck.pointCount} points` : "Téléphone — aucun fichier VCC importé"}</div>
+                <div class="historyActionBar">
+                    <button type="button" id="btnImportNavigationVCC" class="secondaryButton">Importer un fichier VCC SpeedPuck</button>
+                    <button type="button" id="btnDeleteNavigation" class="dangerButton">Supprimer cette navigation</button>
+                </div>
+            </section>
+
             ${
                 preparation.navigationNotes
                     ? `
@@ -1938,12 +1987,26 @@
             }
         `;
 
+        getElement("btnWeatherThumbnail")?.addEventListener("click", () => openWeatherImage(preparation.weatherImageData, preparation.weatherImageName));
+        getElement("btnImportNavigationVCC")?.addEventListener("click", () => importVCCForNavigation(navigation.id));
+        getElement("btnDeleteNavigation")?.addEventListener("click", () => deleteNavigation(navigation.id));
+
         openModal("navigationDetailsModal");
         window.setTimeout(() => initializeHistorySatelliteMap(navigation), 50);
     }
 
     function bindHistoryCards() {
         const activateCard = event => {
+            const actionButton = event.target.closest("[data-history-action]");
+            if (actionButton) {
+                event.preventDefault();
+                event.stopPropagation();
+                const navigationId = actionButton.dataset.navigationId;
+                if (actionButton.dataset.historyAction === "delete") deleteNavigation(navigationId);
+                if (actionButton.dataset.historyAction === "vcc") importVCCForNavigation(navigationId);
+                if (actionButton.dataset.historyAction === "weather") openWeatherImage(actionButton.dataset.image, actionButton.dataset.imageName);
+                return;
+            }
             const card = event.target.closest(
                 ".navigationHistoryCard"
             );
@@ -2050,6 +2113,188 @@
         }
     }
 
+    function compressImageFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error("Lecture de l’image impossible."));
+            reader.onload = () => {
+                const image = new Image();
+                image.onerror = () => reject(new Error("Image illisible."));
+                image.onload = () => {
+                    const maximum = 1600;
+                    const ratio = Math.min(1, maximum / Math.max(image.width, image.height));
+                    const canvas = document.createElement("canvas");
+                    canvas.width = Math.max(1, Math.round(image.width * ratio));
+                    canvas.height = Math.max(1, Math.round(image.height * ratio));
+                    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL("image/jpeg", 0.78));
+                };
+                image.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function saveWeatherImage() {
+        const file = getElement("weatherImage")?.files?.[0];
+        if (!file) return;
+        try {
+            const imageData = await compressImageFile(file);
+            const preparation = readPreparationForm();
+            preparation.weatherImageName = file.name;
+            preparation.weatherImageData = imageData;
+            state.preparation = preparation;
+            saveJSON(STORAGE_KEYS.preparation, preparation);
+        } catch (error) {
+            console.error(error);
+            alert("La capture météo n’a pas pu être enregistrée.");
+        }
+    }
+
+    function openWeatherImage(imageData, imageName) {
+        if (!imageData) return;
+        let modal = getElement("weatherImageModal");
+        if (!modal) {
+            modal = document.createElement("div");
+            modal.id = "weatherImageModal";
+            modal.className = "modal imageViewerModal";
+            modal.innerHTML = `<div class="modalContent imageViewerContent"><div class="imageViewerToolbar"><button id="btnCloseWeatherImage" class="secondaryButton compactButton">Fermer</button></div><img id="weatherImageFull" class="imageViewerImage" alt="Capture météo agrandie"></div>`;
+            document.body.appendChild(modal);
+            getElement("btnCloseWeatherImage")?.addEventListener("click", closeAllModals);
+            modal.addEventListener("click", event => { if (event.target === modal) closeAllModals(); });
+        }
+        const image = getElement("weatherImageFull");
+        image.src = imageData;
+        image.alt = imageName || "Capture météo agrandie";
+        openModal("weatherImageModal");
+    }
+
+    function parseVCCText(text) {
+        const parseNumber = value => Number(String(value ?? "").trim().replace(",", "."));
+        const normalizedName = value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+        if (text.trim().startsWith("<")) {
+            try {
+                const documentXML = new DOMParser().parseFromString(text, "application/xml");
+                if (!documentXML.querySelector("parsererror")) {
+                    const candidates = Array.from(documentXML.querySelectorAll("trkpt, trackpoint, point, sample, fix, record"));
+                    const xmlTrack = candidates.map((node, index) => {
+                        const findValue = names => {
+                            for (const name of names) {
+                                const attribute = node.getAttribute(name);
+                                if (attribute !== null) return attribute;
+                                const child = Array.from(node.children).find(item => names.includes(normalizedName(item.tagName)));
+                                if (child) return child.textContent;
+                            }
+                            return null;
+                        };
+                        const latitude = parseNumber(findValue(["lat", "latitude"]));
+                        const longitude = parseNumber(findValue(["lon", "lng", "longitude"]));
+                        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+                        const speed = parseNumber(findValue(["speedkn", "boatspeed", "sog", "speed", "vitesse"]));
+                        const heading = parseNumber(findValue(["heading", "cog", "course", "cap"]));
+                        const rawDate = findValue(["datetime", "timestamp", "time", "date", "heure"]);
+                        const parsedDate = rawDate ? new Date(rawDate) : null;
+                        return {
+                            latitude,
+                            longitude,
+                            speedKn: Number.isFinite(speed) ? speed : null,
+                            heading: Number.isFinite(heading) ? heading : null,
+                            timestamp: parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : new Date(Date.now() + index * 1000).toISOString(),
+                            source: "speedpuck"
+                        };
+                    }).filter(Boolean);
+                    if (xmlTrack.length > 1) return xmlTrack;
+                }
+            } catch (error) {
+                console.warn("Lecture XML VCC impossible", error);
+            }
+        }
+
+        const lines = text.split(/\r?\n/).filter(line => line.trim());
+        if (lines.length < 2) return [];
+        const separator = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
+        const clean = value => value.trim().replace(/^"|"$/g, "");
+        const headers = lines[0].split(separator).map(value => normalizedName(clean(value)));
+        const findIndex = names => headers.findIndex(header => names.some(name => header.includes(name)));
+        const latIndex = findIndex(["latitude", "lat"]);
+        const lonIndex = findIndex(["longitude", "lon", "lng"]);
+        const speedIndex = findIndex(["speedkn", "boatspeed", "sog", "speed", "vitesse"]);
+        const headingIndex = findIndex(["heading", "cog", "course", "cap"]);
+        const dateIndex = findIndex(["datetime", "timestamp", "date", "time", "heure"]);
+        if (latIndex < 0 || lonIndex < 0) return [];
+        return lines.slice(1).map((line, index) => {
+            const columns = line.split(separator).map(clean);
+            const latitude = parseNumber(columns[latIndex]);
+            const longitude = parseNumber(columns[lonIndex]);
+            if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+            const rawDate = dateIndex >= 0 ? columns[dateIndex] : "";
+            const parsedDate = rawDate ? new Date(rawDate) : null;
+            const speed = speedIndex >= 0 ? parseNumber(columns[speedIndex]) : null;
+            const heading = headingIndex >= 0 ? parseNumber(columns[headingIndex]) : null;
+            return { latitude, longitude, speedKn: Number.isFinite(speed) ? speed : null, heading: Number.isFinite(heading) ? heading : null, timestamp: parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : new Date(Date.now() + index * 1000).toISOString(), source: "speedpuck" };
+        }).filter(Boolean);
+    }
+
+    function importVCCForNavigation(navigationId) {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".vcc,.csv,.txt,text/plain,text/csv";
+        input.addEventListener("change", async () => {
+            const file = input.files?.[0];
+            if (!file) return;
+            try {
+                const text = await file.text();
+                const track = parseVCCText(text);
+                if (track.length < 2) {
+                    alert("Le fichier a été lu, mais aucune trace GPS exploitable n’a été reconnue. Le format VCC devra être adapté à ce modèle de fichier.");
+                    return;
+                }
+                const navigation = findNavigationById(navigationId);
+                if (!navigation) return;
+                navigation.speedPuck = { fileName: file.name, importedAt: new Date().toISOString(), pointCount: track.length };
+                navigation.phoneTrack = navigation.phoneTrack || navigation.track || [];
+                navigation.speedPuckTrack = track;
+                navigation.track = track;
+                recalculateNavigationStats(navigation);
+                saveJSON(STORAGE_KEYS.history, state.history);
+                renderHistory();
+                renderRecentNavigations();
+                openNavigationDetails(navigationId);
+            } catch (error) {
+                console.error(error);
+                alert("L’import du fichier VCC a échoué.");
+            }
+        });
+        input.click();
+    }
+
+    function recalculateNavigationStats(navigation) {
+        const track = navigation.track || [];
+        let distance = 0;
+        let maximum = 0;
+        track.forEach((point, index) => {
+            if (Number.isFinite(point.speedKn)) maximum = Math.max(maximum, point.speedKn);
+            if (index) distance += calculateDistanceNm(track[index - 1].latitude, track[index - 1].longitude, point.latitude, point.longitude);
+        });
+        navigation.distanceNm = distance;
+        navigation.maxSpeedKn = maximum;
+    }
+
+    function deleteNavigation(navigationId) {
+        showConfirmation(
+            "Supprimer cette navigation ?",
+            "Cette suppression est irréversible. La navigation, ses données GPS, ses réglages, sa météo et son fichier SpeedPuck seront supprimés. Les polaires, recommandations de réglage et futurs conseils seront recalculés à partir des navigations restantes.",
+            () => {
+                state.history = state.history.filter(navigation => navigation.id !== navigationId);
+                saveJSON(STORAGE_KEYS.history, state.history);
+                renderHistory();
+                renderRecentNavigations();
+                closeAllModals();
+            }
+        );
+    }
+
     function bindPreparationAutosave() {
         const fieldIds = [
             "weatherImage",
@@ -2083,6 +2328,60 @@
                 savePreparationDraft
             );
         });
+
+        getElement("weatherImage")?.addEventListener("change", saveWeatherImage);
+    }
+
+    function parsePolarText(text) {
+        const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+        if (lines.length < 2) return [];
+        const separator = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
+        const cells = lines.map(line => line.split(separator).map(value => value.trim().replace(/^"|"$/g, "")));
+        const number = value => Number(String(value).replace(",", "."));
+        const header = cells[0].map(value => value.toLowerCase().replace(/[^a-z0-9]/g, ""));
+        const windIndex = header.findIndex(value => ["wind", "tws", "vent", "windspeed"].some(name => value.includes(name)));
+        const angleIndex = header.findIndex(value => ["angle", "twa", "allure"].some(name => value.includes(name)));
+        const speedIndex = header.findIndex(value => ["speed", "boatspeed", "target", "vitesse"].some(name => value.includes(name)));
+        if (windIndex >= 0 && angleIndex >= 0 && speedIndex >= 0) {
+            return cells.slice(1).map(row => ({ windSpeed: number(row[windIndex]), angle: number(row[angleIndex]), speed: number(row[speedIndex]) }))
+                .filter(row => [row.windSpeed, row.angle, row.speed].every(Number.isFinite));
+        }
+        const angles = cells[0].slice(1).map(number);
+        const result = [];
+        cells.slice(1).forEach(row => {
+            const windSpeed = number(row[0]);
+            row.slice(1).forEach((value, index) => {
+                const speed = number(value);
+                const angle = angles[index];
+                if ([windSpeed, angle, speed].every(Number.isFinite)) result.push({ windSpeed, angle, speed });
+            });
+        });
+        return result;
+    }
+
+    function importPolarFile() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".csv,.txt,text/csv,text/plain";
+        input.addEventListener("change", async () => {
+            const file = input.files?.[0];
+            if (!file) return;
+            try {
+                const polarData = parsePolarText(await file.text());
+                if (!polarData.length) {
+                    alert("La polaire n’a pas été reconnue. Utilisez un CSV avec Vent/TWA/Vitesse ou un tableau Vent × angles.");
+                    return;
+                }
+                state.settings.polarData = polarData;
+                state.settings.polarFileName = file.name;
+                saveJSON(STORAGE_KEYS.settings, state.settings);
+                alert(`Polaire importée : ${polarData.length} points.`);
+            } catch (error) {
+                console.error(error);
+                alert("L’import de la polaire a échoué.");
+            }
+        });
+        input.click();
     }
 
     function bindButtons() {
@@ -2206,11 +2505,7 @@ bindClick(
 
         bindClick(
             "btnImportPolar",
-            () => {
-                alert(
-                    "L'import de polaire sera ajouté dans le module Polaires."
-                );
-            }
+            importPolarFile
         );
 document
             .querySelectorAll(".modal")
