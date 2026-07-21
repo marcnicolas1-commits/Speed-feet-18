@@ -1,0 +1,14 @@
+{
+  "app_version_233": true,
+  "start_button_opens_preparation": true,
+  "obsolete_btnPrepare_removed": true,
+  "obsolete_vcc_removed": true,
+  "marker_without_prompt": true,
+  "offline_track_renderer_present": true,
+  "resume_running_navigation": true,
+  "missing_getElement_ids": [],
+  "missing_button_ids": [],
+  "html_js_cache_buster": true,
+  "pwa_cache_updated": true,
+  "javascript_syntax_ok": true
+}
