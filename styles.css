@@ -2005,3 +2005,22 @@ body {
         align-items: flex-start;
     }
 }
+
+
+/* SpeedFeet Analyzer v2.4 */
+.navigationDashboardLive { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.navigationDashboardLive .dataCard { min-height: 118px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+.navigationDashboardLive .dataCard span:last-child { font-size: clamp(2rem, 10vw, 3.7rem); font-weight: 850; font-variant-numeric: tabular-nums; }
+.navigationDashboardLive .dataTitle { font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+.navigationDashboardLive .gpsStatusCard, .navigationDashboardLive .clockDataCard { grid-column: 1 / -1; min-height: 88px; }
+.navigationDashboardLive .gpsStatusCard span:last-child, .navigationDashboardLive .clockDataCard span:last-child { font-size: clamp(1.7rem, 8vw, 3rem); }
+.markerChoiceGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
+.markerChoiceButton { min-height:68px; border:1px solid var(--border-light); border-radius:14px; background:var(--bg-card-light); color:var(--text-main); font-weight:750; }
+.markerChoiceButton:last-child { grid-column:1/-1; }
+.historySatelliteMap { width:100%; height:min(55vh,520px); min-height:340px; border-radius:14px; overflow:hidden; background:#081524; }
+.trimAnalysisItem { margin:.75rem 0; padding:1rem; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.025); }
+.trimAnalysisItem span { display:block; margin-top:.3rem; color:var(--text-muted); font-size:.85rem; }
+.trimVerdict { font-weight:800; }
+.trimVerdict.positive { color:var(--good); }
+.trimVerdict.negative { color:var(--bad); }
+@media (max-width:560px) { .navigationDashboardLive { grid-template-columns:1fr 1fr; } .markerChoiceGrid { grid-template-columns:1fr; } .markerChoiceButton:last-child { grid-column:auto; } }

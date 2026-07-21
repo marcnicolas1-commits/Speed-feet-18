@@ -15,7 +15,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="styles.css?v=2340">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <link rel="stylesheet" href="styles.css?v=2400">
 
 </head>
 
@@ -298,35 +299,27 @@
         </header>
 
 
-        <section class="navigationDashboard">
-
-            <div class="dataCard">
-                <span class="dataTitle">Temps</span>
-                <span id="navTime">00:00:00</span>
+        <section class="navigationDashboard navigationDashboardLive">
+            <div class="dataCard gpsStatusCard">
+                <span class="dataTitle">GPS</span>
+                <span id="navGPS">Recherche…</span>
             </div>
-
-            <div class="dataCard">
-                <span class="dataTitle">Distance</span>
-                <span id="navDistance">0.00 nm</span>
-            </div>
-
-            <div class="dataCard">
+            <div class="dataCard primaryDataCard">
                 <span class="dataTitle">Vitesse</span>
                 <span id="navSpeed">0.0 nd</span>
             </div>
-
             <div class="dataCard">
-                <span class="dataTitle">VMG</span>
-                <span id="navVMG">0.0 nd</span>
+                <span class="dataTitle">Cap GPS</span>
+                <span id="navHeading">---°</span>
             </div>
-
-        </section>
-
-
-        <section id="mapContainer">
-
-            <!-- Carte Leaflet -->
-
+            <div class="dataCard">
+                <span class="dataTitle">Polaire</span>
+                <span id="navPolar">— %</span>
+            </div>
+            <div class="dataCard clockDataCard">
+                <span class="dataTitle">Heure</span>
+                <span id="navClock">--:--</span>
+            </div>
         </section>
 
 
@@ -544,6 +537,24 @@
 
         </div>
 
+    </div>
+
+
+    <!-- POPUP MARQUEUR -->
+    <div id="markerModal" class="modal">
+        <div class="modalContent">
+            <h2>Ajouter une manœuvre</h2>
+            <div class="markerChoiceGrid">
+                <button type="button" class="markerChoiceButton" data-marker-type="tack">Virement</button>
+                <button type="button" class="markerChoiceButton" data-marker-type="gybe">Empannage</button>
+                <button type="button" class="markerChoiceButton" data-marker-type="spi-hoist">Envoi de spi</button>
+                <button type="button" class="markerChoiceButton" data-marker-type="spi-drop">Affalage du spi</button>
+                <button type="button" class="markerChoiceButton" data-marker-type="other">Autre</button>
+            </div>
+            <div class="modalButtons">
+                <button id="btnCancelMarker" class="secondaryButton">Annuler</button>
+            </div>
+        </div>
     </div>
 
           <!-- ====================================================== -->
@@ -783,13 +794,14 @@
 
 </div>
 
-<script src="app.js?v=2340"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="app.js?v=2400"></script>
 
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=233')
+    navigator.serviceWorker.register('./sw.js?v=2400')
       .catch(error => console.error('Service Worker non enregistré :', error));
   });
 }
