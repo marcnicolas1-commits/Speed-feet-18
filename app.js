@@ -1,21 +1,29 @@
 /* ==========================================================
    SPEEDFEET ANALYZER
    app.js — Partie 1A
-   Initialisation et état global
+   Base de l’application et navigation entre les pages
    ========================================================== */
 
 "use strict";
 
+
 /* ==========================================================
-   APPLICATION
+   INFORMATIONS DE L’APPLICATION
    ========================================================== */
 
 const APP_NAME = "SpeedFeet Analyzer";
 const APP_VERSION = "2.3.0";
-const STORAGE_KEY = "speedfeet-data";
+
+const STORAGE_KEYS = {
+    settings: "speedfeet-settings",
+    preparation: "speedfeet-preparation",
+    history: "speedfeet-history",
+    activeNavigation: "speedfeet-active-navigation"
+};
+
 
 /* ==========================================================
-   ÉTAT GLOBAL
+   ÉTAT GLOBAL DE L’APPLICATION
    ========================================================== */
 
 const appState = {
@@ -26,33 +34,64 @@ const appState = {
 
     watchId: null,
 
+    timerId: null,
+
     startTime: null,
+
+    currentPosition: null,
 
     currentTrack: [],
 
     currentMarkers: [],
 
-    weather: {},
+    currentWindRecords: [],
 
-    preparation: {},
+    currentTrimRecords: [],
 
-    settings: {},
+    preparation: null,
+
+    settings: null,
 
     history: []
 
 };
 
-/* ==========================================================
-   DOM
-   ========================================================== */
-
-const dom = {};
 
 /* ==========================================================
-   INITIALISATION
+   RÉFÉRENCES DU DOM
    ========================================================== */
 
-document.addEventListener("DOMContentLoaded", initApplication);
+const dom = {
+
+    pages: [],
+
+    homePage: null,
+    preparePage: null,
+    navigationPage: null,
+    historyPage: null,
+    settingsPage: null,
+
+    windModal: null,
+    trimModal: null,
+    confirmModal: null,
+
+    btnPrepare: null,
+    btnStartNavigation: null,
+    btnHistory: null,
+    btnSettings: null
+
+};
+
+
+/* ==========================================================
+   DÉMARRAGE DE L’APPLICATION
+   ========================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    initApplication
+);
+
 
 /* ==========================================================
    INITIALISATION PRINCIPALE
@@ -60,129 +99,306 @@ document.addEventListener("DOMContentLoaded", initApplication);
 
 function initApplication() {
 
-    console.log(APP_NAME + " " + APP_VERSION);
+    console.log(
+        `${APP_NAME} — version ${APP_VERSION}`
+    );
 
-    cacheDom();
+    cacheDomElements();
 
-    loadStorage();
-
-    initNavigation();
+    initializePageNavigation();
 
     showPage("home");
 
 }
 
+
 /* ==========================================================
-   CACHE DOM
+   RÉCUPÉRATION DES ÉLÉMENTS HTML
    ========================================================== */
 
-function cacheDom() {
+function cacheDomElements() {
 
-    dom.pages = document.querySelectorAll(".page");
+    dom.pages = Array.from(
+        document.querySelectorAll(".page")
+    );
 
-    dom.homePage = document.getElementById("homePage");
-    dom.preparePage = document.getElementById("preparePage");
-    dom.navigationPage = document.getElementById("navigationPage");
-    dom.historyPage = document.getElementById("historyPage");
-    dom.settingsPage = document.getElementById("settingsPage");
+    dom.homePage =
+        document.getElementById("homePage");
 
-    dom.windModal = document.getElementById("windModal");
-    dom.trimModal = document.getElementById("trimModal");
-    dom.confirmModal = document.getElementById("confirmModal");
+    dom.preparePage =
+        document.getElementById("preparePage");
+
+    dom.navigationPage =
+        document.getElementById("navigationPage");
+
+    dom.historyPage =
+        document.getElementById("historyPage");
+
+    dom.settingsPage =
+        document.getElementById("settingsPage");
+
+
+    dom.windModal =
+        document.getElementById("windModal");
+
+    dom.trimModal =
+        document.getElementById("trimModal");
+
+    dom.confirmModal =
+        document.getElementById("confirmModal");
+
+
+    dom.btnPrepare =
+        document.getElementById("btnPrepare");
+
+    dom.btnStartNavigation =
+        document.getElementById(
+            "btnStartNavigation"
+        );
+
+    dom.btnHistory =
+        document.getElementById("btnHistory");
+
+    dom.btnSettings =
+        document.getElementById("btnSettings");
 
 }
 
+
 /* ==========================================================
-   NAVIGATION ENTRE LES PAGES
+   INITIALISATION DE LA NAVIGATION
    ========================================================== */
 
-function initNavigation() {
+function initializePageNavigation() {
 
     registerPageButton(
-        "prepareButton",
+        dom.btnPrepare,
         "prepare"
     );
 
     registerPageButton(
-        "startNavigationButton",
+        dom.btnStartNavigation,
         "navigation"
     );
 
     registerPageButton(
-        "historyButton",
+        dom.btnHistory,
         "history"
     );
 
     registerPageButton(
-        "settingsButton",
+        dom.btnSettings,
         "settings"
     );
+
 
     document
         .querySelectorAll("[data-page]")
         .forEach(button => {
 
-            button.addEventListener("click", () => {
+            button.addEventListener(
+                "click",
+                () => {
 
-                showPage(
-                    button.dataset.page
-                );
+                    const pageName =
+                        button.dataset.page;
 
-            });
+                    showPage(pageName);
+
+                }
+            );
 
         });
 
 }
 
+
 /* ==========================================================
-   ENREGISTREMENT D'UN BOUTON
+   ASSOCIATION D’UN BOUTON À UNE PAGE
    ========================================================== */
 
-function registerPageButton(id, page) {
+function registerPageButton(
+    button,
+    pageName
+) {
 
-    const button = document.getElementById(id);
+    if (!button) {
 
-    if (!button) return;
+        console.warn(
+            `Bouton introuvable pour la page : ${pageName}`
+        );
 
-    button.addEventListener("click", () => {
+        return;
 
-        showPage(page);
+    }
 
-    });
+    button.addEventListener(
+        "click",
+        () => {
+
+            showPage(pageName);
+
+        }
+    );
 
 }
 
+
 /* ==========================================================
-   AFFICHER UNE PAGE
+   AFFICHAGE D’UNE PAGE
    ========================================================== */
 
 function showPage(pageName) {
 
-    appState.currentPage = pageName;
+    const targetPage =
+        document.getElementById(
+            `${pageName}Page`
+        );
+
+    if (!targetPage) {
+
+        console.warn(
+            `Page introuvable : ${pageName}`
+        );
+
+        return;
+
+    }
+
+
+    closeAllModals();
+
 
     dom.pages.forEach(page => {
 
         page.classList.remove("active");
 
+        page.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
     });
 
-    const page = document.getElementById(
-        pageName + "Page"
+
+    targetPage.classList.add("active");
+
+    targetPage.setAttribute(
+        "aria-hidden",
+        "false"
     );
 
-    if (page) {
 
-        page.classList.add("active");
+    appState.currentPage = pageName;
 
-    }
 
     window.scrollTo({
         top: 0,
-        behavior: "instant"
+        left: 0,
+        behavior: "auto"
     });
+
+
+    document.body.dataset.currentPage =
+        pageName;
+
+
+    window.dispatchEvent(
+        new CustomEvent(
+            "speedfeet:pagechange",
+            {
+                detail: {
+                    page: pageName
+                }
+            }
+        )
+    );
 
 }
 
+
 /* ==========================================================
-   FIN PARTIE 1A
+   FERMETURE PROVISOIRE DES MODALES
+   La gestion complète arrivera dans la prochaine partie.
+   ========================================================== */
+
+function closeAllModals() {
+
+    const modals = [
+        dom.windModal,
+        dom.trimModal,
+        dom.confirmModal
+    ];
+
+    modals.forEach(modal => {
+
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.remove(
+            "open",
+            "active",
+            "is-open"
+        );
+
+        modal.setAttribute(
+            "aria-hidden",
+            "true"
+        );
+
+    });
+
+    document.body.classList.remove(
+        "modal-open"
+    );
+
+}
+
+
+/* ==========================================================
+   GESTION DU BOUTON RETOUR DU NAVIGATEUR
+   ========================================================== */
+
+window.addEventListener(
+    "popstate",
+    event => {
+
+        const requestedPage =
+            event.state?.page || "home";
+
+        showPage(requestedPage);
+
+    }
+);
+
+
+/* ==========================================================
+   INFORMATIONS DE DIAGNOSTIC
+   ========================================================== */
+
+function getApplicationStatus() {
+
+    return {
+
+        name: APP_NAME,
+
+        version: APP_VERSION,
+
+        currentPage:
+            appState.currentPage,
+
+        numberOfPages:
+            dom.pages.length,
+
+        navigationRunning:
+            appState.navigationRunning
+
+    };
+
+}
+
+
+/* ==========================================================
+   FIN DE LA PARTIE 1A
    ========================================================== */
