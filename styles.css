@@ -1,0 +1,2007 @@
+:root{color-scheme:dark;--bg:#07111f;--card:#0e1b2d;--card2:#12233a;--line:#233955;--text:#f7fbff;--muted:#9fb0c3;--accent:#42a5ff;--good:#32d583;--warn:#fdb022;--bad:#f97066}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+body{padding-bottom:calc(78px + env(safe-area-inset-bottom))}button,input,select,textarea{font:inherit}.hidden{display:none!important}
+header{position:sticky;top:0;z-index:20;background:rgba(7,17,31,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 16px 10px}
+.head{max-width:1180px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:10px}.brand{font-weight:850;font-size:20px}.version{font-size:12px;color:var(--muted)}
+main{max-width:1180px;margin:auto;padding:14px}.screen{display:none}.screen.active{display:block}
+.card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px;box-shadow:0 10px 30px #0003}.card h2,.card h3{margin:0 0 12px}.muted{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{background:#081524;border:1px solid var(--line);border-radius:15px;padding:12px}.stat b{display:block;font-size:22px;margin-top:4px}.stat span{font-size:12px;color:var(--muted)}
+label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px}input,select,textarea{width:100%;border:1px solid var(--line);background:#081524;color:var(--text);border-radius:12px;padding:12px}textarea{min-height:84px;resize:vertical}
+.btn{border:0;border-radius:14px;padding:13px 16px;font-weight:800;background:var(--accent);color:#04101d;cursor:pointer}.btn.secondary{background:#20334d;color:#fff}.btn.good{background:var(--good)}.btn.warn{background:var(--warn)}.btn.bad{background:var(--bad)}.btn:disabled{opacity:.45}.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.grow{flex:1}
+.navbar{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(7,17,31,.96);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr);gap:4px}.navbtn{background:none;border:0;color:var(--muted);font-size:11px;padding:7px 2px;border-radius:12px}.navbtn i{display:block;font-style:normal;font-size:22px;margin-bottom:2px}.navbtn.active{color:#fff;background:#14263d}
+.checkitem,.taskitem{display:flex;gap:10px;align-items:flex-start;background:#081524;border:1px solid var(--line);padding:11px;border-radius:13px;margin:8px 0}.checkitem input{width:22px;height:22px;margin-top:1px}.tasktext{flex:1}.taskactions{display:flex;gap:6px}.iconbtn{border:0;background:#20334d;color:#fff;border-radius:10px;padding:8px 10px}
+.hero{padding:22px;text-align:center}.mark{width:min(76vw,360px);aspect-ratio:1;border-radius:50%;border:8px solid #6bc0ff33;background:radial-gradient(circle at 35% 30%,#6bc0ff,#1488e8 55%,#0863ad);box-shadow:0 0 0 12px #42a5ff12,0 24px 60px #0008;color:white;font-size:34px;font-weight:900;letter-spacing:.5px}.mark:active{transform:scale(.97)}.navclock{font-size:44px;font-variant-numeric:tabular-nums;font-weight:800}.gpsline{display:flex;justify-content:center;gap:14px;color:var(--muted);margin:12px 0}.pulse{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 12px var(--good)}
+#map{height:54vh;min-height:350px;border-radius:16px;overflow:hidden}.legend{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;color:var(--muted);font-size:11px}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:3px}.timeline{width:100%}.maneuver-icon,.event-icon{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:2px solid #fff;border-radius:50%;font-weight:900;font-size:10px;color:#fff}.maneuver-tack{background:#2775ff}.maneuver-gybe{background:#ff8a22}.event-icon{background:#a855f7}.popup{color:#111;min-width:230px}.popup textarea,.popup select{background:white;color:#111;border-color:#ccc}.popup label{color:#555}.popup .btn{width:100%;margin-top:8px}
+.modal{position:fixed;inset:0;z-index:200;background:#000a;display:flex;align-items:flex-end;justify-content:center;padding:16px}.modalbox{width:min(560px,100%);background:var(--card2);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 20px 70px #000}.choicegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.choicebtn{border:1px solid var(--line);background:#081524;color:#fff;border-radius:14px;padding:15px;font-weight:800}.choicebtn.selected{background:var(--accent);color:#04101d}.sessioncard{cursor:pointer}.sessioncard:active{transform:scale(.99)}.detailrow{padding:10px 0;border-bottom:1px solid var(--line)}.dangerzone{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);z-index:100;background:#fff;color:#07111f;padding:11px 16px;border-radius:999px;font-weight:700;box-shadow:0 12px 30px #0008;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1}
+@media(max-width:760px){.grid{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.desktopOnly{display:none}.brand{font-size:17px}.card{border-radius:16px;padding:13px}.mark{width:min(72vw,310px)}.navclock{font-size:38px}}
+
+.dashboard-card{width:100%;text-align:left;color:inherit;cursor:pointer;appearance:none}.dashboard-card:hover,.dashboard-card:focus{transform:translateY(-1px);border-color:#4f9cff}.dashboard-card:active{transform:scale(.99)}.dictation-row{align-items:stretch}.dictation-row textarea{min-height:95px}.micbtn{min-width:105px}.small{font-size:12px;margin-top:5px}@media(max-width:520px){.dictation-row{display:block}.micbtn{width:100%;margin-top:8px}}
+
+/* V2.3 */
+.syncbox{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:15px;background:#081524}.analysis-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}.analysis-grid .card{min-width:0}#polarCanvas{width:100%;height:auto;display:block;background:#081524;border:1px solid var(--line);border-radius:14px}.eventchoices{grid-template-columns:repeat(3,1fr)}.dynamic-fields{padding:12px;margin:10px 0;border-radius:14px;background:#081524;border:1px solid var(--line)}.testrow{padding:10px;border:1px solid var(--line);border-radius:12px;margin:8px 0;background:#081524}.testrow .gain{font-size:18px;font-weight:800}.gain.positive{color:var(--good)}.gain.negative{color:var(--bad)}@media(max-width:760px){.analysis-grid{grid-template-columns:1fr}.eventchoices{grid-template-columns:repeat(2,1fr)}}
+/* ==========================================================
+   SPEEDFEET ANALYZER
+   styles.css — Partie 2
+   Cartes, boutons et barres d’actions
+   ========================================================== */
+
+
+/* ==========================================================
+   CARTES
+   ========================================================== */
+
+.card {
+    margin-bottom: 20px;
+    padding: 22px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-large);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.025),
+            rgba(255, 255, 255, 0)
+        ),
+        var(--bg-card);
+
+    box-shadow: var(--shadow);
+}
+
+.card:last-child {
+    margin-bottom: 0;
+}
+
+
+/* ==========================================================
+   BOUTONS DE MENU
+   ========================================================== */
+
+.menuButton {
+    width: 100%;
+    min-height: 78px;
+    padding: 18px 20px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-large);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.035),
+            rgba(255, 255, 255, 0)
+        ),
+        var(--bg-card);
+
+    color: var(--text-main);
+
+    font-size: 1.05rem;
+    font-weight: 750;
+    line-height: 1.25;
+    text-align: left;
+
+    box-shadow: var(--shadow);
+
+    transition:
+        transform 0.12s ease,
+        border-color 0.12s ease,
+        background 0.12s ease;
+}
+
+.menuButton:hover {
+    border-color: var(--border-light);
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.055),
+            rgba(255, 255, 255, 0)
+        ),
+        var(--bg-card-light);
+}
+
+.menuButton:active {
+    transform: scale(0.985);
+}
+
+.menuButton.primary {
+    border-color: rgba(66, 165, 245, 0.75);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.13),
+            rgba(255, 255, 255, 0)
+        ),
+        var(--primary);
+
+    color: #ffffff;
+}
+
+.menuButton.primary:hover {
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.16),
+            rgba(255, 255, 255, 0)
+        ),
+        var(--primary-hover);
+}
+
+
+/* ==========================================================
+   BOUTONS GÉNÉRAUX
+   ========================================================== */
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.actionButton {
+    min-height: 54px;
+    padding: 14px 18px;
+
+    border-radius: var(--radius-medium);
+
+    font-size: 1rem;
+    font-weight: 750;
+    line-height: 1.2;
+
+    transition:
+        transform 0.12s ease,
+        background 0.12s ease,
+        border-color 0.12s ease,
+        opacity 0.12s ease;
+}
+
+.primaryButton:active,
+.secondaryButton:active,
+.dangerButton:active,
+.actionButton:active {
+    transform: scale(0.975);
+}
+
+.primaryButton {
+    border: 1px solid rgba(66, 165, 245, 0.72);
+
+    background: var(--primary);
+    color: #ffffff;
+}
+
+.primaryButton:hover {
+    background: var(--primary-hover);
+}
+
+.primaryButton:active {
+    background: var(--primary-active);
+}
+
+.secondaryButton {
+    border: 1px solid var(--border-light);
+
+    background: var(--secondary);
+    color: var(--text-main);
+}
+
+.secondaryButton:hover {
+    background: var(--secondary-hover);
+}
+
+.dangerButton {
+    border: 1px solid rgba(255, 100, 100, 0.48);
+
+    background: var(--danger);
+    color: #ffffff;
+}
+
+.dangerButton:hover {
+    background: var(--danger-hover);
+}
+
+.actionButton {
+    border: 1px solid rgba(66, 165, 245, 0.55);
+
+    background: rgba(25, 118, 210, 0.18);
+    color: #dceeff;
+}
+
+.actionButton:hover {
+    background: rgba(25, 118, 210, 0.3);
+}
+
+
+/* ==========================================================
+   ÉTATS DES BOUTONS
+   ========================================================== */
+
+button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+button.is-loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+}
+
+button.is-loading::after {
+    content: "";
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    width: 20px;
+    height: 20px;
+
+    margin-top: -10px;
+    margin-left: -10px;
+
+    border: 3px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+
+    animation: buttonSpinner 0.8s linear infinite;
+}
+
+@keyframes buttonSpinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* ==========================================================
+   BARRES D’ACTIONS
+   ========================================================== */
+
+.buttonBar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+
+    margin-top: 28px;
+}
+
+.buttonBar button {
+    width: 100%;
+}
+
+
+/* ==========================================================
+   LISTES D’ACCUEIL ET D’HISTORIQUE
+   ========================================================== */
+
+#recentNavigationList,
+#historyList {
+    display: grid;
+    gap: 14px;
+}
+
+.navigationItem {
+    padding: 18px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-medium);
+
+    background: var(--bg-card);
+
+    box-shadow: var(--shadow);
+}
+
+.navigationItemHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+
+    margin-bottom: 12px;
+}
+
+.navigationItemTitle {
+    margin: 0;
+
+    color: var(--text-main);
+
+    font-size: 1.05rem;
+    font-weight: 750;
+}
+
+.navigationItemDate {
+    flex-shrink: 0;
+
+    color: var(--text-muted);
+
+    font-size: 0.85rem;
+}
+
+.navigationItemData {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 14px;
+
+    color: var(--text-secondary);
+
+    font-size: 0.92rem;
+}
+
+.navigationItemActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    margin-top: 16px;
+}
+
+.navigationItemActions button {
+    min-height: 42px;
+    padding: 10px 14px;
+
+    font-size: 0.9rem;
+}
+
+
+/* ==========================================================
+   BADGES
+   ========================================================== */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 28px;
+    padding: 4px 10px;
+
+    border: 1px solid var(--border);
+    border-radius: 999px;
+
+    background: var(--bg-card-light);
+    color: var(--text-secondary);
+
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.badge.success {
+    border-color: rgba(46, 159, 87, 0.55);
+    background: rgba(46, 159, 87, 0.16);
+    color: #9ee7b7;
+}
+
+.badge.warning {
+    border-color: rgba(229, 155, 36, 0.55);
+    background: rgba(229, 155, 36, 0.16);
+    color: #ffd38e;
+}
+
+.badge.error {
+    border-color: rgba(216, 69, 69, 0.55);
+    background: rgba(216, 69, 69, 0.16);
+    color: #ffaaaa;
+}
+
+
+/* ==========================================================
+   SÉPARATEURS
+   ========================================================== */
+
+.divider {
+    width: 100%;
+    height: 1px;
+
+    margin: 20px 0;
+
+    border: 0;
+    background: var(--border);
+}
+/* ==========================================================
+   SPEEDFEET ANALYZER
+   styles.css — Partie 3
+   Formulaires, tableau de bord et carte
+   ========================================================== */
+
+
+/* ==========================================================
+   FORMULAIRES
+   ========================================================== */
+
+label {
+    display: block;
+
+    margin-bottom: 6px;
+    margin-top: 18px;
+
+    color: var(--text-secondary);
+
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+input,
+select,
+textarea {
+
+    width: 100%;
+
+    padding: 14px 16px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-medium);
+
+    background: var(--bg-input);
+
+    color: var(--text-main);
+
+    font-size: 1rem;
+
+    transition:
+        border-color .15s ease,
+        background .15s ease;
+
+}
+
+input:hover,
+select:hover,
+textarea:hover{
+
+    border-color:var(--border-light);
+
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+
+    outline:none;
+
+    border-color:var(--primary);
+
+    background:var(--bg-card-light);
+
+}
+
+textarea{
+
+    min-height:110px;
+
+    resize:vertical;
+
+}
+
+input[type=file]{
+
+    padding:12px;
+
+}
+
+
+/* ==========================================================
+   TABLEAU DE BORD NAVIGATION
+   ========================================================== */
+
+.navigationDashboard{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(2,minmax(0,1fr));
+
+    gap:14px;
+
+    margin-bottom:22px;
+
+}
+
+.dataCard{
+
+    padding:18px;
+
+    border:1px solid var(--border);
+
+    border-radius:var(--radius-large);
+
+    background:var(--bg-card);
+
+    box-shadow:var(--shadow);
+
+    text-align:center;
+
+}
+
+.dataTitle{
+
+    display:block;
+
+    margin-bottom:10px;
+
+    color:var(--text-muted);
+
+    font-size:.85rem;
+
+    text-transform:uppercase;
+
+    letter-spacing:.05em;
+
+}
+
+.dataCard span:last-child{
+
+    display:block;
+
+    color:var(--text-main);
+
+    font-size:1.8rem;
+
+    font-weight:800;
+
+}
+
+
+/* ==========================================================
+   CARTE
+   ========================================================== */
+
+#mapContainer{
+
+    width:100%;
+
+    height:52vh;
+
+    min-height:350px;
+
+    margin-bottom:22px;
+
+    overflow:hidden;
+
+    border:1px solid var(--border);
+
+    border-radius:var(--radius-large);
+
+    background:#0a1724;
+
+    box-shadow:var(--shadow);
+
+}
+
+
+/* Leaflet */
+
+.leaflet-container{
+
+    width:100%;
+
+    height:100%;
+
+    background:#0a1724;
+
+}
+
+
+/* ==========================================================
+   BARRE D'ACTIONS NAVIGATION
+   ========================================================== */
+
+.navigationToolbar{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(4,minmax(0,1fr));
+
+    gap:12px;
+
+}
+
+.navigationToolbar button{
+
+    min-height:64px;
+
+}
+
+
+/* ==========================================================
+   INFO GPS
+   ========================================================== */
+
+.gpsStatus{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    margin-bottom:20px;
+
+}
+
+.gpsDot{
+
+    width:12px;
+
+    height:12px;
+
+    border-radius:50%;
+
+    background:var(--danger);
+
+}
+
+.gpsDot.active{
+
+    background:var(--success);
+
+}
+
+
+/* ==========================================================
+   INDICATEURS
+   ========================================================== */
+
+.windQuality{
+
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:8px;
+
+}
+
+.windGood{
+
+    color:#6ddf6d;
+
+}
+
+.windMedium{
+
+    color:#ffd54f;
+
+}
+
+.windPoor{
+
+    color:#ff6b6b;
+
+}
+
+
+/* ==========================================================
+   PETITES INFOS
+   ========================================================== */
+
+.infoRow{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    gap:12px;
+
+    margin:10px 0;
+
+}
+
+.infoLabel{
+
+    color:var(--text-secondary);
+
+}
+
+.infoValue{
+
+    font-weight:700;
+
+    color:var(--text-main);
+
+}
+/* ==========================================================
+   SPEEDFEET ANALYZER
+   styles.css — Partie 4
+   Navigation, analyses et graphiques
+   ========================================================== */
+
+
+/* ==========================================================
+   BARRE FIXE DE NAVIGATION
+   ========================================================== */
+
+.navigationToolbar{
+
+    position:fixed;
+
+    left:50%;
+
+    bottom:18px;
+
+    transform:translateX(-50%);
+
+    width:min(96%,700px);
+
+    padding:10px;
+
+    display:grid;
+
+    grid-template-columns:repeat(4,1fr);
+
+    gap:10px;
+
+    border:1px solid rgba(255,255,255,.08);
+
+    border-radius:22px;
+
+    background:rgba(13,27,42,.92);
+
+    backdrop-filter:blur(14px);
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.45);
+
+    z-index:900;
+
+}
+
+.navigationToolbar button{
+
+    min-height:62px;
+
+    border-radius:16px;
+
+}
+
+
+/* laisse la place sous la carte */
+
+#navigationPage{
+
+    padding-bottom:130px;
+
+}
+
+
+/* ==========================================================
+   GRILLES
+   ========================================================== */
+
+.grid2{
+
+    display:grid;
+
+    grid-template-columns:repeat(2,minmax(0,1fr));
+
+    gap:18px;
+
+}
+
+.grid3{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,minmax(0,1fr));
+
+    gap:18px;
+
+}
+
+.grid4{
+
+    display:grid;
+
+    grid-template-columns:repeat(4,minmax(0,1fr));
+
+    gap:18px;
+
+}
+
+
+/* ==========================================================
+   TABLEAUX
+   ========================================================== */
+
+table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+}
+
+th{
+
+    padding:12px;
+
+    text-align:left;
+
+    color:var(--text-secondary);
+
+    border-bottom:1px solid var(--border);
+
+    font-size:.9rem;
+
+}
+
+td{
+
+    padding:14px 12px;
+
+    border-bottom:1px solid rgba(255,255,255,.05);
+
+}
+
+tr:hover{
+
+    background:rgba(255,255,255,.03);
+
+}
+
+
+/* ==========================================================
+   ANALYSE
+   ========================================================== */
+
+.analysisCard{
+
+    margin-bottom:20px;
+
+}
+
+.analysisValue{
+
+    font-size:2rem;
+
+    font-weight:800;
+
+    color:var(--primary);
+
+}
+
+.analysisLabel{
+
+    margin-top:6px;
+
+    color:var(--text-secondary);
+
+}
+
+
+/* ==========================================================
+   VCC
+   ========================================================== */
+
+.vccResult{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:16px;
+
+    margin-top:12px;
+
+    border-radius:16px;
+
+    background:rgba(25,118,210,.08);
+
+    border:1px solid rgba(25,118,210,.25);
+
+}
+
+
+/* ==========================================================
+   POLAIRE
+   ========================================================== */
+
+#polarChart{
+
+    width:100%;
+
+    height:420px;
+
+}
+
+
+/* ==========================================================
+   CANVAS
+   ========================================================== */
+
+canvas{
+
+    width:100%;
+
+    max-width:100%;
+
+}
+
+
+/* ==========================================================
+   STATISTIQUES
+   ========================================================== */
+
+.statsGrid{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+
+    gap:16px;
+
+}
+
+.statBox{
+
+    padding:18px;
+
+    border-radius:18px;
+
+    background:var(--bg-card);
+
+    border:1px solid var(--border);
+
+    text-align:center;
+
+}
+
+.statBox h3{
+
+    margin-bottom:8px;
+
+}
+
+.statValue{
+
+    font-size:2rem;
+
+    font-weight:800;
+
+}
+
+
+/* ==========================================================
+   APPRENTISSAGE
+   ========================================================== */
+
+.tipCard{
+
+    padding:18px;
+
+    border-left:4px solid var(--primary);
+
+    border-radius:14px;
+
+    background:rgba(25,118,210,.08);
+
+    margin-bottom:14px;
+
+}
+
+.tipTitle{
+
+    font-weight:700;
+
+    margin-bottom:8px;
+
+}
+
+.tipText{
+
+    color:var(--text-secondary);
+
+}
+
+
+/* ==========================================================
+   ÉTATS
+   ========================================================== */
+
+.hidden{
+
+    display:none !important;
+
+}
+
+.center{
+
+    text-align:center;
+
+}
+
+.right{
+
+    text-align:right;
+
+}
+
+.mt20{
+
+    margin-top:20px;
+
+}
+
+.mb20{
+
+    margin-bottom:20px;
+
+}
+/* ==========================================================
+   SPEEDFEET ANALYZER
+   styles.css — Partie 5
+   Modales, formulaires Vent/Réglages et confirmation
+   ========================================================== */
+
+
+/* ==========================================================
+   MODALES
+   ========================================================== */
+
+.modal {
+    display: none;
+
+    position: fixed;
+    inset: 0;
+
+    align-items: center;
+    justify-content: center;
+
+    padding:
+        max(18px, env(safe-area-inset-top))
+        max(18px, env(safe-area-inset-right))
+        max(18px, env(safe-area-inset-bottom))
+        max(18px, env(safe-area-inset-left));
+
+    background: rgba(2, 8, 15, 0.78);
+    backdrop-filter: blur(8px);
+
+    z-index: 2000;
+}
+
+.modal.open,
+.modal.active,
+.modal.is-open {
+    display: flex;
+}
+
+
+/* ==========================================================
+   CONTENU DES MODALES
+   ========================================================== */
+
+.modalContent {
+    width: min(100%, 620px);
+    max-height: min(88vh, 900px);
+
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    padding: 24px;
+
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-large);
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.035),
+            rgba(255, 255, 255, 0)
+        ),
+        var(--bg-secondary);
+
+    box-shadow:
+        0 24px 70px rgba(0, 0, 0, 0.58);
+
+    animation: modalAppear 0.18s ease-out;
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+
+/* ==========================================================
+   EN-TÊTE DES MODALES
+   ========================================================== */
+
+.modalHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+
+    margin-bottom: 22px;
+}
+
+.modalHeader h2 {
+    margin: 0;
+
+    color: var(--text-main);
+
+    font-size: clamp(1.45rem, 4vw, 2rem);
+    line-height: 1.15;
+}
+
+.modalClose,
+.closeModalButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 auto;
+
+    width: 44px;
+    height: 44px;
+    padding: 0;
+
+    border: 1px solid var(--border);
+    border-radius: 50%;
+
+    background: var(--secondary);
+    color: var(--text-main);
+
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.modalClose:hover,
+.closeModalButton:hover {
+    border-color: var(--border-light);
+    background: var(--secondary-hover);
+}
+
+
+/* ==========================================================
+   ACTIONS DES MODALES
+   ========================================================== */
+
+.modalActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+
+    margin-top: 26px;
+}
+
+.modalActions button {
+    width: 100%;
+}
+
+
+/* ==========================================================
+   FORMULAIRE VENT
+   ========================================================== */
+
+.windGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.windDirectionBlock {
+    margin-top: 22px;
+}
+
+.compass {
+    position: relative;
+
+    width: min(72vw, 260px);
+    aspect-ratio: 1;
+
+    margin: 20px auto;
+
+    border: 2px solid var(--border-light);
+    border-radius: 50%;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(25, 118, 210, 0.12),
+            rgba(9, 23, 37, 0.82) 66%
+        );
+
+    box-shadow:
+        inset 0 0 30px rgba(0, 0, 0, 0.38),
+        0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.compass::before,
+.compass::after {
+    content: "";
+
+    position: absolute;
+    background: var(--border);
+}
+
+.compass::before {
+    top: 8%;
+    bottom: 8%;
+    left: 50%;
+
+    width: 1px;
+
+    transform: translateX(-50%);
+}
+
+.compass::after {
+    top: 50%;
+    left: 8%;
+    right: 8%;
+
+    height: 1px;
+
+    transform: translateY(-50%);
+}
+
+.compassLabel {
+    position: absolute;
+
+    color: var(--text-secondary);
+
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+.compassNorth {
+    top: 10px;
+    left: 50%;
+
+    transform: translateX(-50%);
+}
+
+.compassSouth {
+    bottom: 10px;
+    left: 50%;
+
+    transform: translateX(-50%);
+}
+
+.compassEast {
+    top: 50%;
+    right: 12px;
+
+    transform: translateY(-50%);
+}
+
+.compassWest {
+    top: 50%;
+    left: 12px;
+
+    transform: translateY(-50%);
+}
+
+.compassNeedle {
+    position: absolute;
+    inset: 18%;
+
+    pointer-events: none;
+
+    transform: rotate(0deg);
+    transition: transform 0.18s ease;
+}
+
+.compassNeedle::before {
+    content: "";
+
+    position: absolute;
+    top: 0;
+    left: 50%;
+
+    width: 0;
+    height: 48%;
+
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 90px solid var(--primary);
+
+    transform: translateX(-50%);
+    transform-origin: center bottom;
+}
+
+.compassNeedle::after {
+    content: "";
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+
+    width: 18px;
+    height: 18px;
+
+    border: 4px solid var(--bg-secondary);
+    border-radius: 50%;
+
+    background: var(--text-main);
+
+    transform: translate(-50%, -50%);
+}
+
+
+/* ==========================================================
+   SÉLECTEURS ET BOUTONS DE RÉGLAGE
+   ========================================================== */
+
+.choiceGrid,
+.trimGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+
+    margin-top: 16px;
+}
+
+.choiceButton,
+.trimButton {
+    min-height: 58px;
+    padding: 13px 14px;
+
+    border: 1px solid var(--border);
+    border-radius: var(--radius-medium);
+
+    background: var(--bg-input);
+    color: var(--text-secondary);
+
+    font-weight: 750;
+    text-align: center;
+}
+
+.choiceButton:hover,
+.trimButton:hover {
+    border-color: var(--border-light);
+    background: var(--bg-card-light);
+}
+
+.choiceButton.selected,
+.choiceButton.active,
+.trimButton.selected,
+.trimButton.active {
+    border-color: rgba(66, 165, 245, 0.8);
+
+    background: rgba(25, 118, 210, 0.28);
+    color: #ffffff;
+
+    box-shadow:
+        inset 0 0 0 1px rgba(66, 165, 245, 0.25);
+}
+
+
+/* ==========================================================
+   RÉGLAGES DE VOILE
+   ========================================================== */
+
+.trimSection {
+    padding: 18px 0;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.trimSection:first-child {
+    padding-top: 0;
+}
+
+.trimSection:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+.trimSectionTitle {
+    margin-bottom: 12px;
+
+    color: var(--text-main);
+
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.rangeRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 16px;
+}
+
+.rangeRow input[type="range"] {
+    padding: 0;
+
+    border: 0;
+    border-radius: 999px;
+
+    background: transparent;
+}
+
+.rangeValue {
+    min-width: 54px;
+
+    color: var(--text-main);
+
+    font-weight: 800;
+    text-align: right;
+}
+
+
+/* ==========================================================
+   CONFIRMATION
+   ========================================================== */
+
+.confirmModalContent {
+    width: min(100%, 480px);
+    text-align: center;
+}
+
+.confirmIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 68px;
+    height: 68px;
+
+    margin: 0 auto 18px;
+
+    border: 1px solid rgba(216, 69, 69, 0.5);
+    border-radius: 50%;
+
+    background: rgba(216, 69, 69, 0.14);
+    color: #ffaaaa;
+
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.confirmText {
+    margin-bottom: 0;
+
+    color: var(--text-secondary);
+
+    font-size: 1rem;
+    line-height: 1.55;
+}
+
+
+/* ==========================================================
+   MESSAGE TEMPORAIRE
+   ========================================================== */
+
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 110px;
+
+    width: min(calc(100% - 36px), 480px);
+    padding: 14px 18px;
+
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-medium);
+
+    background: rgba(13, 27, 42, 0.96);
+    color: var(--text-main);
+
+    box-shadow: var(--shadow);
+
+    text-align: center;
+
+    transform: translateX(-50%);
+    z-index: 2500;
+}
+
+.toast.success {
+    border-color: rgba(46, 159, 87, 0.65);
+}
+
+.toast.error {
+    border-color: rgba(216, 69, 69, 0.65);
+}
+/* ==========================================================
+   SPEEDFEET ANALYZER
+   styles.css — Partie 6
+   Responsive, iPad, iPhone et finitions
+   ========================================================== */
+
+
+/* ==========================================================
+   TABLETTE
+   ========================================================== */
+
+@media (max-width:900px){
+
+    .grid4,
+    .grid3{
+
+        grid-template-columns:repeat(2,1fr);
+
+    }
+
+    .navigationDashboard{
+
+        grid-template-columns:repeat(2,1fr);
+
+    }
+
+    .buttonBar{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+
+/* ==========================================================
+   SMARTPHONE
+   ========================================================== */
+
+@media (max-width:700px){
+
+    .mainMenu{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .grid2,
+    .grid3,
+    .grid4{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .navigationDashboard{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .windGrid{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .choiceGrid,
+    .trimGrid{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .modalActions{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .navigationToolbar{
+
+        width:calc(100% - 18px);
+
+        bottom:8px;
+
+        gap:8px;
+
+        padding:8px;
+
+    }
+
+    .navigationToolbar button{
+
+        min-height:56px;
+
+        font-size:.9rem;
+
+    }
+
+}
+
+
+/* ==========================================================
+   PETITS SMARTPHONES
+   ========================================================== */
+
+@media (max-width:430px){
+
+    .page{
+
+        padding:16px;
+
+    }
+
+    .card{
+
+        padding:18px;
+
+    }
+
+    .pageHeader h1{
+
+        font-size:2rem;
+
+    }
+
+    .subtitle{
+
+        font-size:.95rem;
+
+    }
+
+}
+
+
+/* ==========================================================
+   MODE PAYSAGE
+   ========================================================== */
+
+@media (orientation:landscape){
+
+    #mapContainer{
+
+        height:65vh;
+
+    }
+
+}
+
+
+/* ==========================================================
+   GRANDS ÉCRANS
+   ========================================================== */
+
+@media (min-width:1400px){
+
+    .page{
+
+        max-width:1250px;
+
+    }
+
+}
+
+
+/* ==========================================================
+   IMPRESSION
+   ========================================================== */
+
+@media print{
+
+    .navigationToolbar,
+    .modal{
+
+        display:none !important;
+
+    }
+
+}
+
+
+/* ==========================================================
+   ANIMATIONS
+   ========================================================== */
+
+.fadeIn{
+
+    animation:fadeIn .25s ease;
+
+}
+
+@keyframes fadeIn{
+
+    from{
+
+        opacity:0;
+
+    }
+
+    to{
+
+        opacity:1;
+
+    }
+
+}
+
+.slideUp{
+
+    animation:slideUp .25s ease;
+
+}
+
+@keyframes slideUp{
+
+    from{
+
+        transform:translateY(18px);
+
+        opacity:0;
+
+    }
+
+    to{
+
+        transform:translateY(0);
+
+        opacity:1;
+
+    }
+
+}
+
+
+/* ==========================================================
+   UTILITAIRES
+   ========================================================== */
+
+.flex{
+
+    display:flex;
+
+}
+
+.flexBetween{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.flexCenter{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+}
+
+.w100{
+
+    width:100%;
+
+}
+
+.textCenter{
+
+    text-align:center;
+
+}
+
+.bold{
+
+    font-weight:700;
+
+}
+
+.hidden{
+
+    display:none !important;
+
+}
+
+.mt10{margin-top:10px;}
+.mt20{margin-top:20px;}
+.mt30{margin-top:30px;}
+
+.mb10{margin-bottom:10px;}
+.mb20{margin-bottom:20px;}
+.mb30{margin-bottom:30px;}
+
+
+/* ==========================================================
+   FIN DU FICHIER
+   ========================================================== */
+
+/* ==========================================================
+   CORRECTION PRIORITAIRE DE L’AFFICHAGE DES PAGES
+   ========================================================== */
+
+.page {
+    display: none !important;
+}
+
+.page.active {
+    display: block !important;
+}
+
+/* ==========================================================
+   SPEEDFEET ANALYZER V2.3.3 — VARIABLES ET COMPATIBILITÉ
+   ========================================================== */
+:root {
+    --bg-card: var(--card);
+    --bg-card-light: var(--card2);
+    --bg-input: #081524;
+    --bg-secondary: var(--card2);
+
+    --border: var(--line);
+    --border-light: #365475;
+
+    --primary: #1976d2;
+    --primary-hover: #2388ea;
+    --primary-active: #1264b3;
+
+    --secondary: #20334d;
+    --secondary-hover: #2a4261;
+
+    --danger: #d84545;
+    --danger-hover: #ee5656;
+    --success: var(--good);
+
+    --text-main: var(--text);
+    --text-secondary: #c8d5e3;
+    --text-muted: var(--muted);
+
+    --radius-medium: 14px;
+    --radius-large: 20px;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+}
+
+/* Structure réellement utilisée par index.html */
+body {
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.page {
+    width: min(100%, 980px);
+    margin: 0 auto;
+    padding: 18px;
+}
+
+.pageHeader {
+    margin-bottom: 24px;
+}
+
+.pageHeader h1 {
+    margin: 0 0 8px;
+    font-size: clamp(2rem, 6vw, 3rem);
+    line-height: 1.08;
+}
+
+.subtitle,
+.smallText {
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.mainMenu {
+    display: grid;
+    gap: 14px;
+}
+
+.homeSection {
+    margin-top: 34px;
+}
+
+.emptyCard {
+    padding: 22px;
+    border: 1px dashed var(--border-light);
+    border-radius: var(--radius-medium);
+    background: rgba(255, 255, 255, 0.025);
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.modalButtons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.modalButtons button {
+    width: 100%;
+}
+
+@media (max-width: 700px) {
+    .modalButtons {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* Historique cliquable — v2.3.4 */
+.navigationHistoryCard {
+    cursor: pointer;
+    transition:
+        transform 0.15s ease,
+        border-color 0.15s ease,
+        background 0.15s ease;
+}
+
+.navigationHistoryCard:hover,
+.navigationHistoryCard:focus-visible {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+    outline: none;
+}
+
+.historyDetailsModal {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.historyDetailsContent {
+    width: min(900px, 100%);
+    max-height: none;
+    margin: 1rem auto;
+}
+
+.historyDetailsHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.compactButton {
+    width: auto;
+    min-width: 100px;
+}
+
+.historyDetailsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.detailStat {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg-card);
+}
+
+.detailStat span {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.historyDetailSection {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg-card);
+}
+
+.historyDetailSection h3 {
+    margin-top: 0;
+}
+
+.historyTrackMap {
+    overflow: hidden;
+    min-height: 260px;
+    border-radius: 12px;
+    background: #081524;
+}
+
+.historyTrackMap svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+@media (max-width: 650px) {
+    .historyDetailsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .historyDetailsHeader {
+        align-items: flex-start;
+    }
+}
