@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "2.5.0";
+    const APP_VERSION = "2.5.1";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -1493,10 +1493,18 @@
             "appVersion",
             APP_VERSION
         );
+
+        setText(
+            "polarImportStatus",
+            state.settings.polarFileName
+                ? `Polaire active : ${state.settings.polarFileName} (${Array.isArray(state.settings.polarData) ? state.settings.polarData.length : 0} points)`
+                : "Aucune polaire importée."
+        );
     }
 
     function saveSettings() {
         state.settings = {
+            ...state.settings,
             boatName:
                 getElement("boatName")
                     ?.value
@@ -2093,6 +2101,8 @@
         state.confirmAction =
             action;
 
+        // Ferme la fiche historique qui pourrait masquer la confirmation.
+        closeAllModals();
         openModal("confirmModal");
     }
 
@@ -2375,6 +2385,7 @@
                 state.settings.polarData = polarData;
                 state.settings.polarFileName = file.name;
                 saveJSON(STORAGE_KEYS.settings, state.settings);
+                setText("polarImportStatus", `Polaire active : ${file.name} (${polarData.length} points)`);
                 alert(`Polaire importée : ${polarData.length} points.`);
             } catch (error) {
                 console.error(error);

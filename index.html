@@ -16,7 +16,7 @@
 
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-    <link rel="stylesheet" href="styles.css?v=2500">
+    <link rel="stylesheet" href="styles.css?v=2510">
 
 </head>
 
@@ -74,6 +74,21 @@
 
         </div>
 
+
+        <section class="homeSection quickWeatherSection">
+
+            <h2>Météo</h2>
+
+            <a class="windguruCard" href="https://www.windguru.cz/53" target="_blank" rel="noopener noreferrer" aria-label="Ouvrir les prévisions Windguru de Brest Moulin Blanc">
+                <div class="windguruIcon" aria-hidden="true">🌬️</div>
+                <div>
+                    <strong>Prévisions Windguru</strong>
+                    <span>Moulin Blanc · Brest</span>
+                </div>
+                <span class="windguruArrow" aria-hidden="true">↗</span>
+            </a>
+
+        </section>
 
         <section class="homeSection">
 
@@ -697,6 +712,8 @@
                 Importer une polaire
 
             </button>
+
+            <p id="polarImportStatus" class="smallText polarImportStatus">Aucune polaire importée.</p>
 </section>
 
 
@@ -710,7 +727,7 @@
                 Version :
                 <strong id="appVersion">
 
-                    2.5.0
+                    2.5.1
 </strong>
 
             </p>
@@ -794,7 +811,7 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=2500"></script>
+<script src="app.js?v=2510"></script>
 
 
 <script>

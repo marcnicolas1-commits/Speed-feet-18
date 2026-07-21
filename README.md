@@ -117,3 +117,11 @@ Tous droits réservés.
 
 
 Mise à jour v2.5.0 : écran navigation simplifié, cap GPS, heure du téléphone, marqueurs de manœuvres, réglages numérotés 1 à 5, analyse après 2 minutes de stabilisation et carte satellite dans l’historique.
+
+
+## Version 2.5.1
+- Correction de la confirmation de suppression d'une navigation.
+- Ajout d'un raccourci Windguru sur l'accueil.
+- Affichage du nom et du nombre de points de la polaire importée.
+- Conservation de la polaire lors de l'enregistrement des paramètres.
+- Mise à jour du cache PWA.
