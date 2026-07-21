@@ -1,1423 +1,2060 @@
-/* ==========================================================
-   SPEEDFEET ANALYZER
-   app.js — Partie 1A
-   Base de l’application et navigation entre les pages
-   ========================================================== */
-
-"use strict";
-
-
-/* ==========================================================
-   INFORMATIONS DE L’APPLICATION
-   ========================================================== */
-
-const APP_NAME = "SpeedFeet Analyzer";
-const APP_VERSION = "2.3.0";
-
-const STORAGE_KEYS = {
-    settings: "speedfeet-settings",
-    preparation: "speedfeet-preparation",
-    history: "speedfeet-history",
-    activeNavigation: "speedfeet-active-navigation"
-};
-
-
-/* ==========================================================
-   ÉTAT GLOBAL DE L’APPLICATION
-   ========================================================== */
-
-const appState = {
-
-    currentPage: "home",
-
-    navigationRunning: false,
-
-    watchId: null,
-
-    timerId: null,
-
-    startTime: null,
-
-    currentPosition: null,
-
-    currentTrack: [],
-
-    currentMarkers: [],
-
-    currentWindRecords: [],
-
-    currentTrimRecords: [],
-
-    preparation: null,
-
-    settings: null,
-
-    history: []
-
-};
-
-
-/* ==========================================================
-   RÉFÉRENCES DU DOM
-   ========================================================== */
-
-const dom = {
-
-    pages: [],
-
-    homePage: null,
-    preparePage: null,
-    navigationPage: null,
-    historyPage: null,
-    settingsPage: null,
-
-    windModal: null,
-    trimModal: null,
-    confirmModal: null,
-
-    btnPrepare: null,
-    btnStartNavigation: null,
-    btnHistory: null,
-    btnSettings: null
-
-};
-
-
-/* ==========================================================
-   DÉMARRAGE DE L’APPLICATION
-   ========================================================== */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    initApplication
-);
-
-
-/* ==========================================================
-   INITIALISATION PRINCIPALE
-   ========================================================== */
-
-function initApplication() {
-
-    console.log(
-        `${APP_NAME} — version ${APP_VERSION}`
-    );
-
-    cacheDomElements();
-
-    initializePageNavigation();
-
-    showPage("home");
-
-}
-
-
-/* ==========================================================
-   RÉCUPÉRATION DES ÉLÉMENTS HTML
-   ========================================================== */
-
-function cacheDomElements() {
-
-    dom.pages = Array.from(
-        document.querySelectorAll(".page")
-    );
-
-    dom.homePage =
-        document.getElementById("homePage");
-
-    dom.preparePage =
-        document.getElementById("preparePage");
-
-    dom.navigationPage =
-        document.getElementById("navigationPage");
-
-    dom.historyPage =
-        document.getElementById("historyPage");
-
-    dom.settingsPage =
-        document.getElementById("settingsPage");
-
-
-    dom.windModal =
-        document.getElementById("windModal");
-
-    dom.trimModal =
-        document.getElementById("trimModal");
-
-    dom.confirmModal =
-        document.getElementById("confirmModal");
-
-
-    dom.btnPrepare =
-        document.getElementById("btnPrepare");
-
-    dom.btnStartNavigation =
-        document.getElementById(
-            "btnStartNavigation"
-        );
-
-    dom.btnHistory =
-        document.getElementById("btnHistory");
-
-    dom.btnSettings =
-        document.getElementById("btnSettings");
-
-}
-
-
-/* ==========================================================
-   INITIALISATION DE LA NAVIGATION
-   ========================================================== */
-
-function initializePageNavigation() {
-
-    registerPageButton(
-        dom.btnPrepare,
-        "prepare"
-    );
-
-    registerPageButton(
-        dom.btnStartNavigation,
-        "navigation"
-    );
-
-    registerPageButton(
-        dom.btnHistory,
-        "history"
-    );
-
-    registerPageButton(
-        dom.btnSettings,
-        "settings"
-    );
-
-
-    document
-        .querySelectorAll("[data-page]")
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    const pageName =
-                        button.dataset.page;
-
-                    showPage(pageName);
-
-                }
+(() => {
+    "use strict";
+
+    const APP_VERSION = "2.3.2";
+
+    const STORAGE_KEYS = {
+        settings: "speedfeet_settings",
+        preparation: "speedfeet_preparation",
+        currentNavigation: "speedfeet_current_navigation",
+        history: "speedfeet_history"
+    };
+
+    const DEFAULT_SETTINGS = {
+        boatName: "Speed Feet 18",
+        defaultMainSail: "GV Régate",
+        defaultJib: "Foc Régate",
+        defaultSpi: "Spi 32",
+        defaultCrew: 1
+    };
+
+    const SELECT_OPTIONS = {
+        mainSails: [
+            "GV Régate",
+            "GV Entraînement"
+        ],
+
+        jibs: [
+            "Foc Régate",
+            "Foc Entraînement"
+        ],
+
+        spinnakers: [
+            "Spi 32",
+            "Spi 42",
+            "Sans spi"
+        ],
+
+        travelerMain: [
+            "Très bas",
+            "Bas",
+            "Milieu",
+            "Haut",
+            "Très haut"
+        ],
+
+        travelerJib: [
+            "Très reculé",
+            "Reculé",
+            "Milieu",
+            "Avancé",
+            "Très avancé"
+        ],
+
+        mastRotation: [
+            "Faible",
+            "Moyenne",
+            "Forte"
+        ],
+
+        cunningham: [
+            "Mou",
+            "Léger",
+            "Moyen",
+            "Fort",
+            "Très fort"
+        ],
+
+        outhaul: [
+            "Creuse",
+            "Moyenne",
+            "Plate",
+            "Très plate"
+        ],
+
+        mainsheet: [
+            "Choquée",
+            "Légèrement choquée",
+            "Moyenne",
+            "Bordée",
+            "Très bordée"
+        ]
+    };
+
+    const state = {
+        settings: loadJSON(
+            STORAGE_KEYS.settings,
+            DEFAULT_SETTINGS
+        ),
+
+        preparation: loadJSON(
+            STORAGE_KEYS.preparation,
+            null
+        ),
+
+        currentNavigation: loadJSON(
+            STORAGE_KEYS.currentNavigation,
+            null
+        ),
+
+        history: loadJSON(
+            STORAGE_KEYS.history,
+            []
+        ),
+
+        currentPage: "homePage",
+        timerId: null,
+        gpsWatchId: null,
+        confirmAction: null
+    };
+
+    function getElement(id) {
+        return document.getElementById(id);
+    }
+
+    function loadJSON(key, fallbackValue) {
+        try {
+            const savedValue = localStorage.getItem(key);
+
+            if (!savedValue) {
+                return cloneValue(fallbackValue);
+            }
+
+            return JSON.parse(savedValue);
+        } catch (error) {
+            console.error(
+                "Erreur de lecture :",
+                key,
+                error
             );
 
+            return cloneValue(fallbackValue);
+        }
+    }
+
+    function saveJSON(key, value) {
+        try {
+            localStorage.setItem(
+                key,
+                JSON.stringify(value)
+            );
+
+            return true;
+        } catch (error) {
+            console.error(
+                "Erreur d'enregistrement :",
+                key,
+                error
+            );
+
+            alert(
+                "L'application n'a pas réussi à enregistrer les données."
+            );
+
+            return false;
+        }
+    }
+
+    function cloneValue(value) {
+        if (
+            value === null ||
+            value === undefined
+        ) {
+            return value;
+        }
+
+        return JSON.parse(
+            JSON.stringify(value)
+        );
+    }
+
+    function toNumberOrNull(value) {
+        if (
+            value === "" ||
+            value === null ||
+            value === undefined
+        ) {
+            return null;
+        }
+
+        const number = Number(value);
+
+        if (!Number.isFinite(number)) {
+            return null;
+        }
+
+        return number;
+    }
+
+    function clamp(value, minimum, maximum) {
+        return Math.min(
+            maximum,
+            Math.max(minimum, value)
+        );
+    }
+
+    function bindClick(id, callback) {
+        const element = getElement(id);
+
+        if (!element) {
+            console.warn(
+                "Bouton introuvable :",
+                id
+            );
+
+            return;
+        }
+
+        element.addEventListener(
+            "click",
+            callback
+        );
+    }
+
+    function fillSelect(
+        element,
+        values,
+        selectedValue
+    ) {
+        if (!element) {
+            return;
+        }
+
+        element.innerHTML = "";
+
+        values.forEach((value) => {
+            const option =
+                document.createElement("option");
+
+            option.value = value;
+            option.textContent = value;
+
+            if (value === selectedValue) {
+                option.selected = true;
+            }
+
+            element.appendChild(option);
+        });
+    }
+
+    function initializeSelects() {
+        fillSelect(
+            getElement("defaultMainSail"),
+            SELECT_OPTIONS.mainSails,
+            state.settings.defaultMainSail
+        );
+
+        fillSelect(
+            getElement("defaultJib"),
+            SELECT_OPTIONS.jibs,
+            state.settings.defaultJib
+        );
+
+        fillSelect(
+            getElement("defaultSpi"),
+            SELECT_OPTIONS.spinnakers,
+            state.settings.defaultSpi
+        );
+
+        fillSelect(
+            getElement("mainSail"),
+            SELECT_OPTIONS.mainSails,
+            state.settings.defaultMainSail
+        );
+
+        fillSelect(
+            getElement("jib"),
+            SELECT_OPTIONS.jibs,
+            state.settings.defaultJib
+        );
+
+        fillSelect(
+            getElement("spinnaker"),
+            SELECT_OPTIONS.spinnakers,
+            state.settings.defaultSpi
+        );
+
+        fillSelect(
+            getElement("trimTravelerMain"),
+            SELECT_OPTIONS.travelerMain,
+            "Milieu"
+        );
+
+        fillSelect(
+            getElement("trimTravelerJib"),
+            SELECT_OPTIONS.travelerJib,
+            "Milieu"
+        );
+
+        fillSelect(
+            getElement("trimRotation"),
+            SELECT_OPTIONS.mastRotation,
+            "Moyenne"
+        );
+
+        fillSelect(
+            getElement("trimCunningham"),
+            SELECT_OPTIONS.cunningham,
+            "Moyen"
+        );
+
+        fillSelect(
+            getElement("trimOuthaul"),
+            SELECT_OPTIONS.outhaul,
+            "Moyenne"
+        );
+
+        fillSelect(
+            getElement("trimSheet"),
+            SELECT_OPTIONS.mainsheet,
+            "Moyenne"
+        );
+    }
+
+    function showPage(pageId) {
+        document
+            .querySelectorAll(".page")
+            .forEach((page) => {
+                page.classList.remove("active");
+                page.setAttribute(
+                    "aria-hidden",
+                    "true"
+                );
+            });
+
+        const selectedPage =
+            getElement(pageId);
+
+        if (!selectedPage) {
+            console.error(
+                "Page introuvable :",
+                pageId
+            );
+
+            return;
+        }
+
+        selectedPage.classList.add("active");
+
+        selectedPage.setAttribute(
+            "aria-hidden",
+            "false"
+        );
+
+        state.currentPage = pageId;
+
+        closeAllModals();
+
+        window.scrollTo({
+            top: 0,
+            behavior: "instant"
         });
 
-}
-
-
-/* ==========================================================
-   ASSOCIATION D’UN BOUTON À UNE PAGE
-   ========================================================== */
-
-function registerPageButton(
-    button,
-    pageName
-) {
-
-    if (!button) {
-
-        console.warn(
-            `Bouton introuvable pour la page : ${pageName}`
-        );
-
-        return;
-
-    }
-
-    button.addEventListener(
-        "click",
-        () => {
-
-            showPage(pageName);
-
+        if (pageId === "homePage") {
+            renderRecentNavigations();
         }
-    );
 
-}
+        if (pageId === "preparePage") {
+            loadPreparationForm();
+        }
 
+        if (pageId === "historyPage") {
+            renderHistory();
+        }
 
-/* ==========================================================
-   AFFICHAGE D’UNE PAGE
-   ========================================================== */
+        if (pageId === "settingsPage") {
+            loadSettingsForm();
+        }
 
-function showPage(pageName) {
-
-    const targetPage =
-        document.getElementById(
-            `${pageName}Page`
-        );
-
-    if (!targetPage) {
-
-        console.warn(
-            `Page introuvable : ${pageName}`
-        );
-
-        return;
-
+        if (pageId === "navigationPage") {
+            updateNavigationDashboard();
+        }
     }
 
-
-    closeAllModals();
-
-
-    dom.pages.forEach(page => {
-
-        page.classList.remove("active");
-
-        page.setAttribute(
-            "aria-hidden",
-            "true"
-        );
-
-    });
-
-
-    targetPage.classList.add("active");
-
-    targetPage.setAttribute(
-        "aria-hidden",
-        "false"
-    );
-
-
-    appState.currentPage = pageName;
-
-
-    window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: "auto"
-    });
-
-
-    document.body.dataset.currentPage =
-        pageName;
-
-
-    window.dispatchEvent(
-        new CustomEvent(
-            "speedfeet:pagechange",
-            {
-                detail: {
-                    page: pageName
-                }
-            }
-        )
-    );
-
-}
-
-
-/* ==========================================================
-   FERMETURE PROVISOIRE DES MODALES
-   La gestion complète arrivera dans la prochaine partie.
-   ========================================================== */
-
-function closeAllModals() {
-
-    const modals = [
-        dom.windModal,
-        dom.trimModal,
-        dom.confirmModal
-    ];
-
-    modals.forEach(modal => {
+    function openModal(modalId) {
+        const modal = getElement(modalId);
 
         if (!modal) {
             return;
         }
 
-        modal.classList.remove(
-            "open",
-            "active",
-            "is-open"
-        );
+        modal.style.display = "flex";
+        modal.classList.add("open");
 
         modal.setAttribute(
             "aria-hidden",
-            "true"
+            "false"
         );
-
-    });
-
-    document.body.classList.remove(
-        "modal-open"
-    );
-
-}
-
-
-/* ==========================================================
-   GESTION DU BOUTON RETOUR DU NAVIGATEUR
-   ========================================================== */
-
-window.addEventListener(
-    "popstate",
-    event => {
-
-        const requestedPage =
-            event.state?.page || "home";
-
-        showPage(requestedPage);
-
-    }
-);
-
-
-/* ==========================================================
-   INFORMATIONS DE DIAGNOSTIC
-   ========================================================== */
-
-function getApplicationStatus() {
-
-    return {
-
-        name: APP_NAME,
-
-        version: APP_VERSION,
-
-        currentPage:
-            appState.currentPage,
-
-        numberOfPages:
-            dom.pages.length,
-
-        navigationRunning:
-            appState.navigationRunning
-
-    };
-
-}
-
-
-/* ==========================================================
-   FIN DE LA PARTIE 1A
-   ========================================================== */
-/* ==========================================================
-   SPEEDFEET ANALYZER
-   app.js — Partie 1B
-   Données par défaut, stockage local et affichage initial
-   ========================================================== */
-
-
-/* ==========================================================
-   VALEURS PAR DÉFAUT
-   ========================================================== */
-
-const DEFAULT_SETTINGS = {
-
-    boat: {
-
-        name: "SpeedFeet 18",
-
-        sailNumber: "",
-
-        length: 5.50,
-
-        weight: 550
-
-    },
-
-    sails: {
-
-        mainsail: "GV Régate",
-
-        jib: "Foc Régate",
-
-        spinnaker: "Spi 32 m²"
-
-    },
-
-    crew: {
-
-        number: 1
-
-    },
-
-    units: {
-
-        speed: "knots",
-
-        distance: "nauticalMiles",
-
-        wind: "knots",
-
-        temperature: "celsius"
-
-    },
-
-    navigation: {
-
-        gpsPrecision: "high",
-
-        recordInterval: 2,
-
-        minimumAccuracy: 35,
-
-        keepScreenAwake: true
-
-    },
-
-    analysis: {
-
-        vccEnabled: true,
-
-        polarEnabled: true,
-
-        learningEnabled: true
-
-    },
-
-    interface: {
-
-        theme: "dark",
-
-        largeControls: true
-
     }
 
-};
+    function closeAllModals() {
+        document
+            .querySelectorAll(".modal")
+            .forEach((modal) => {
+                modal.style.display = "none";
+                modal.classList.remove("open");
 
-
-const DEFAULT_PREPARATION = {
-
-    createdAt: null,
-
-    updatedAt: null,
-
-    weatherImage: null,
-
-    averageWind: null,
-
-    gustWind: null,
-
-    windDirection: null,
-
-    seaState: "",
-
-    notes: "",
-
-    configuration: {
-
-        mainsail:
-            DEFAULT_SETTINGS.sails.mainsail,
-
-        jib:
-            DEFAULT_SETTINGS.sails.jib,
-
-        spinnaker:
-            DEFAULT_SETTINGS.sails.spinnaker,
-
-        crew:
-            DEFAULT_SETTINGS.crew.number
-
+                modal.setAttribute(
+                    "aria-hidden",
+                    "true"
+                );
+            });
     }
 
-};
-
-
-/* ==========================================================
-   INITIALISATION DES DONNÉES LOCALES
-   ========================================================== */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    initializePersistentData
-);
-
-
-function initializePersistentData() {
-
-    appState.settings =
-        loadStoredObject(
-            STORAGE_KEYS.settings,
-            DEFAULT_SETTINGS
-        );
-
-    appState.preparation =
-        loadStoredObject(
-            STORAGE_KEYS.preparation,
-            DEFAULT_PREPARATION
-        );
-
-    appState.history =
-        loadStoredArray(
-            STORAGE_KEYS.history
-        );
-
-
-    normalizeApplicationData();
-
-    renderRecentNavigations();
-
-    renderHistory();
-
-    restoreActiveNavigationState();
-
-
-    console.log(
-        "Données locales chargées",
-        {
-            settings:
-                appState.settings,
-
-            preparation:
-                appState.preparation,
-
-            historyCount:
-                appState.history.length
-        }
-    );
-
-}
-
-
-/* ==========================================================
-   CHARGEMENT D’UN OBJET DEPUIS LE STOCKAGE
-   ========================================================== */
-
-function loadStoredObject(
-    key,
-    defaultValue
-) {
-
-    try {
-
-        const storedValue =
-            localStorage.getItem(key);
-
-        if (!storedValue) {
-
-            return deepClone(defaultValue);
-
-        }
-
-        const parsedValue =
-            JSON.parse(storedValue);
-
-        if (
-            !parsedValue ||
-            typeof parsedValue !== "object" ||
-            Array.isArray(parsedValue)
-        ) {
-
-            return deepClone(defaultValue);
-
-        }
-
-        return mergeDeep(
-            deepClone(defaultValue),
-            parsedValue
-        );
-
-    } catch (error) {
-
-        console.error(
-            `Impossible de lire ${key}`,
-            error
-        );
-
-        return deepClone(defaultValue);
-
-    }
-
-}
-
-
-/* ==========================================================
-   CHARGEMENT D’UN TABLEAU DEPUIS LE STOCKAGE
-   ========================================================== */
-
-function loadStoredArray(key) {
-
-    try {
-
-        const storedValue =
-            localStorage.getItem(key);
-
-        if (!storedValue) {
-
-            return [];
-
-        }
-
-        const parsedValue =
-            JSON.parse(storedValue);
-
-        return Array.isArray(parsedValue)
-            ? parsedValue
-            : [];
-
-    } catch (error) {
-
-        console.error(
-            `Impossible de lire ${key}`,
-            error
-        );
-
-        return [];
-
-    }
-
-}
-
-
-/* ==========================================================
-   SAUVEGARDE GÉNÉRIQUE
-   ========================================================== */
-
-function saveStoredValue(
-    key,
-    value
-) {
-
-    try {
-
-        localStorage.setItem(
-            key,
-            JSON.stringify(value)
-        );
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            `Impossible d’enregistrer ${key}`,
-            error
-        );
-
-        return false;
-
-    }
-
-}
-
-
-/* ==========================================================
-   SAUVEGARDES SPÉCIFIQUES
-   ========================================================== */
-
-function saveSettings() {
-
-    return saveStoredValue(
-        STORAGE_KEYS.settings,
-        appState.settings
-    );
-
-}
-
-
-function savePreparation() {
-
-    if (!appState.preparation) {
-
-        return false;
-
-    }
-
-    appState.preparation.updatedAt =
-        new Date().toISOString();
-
-    return saveStoredValue(
-        STORAGE_KEYS.preparation,
-        appState.preparation
-    );
-
-}
-
-
-function saveHistory() {
-
-    return saveStoredValue(
-        STORAGE_KEYS.history,
-        appState.history
-    );
-
-}
-
-
-function saveActiveNavigation() {
-
-    const activeNavigation = {
-
-        navigationRunning:
-            appState.navigationRunning,
-
-        startTime:
-            appState.startTime,
-
-        currentTrack:
-            appState.currentTrack,
-
-        currentMarkers:
-            appState.currentMarkers,
-
-        currentWindRecords:
-            appState.currentWindRecords,
-
-        currentTrimRecords:
-            appState.currentTrimRecords
-
-    };
-
-    return saveStoredValue(
-        STORAGE_KEYS.activeNavigation,
-        activeNavigation
-    );
-
-}
-
-
-/* ==========================================================
-   NORMALISATION DES DONNÉES
-   ========================================================== */
-
-function normalizeApplicationData() {
-
-    if (!appState.settings) {
-
-        appState.settings =
-            deepClone(DEFAULT_SETTINGS);
-
-    }
-
-    if (!appState.preparation) {
-
-        appState.preparation =
-            deepClone(DEFAULT_PREPARATION);
-
-    }
-
-    if (!Array.isArray(appState.history)) {
-
-        appState.history = [];
-
-    }
-
-
-    if (
-        !appState.preparation.configuration
-    ) {
-
-        appState.preparation.configuration = {
-
-            mainsail:
-                appState.settings.sails.mainsail,
+    function readPreparationForm() {
+        const previousImageName =
+            state.preparation?.weatherImageName ||
+            "";
+
+        const selectedImage =
+            getElement("weatherImage")
+                ?.files?.[0];
+
+        return {
+            weatherImageName:
+                selectedImage?.name ||
+                previousImageName,
+
+            windAverage:
+                toNumberOrNull(
+                    getElement("windAverage")
+                        ?.value
+                ),
+
+            windGust:
+                toNumberOrNull(
+                    getElement("windGust")
+                        ?.value
+                ),
+
+            windDirection:
+                toNumberOrNull(
+                    getElement("windDirection")
+                        ?.value
+                ),
+
+            seaState:
+                getElement("seaState")
+                    ?.value ||
+                "",
+
+            weatherNotes:
+                getElement("weatherNotes")
+                    ?.value
+                    .trim() ||
+                "",
+
+            mainSail:
+                getElement("mainSail")
+                    ?.value ||
+                state.settings.defaultMainSail,
 
             jib:
-                appState.settings.sails.jib,
+                getElement("jib")
+                    ?.value ||
+                state.settings.defaultJib,
 
             spinnaker:
-                appState.settings.sails.spinnaker,
+                getElement("spinnaker")
+                    ?.value ||
+                state.settings.defaultSpi,
 
-            crew:
-                appState.settings.crew.number
+            crew: clamp(
+                toNumberOrNull(
+                    getElement("crew")
+                        ?.value
+                ) ||
+                state.settings.defaultCrew,
+                1,
+                10
+            ),
 
+            navigationNotes:
+                getElement("navigationNotes")
+                    ?.value
+                    .trim() ||
+                "",
+
+            updatedAt:
+                new Date().toISOString()
+        };
+    }
+
+    function savePreparationDraft() {
+        state.preparation =
+            readPreparationForm();
+
+        saveJSON(
+            STORAGE_KEYS.preparation,
+            state.preparation
+        );
+    }
+
+    function loadPreparationForm() {
+        const data =
+            state.preparation || {
+                windAverage: null,
+                windGust: null,
+                windDirection: null,
+                seaState: "",
+                weatherNotes: "",
+                mainSail:
+                    state.settings
+                        .defaultMainSail,
+                jib:
+                    state.settings
+                        .defaultJib,
+                spinnaker:
+                    state.settings
+                        .defaultSpi,
+                crew:
+                    state.settings
+                        .defaultCrew,
+                navigationNotes: ""
+            };
+
+        setInputValue(
+            "windAverage",
+            data.windAverage
+        );
+
+        setInputValue(
+            "windGust",
+            data.windGust
+        );
+
+        setInputValue(
+            "windDirection",
+            data.windDirection
+        );
+
+        setInputValue(
+            "seaState",
+            data.seaState
+        );
+
+        setInputValue(
+            "weatherNotes",
+            data.weatherNotes
+        );
+
+        setInputValue(
+            "mainSail",
+            data.mainSail ||
+                state.settings
+                    .defaultMainSail
+        );
+
+        setInputValue(
+            "jib",
+            data.jib ||
+                state.settings
+                    .defaultJib
+        );
+
+        setInputValue(
+            "spinnaker",
+            data.spinnaker ||
+                state.settings
+                    .defaultSpi
+        );
+
+        setInputValue(
+            "crew",
+            data.crew ||
+                state.settings
+                    .defaultCrew
+        );
+
+        setInputValue(
+            "navigationNotes",
+            data.navigationNotes
+        );
+    }
+
+    function setInputValue(id, value) {
+        const element = getElement(id);
+
+        if (!element) {
+            return;
+        }
+
+        element.value =
+            value ?? "";
+    }
+
+    function validatePreparation(data) {
+        const errors = [];
+
+        if (
+            data.windAverage !== null &&
+            (
+                data.windAverage < 0 ||
+                data.windAverage > 100
+            )
+        ) {
+            errors.push(
+                "Le vent moyen doit être compris entre 0 et 100 nœuds."
+            );
+        }
+
+        if (
+            data.windGust !== null &&
+            (
+                data.windGust < 0 ||
+                data.windGust > 120
+            )
+        ) {
+            errors.push(
+                "Les rafales doivent être comprises entre 0 et 120 nœuds."
+            );
+        }
+
+        if (
+            data.windAverage !== null &&
+            data.windGust !== null &&
+            data.windGust <
+                data.windAverage
+        ) {
+            errors.push(
+                "Les rafales ne peuvent pas être inférieures au vent moyen."
+            );
+        }
+
+        if (
+            data.windDirection !== null &&
+            (
+                data.windDirection < 0 ||
+                data.windDirection > 359
+            )
+        ) {
+            errors.push(
+                "La direction doit être comprise entre 0° et 359°."
+            );
+        }
+
+        if (
+            !Number.isInteger(data.crew) ||
+            data.crew < 1 ||
+            data.crew > 10
+        ) {
+            errors.push(
+                "Le nombre de personnes doit être compris entre 1 et 10."
+            );
+        }
+
+        return errors;
+    }
+
+    function startPreparedNavigation() {
+        const preparation =
+            readPreparationForm();
+
+        const errors =
+            validatePreparation(
+                preparation
+            );
+
+        if (errors.length > 0) {
+            alert(errors.join("\n"));
+            return;
+        }
+
+        state.preparation =
+            preparation;
+
+        saveJSON(
+            STORAGE_KEYS.preparation,
+            preparation
+        );
+
+        startNavigation(preparation);
+    }
+
+    function startNavigation(preparation) {
+        if (
+            state.currentNavigation
+                ?.status === "running"
+        ) {
+            showPage(
+                "navigationPage"
+            );
+
+            startNavigationRuntime();
+
+            return;
+        }
+
+        const now =
+            new Date().toISOString();
+
+        state.currentNavigation = {
+            id: `navigation-${Date.now()}`,
+            status: "running",
+
+            boatName:
+                state.settings.boatName,
+
+            startedAt: now,
+            endedAt: null,
+
+            preparation:
+                preparation || {
+                    mainSail:
+                        state.settings
+                            .defaultMainSail,
+
+                    jib:
+                        state.settings
+                            .defaultJib,
+
+                    spinnaker:
+                        state.settings
+                            .defaultSpi,
+
+                    crew:
+                        state.settings
+                            .defaultCrew
+                },
+
+            track: [],
+            windRecords: [],
+            trimRecords: [],
+            markers: [],
+
+            distanceNm: 0,
+            currentSpeedKn: 0,
+            maxSpeedKn: 0
         };
 
-    }
-
-}
-
-
-/* ==========================================================
-   RESTAURATION D’UNE NAVIGATION ACTIVE
-   ========================================================== */
-
-function restoreActiveNavigationState() {
-
-    const activeNavigation =
-        loadStoredObject(
-            STORAGE_KEYS.activeNavigation,
-            {}
+        saveJSON(
+            STORAGE_KEYS.currentNavigation,
+            state.currentNavigation
         );
 
-    if (
-        !activeNavigation ||
-        !activeNavigation.navigationRunning
-    ) {
+        showPage("navigationPage");
 
-        return;
-
+        startNavigationRuntime();
     }
 
-    appState.navigationRunning = true;
+    function startNavigationRuntime() {
+        stopNavigationRuntime();
 
-    appState.startTime =
-        activeNavigation.startTime || null;
-
-    appState.currentTrack =
-        Array.isArray(
-            activeNavigation.currentTrack
-        )
-            ? activeNavigation.currentTrack
-            : [];
-
-    appState.currentMarkers =
-        Array.isArray(
-            activeNavigation.currentMarkers
-        )
-            ? activeNavigation.currentMarkers
-            : [];
-
-    appState.currentWindRecords =
-        Array.isArray(
-            activeNavigation.currentWindRecords
-        )
-            ? activeNavigation.currentWindRecords
-            : [];
-
-    appState.currentTrimRecords =
-        Array.isArray(
-            activeNavigation.currentTrimRecords
-        )
-            ? activeNavigation.currentTrimRecords
-            : [];
-
-}
-
-
-/* ==========================================================
-   AFFICHAGE DES DERNIÈRES NAVIGATIONS
-   ========================================================== */
-
-function renderRecentNavigations() {
-
-    const container =
-        document.getElementById(
-            "recentNavigationList"
-        );
-
-    if (!container) {
-
-        return;
-
-    }
-
-    container.innerHTML = "";
-
-
-    if (appState.history.length === 0) {
-
-        container.innerHTML = `
-            <div class="emptyCard">
-                Aucune navigation enregistrée.
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    const recentNavigations =
-        [...appState.history]
-            .sort(sortNavigationsNewestFirst)
-            .slice(0, 3);
-
-
-    recentNavigations.forEach(
-        navigation => {
-
-            container.appendChild(
-                createNavigationCard(
-                    navigation,
-                    true
-                )
+        state.timerId =
+            window.setInterval(
+                updateNavigationDashboard,
+                1000
             );
 
+        if (
+            "geolocation" in navigator
+        ) {
+            state.gpsWatchId =
+                navigator.geolocation
+                    .watchPosition(
+                        handleGPSPosition,
+
+                        handleGPSError,
+
+                        {
+                            enableHighAccuracy:
+                                true,
+
+                            maximumAge: 2000,
+
+                            timeout: 15000
+                        }
+                    );
+        } else {
+            displayMapMessage(
+                "La géolocalisation n'est pas disponible."
+            );
         }
-    );
 
-}
-
-
-/* ==========================================================
-   AFFICHAGE DE L’HISTORIQUE
-   ========================================================== */
-
-function renderHistory() {
-
-    const container =
-        document.getElementById(
-            "historyList"
-        );
-
-    if (!container) {
-
-        return;
-
+        updateNavigationDashboard();
     }
 
-    container.innerHTML = "";
-
-
-    if (appState.history.length === 0) {
-
-        container.innerHTML = `
-            <div class="emptyCard">
-                Aucune sortie enregistrée pour le moment.
-            </div>
-        `;
-
-        return;
-
-    }
-
-
-    const sortedHistory =
-        [...appState.history]
-            .sort(sortNavigationsNewestFirst);
-
-
-    sortedHistory.forEach(
-        navigation => {
-
-            container.appendChild(
-                createNavigationCard(
-                    navigation,
-                    false
-                )
+    function stopNavigationRuntime() {
+        if (state.timerId !== null) {
+            clearInterval(
+                state.timerId
             );
 
+            state.timerId = null;
         }
-    );
 
-}
-
-
-/* ==========================================================
-   CRÉATION D’UNE CARTE DE NAVIGATION
-   ========================================================== */
-
-function createNavigationCard(
-    navigation,
-    compactMode = false
-) {
-
-    const article =
-        document.createElement("article");
-
-    article.className =
-        "navigationItem";
-
-
-    const title =
-        navigation.title ||
-        "Navigation SpeedFeet 18";
-
-    const date =
-        formatDateTime(
-            navigation.startedAt ||
-            navigation.date
-        );
-
-    const duration =
-        formatDuration(
-            navigation.durationSeconds || 0
-        );
-
-    const distance =
-        formatDistance(
-            navigation.distanceNm || 0
-        );
-
-    const maximumSpeed =
-        formatSpeed(
-            navigation.maximumSpeed || 0
-        );
-
-
-    article.innerHTML = `
-        <div class="navigationItemHeader">
-
-            <h3 class="navigationItemTitle">
-                ${escapeHtml(title)}
-            </h3>
-
-            <span class="navigationItemDate">
-                ${escapeHtml(date)}
-            </span>
-
-        </div>
-
-        <div class="navigationItemData">
-
-            <span>
-                Durée : ${escapeHtml(duration)}
-            </span>
-
-            <span>
-                Distance : ${escapeHtml(distance)}
-            </span>
-
-            <span>
-                Vitesse max :
-                ${escapeHtml(maximumSpeed)}
-            </span>
-
-            <span>
-                Équipage :
-                ${escapeHtml(
-                    String(
-                        navigation.crew || 1
-                    )
-                )}
-            </span>
-
-        </div>
-    `;
-
-
-    if (!compactMode) {
-
-        const actions =
-            document.createElement("div");
-
-        actions.className =
-            "navigationItemActions";
-
-
-        const openButton =
-            document.createElement("button");
-
-        openButton.type = "button";
-
-        openButton.className =
-            "secondaryButton";
-
-        openButton.textContent =
-            "Ouvrir";
-
-        openButton.addEventListener(
-            "click",
-            () => {
-
-                openNavigationFromHistory(
-                    navigation.id
+        if (
+            state.gpsWatchId !== null &&
+            "geolocation" in navigator
+        ) {
+            navigator.geolocation
+                .clearWatch(
+                    state.gpsWatchId
                 );
 
-            }
-        );
-
-
-        actions.appendChild(
-            openButton
-        );
-
-        article.appendChild(
-            actions
-        );
-
-    }
-
-    return article;
-
-}
-
-
-/* ==========================================================
-   OUVERTURE PROVISOIRE D’UNE SORTIE
-   L’analyse complète arrivera dans la Partie 6.
-   ========================================================== */
-
-function openNavigationFromHistory(
-    navigationId
-) {
-
-    const navigation =
-        appState.history.find(
-            item =>
-                item.id === navigationId
-        );
-
-    if (!navigation) {
-
-        console.warn(
-            "Navigation introuvable",
-            navigationId
-        );
-
-        return;
-
-    }
-
-    appState.selectedNavigation =
-        navigation;
-
-    console.log(
-        "Navigation sélectionnée",
-        navigation
-    );
-
-}
-
-
-/* ==========================================================
-   TRI DES NAVIGATIONS
-   ========================================================== */
-
-function sortNavigationsNewestFirst(
-    firstNavigation,
-    secondNavigation
-) {
-
-    const firstDate =
-        new Date(
-            firstNavigation.startedAt ||
-            firstNavigation.date ||
-            0
-        ).getTime();
-
-    const secondDate =
-        new Date(
-            secondNavigation.startedAt ||
-            secondNavigation.date ||
-            0
-        ).getTime();
-
-    return secondDate - firstDate;
-
-}
-
-
-/* ==========================================================
-   OUTILS DE FORMATAGE
-   ========================================================== */
-
-function formatDateTime(value) {
-
-    if (!value) {
-
-        return "Date inconnue";
-
-    }
-
-    const date =
-        new Date(value);
-
-    if (
-        Number.isNaN(
-            date.getTime()
-        )
-    ) {
-
-        return "Date inconnue";
-
-    }
-
-    return new Intl.DateTimeFormat(
-        "fr-FR",
-        {
-            dateStyle: "medium",
-            timeStyle: "short"
+            state.gpsWatchId = null;
         }
-    ).format(date);
+    }
 
-}
+    function handleGPSPosition(position) {
+        if (
+            !state.currentNavigation ||
+            state.currentNavigation
+                .status !== "running"
+        ) {
+            return;
+        }
 
+        const coordinates =
+            position.coords;
 
-function formatDuration(
-    totalSeconds
-) {
+        const point = {
+            latitude:
+                coordinates.latitude,
 
-    const safeSeconds =
-        Math.max(
+            longitude:
+                coordinates.longitude,
+
+            accuracy:
+                coordinates.accuracy,
+
+            speedKn:
+                Number.isFinite(
+                    coordinates.speed
+                ) &&
+                coordinates.speed >= 0
+                    ? coordinates.speed *
+                      1.943844
+                    : null,
+
+            heading:
+                Number.isFinite(
+                    coordinates.heading
+                ) &&
+                coordinates.heading >= 0
+                    ? coordinates.heading
+                    : null,
+
+            timestamp:
+                new Date(
+                    position.timestamp
+                ).toISOString()
+        };
+
+        const track =
+            state.currentNavigation.track;
+
+        const previousPoint =
+            track[track.length - 1];
+
+        if (previousPoint) {
+            const segmentDistance =
+                calculateDistanceNm(
+                    previousPoint.latitude,
+                    previousPoint.longitude,
+                    point.latitude,
+                    point.longitude
+                );
+
+            if (
+                segmentDistance >= 0 &&
+                segmentDistance < 0.5
+            ) {
+                state.currentNavigation
+                    .distanceNm +=
+                    segmentDistance;
+            }
+        }
+
+        if (point.speedKn !== null) {
+            state.currentNavigation
+                .currentSpeedKn =
+                point.speedKn;
+
+            state.currentNavigation
+                .maxSpeedKn =
+                Math.max(
+                    state.currentNavigation
+                        .maxSpeedKn,
+
+                    point.speedKn
+                );
+        }
+
+        track.push(point);
+
+        if (track.length % 3 === 0) {
+            saveJSON(
+                STORAGE_KEYS
+                    .currentNavigation,
+
+                state.currentNavigation
+            );
+        }
+
+        updateNavigationDashboard();
+
+        displayMapMessage(
+            "GPS actif — " +
+            point.latitude.toFixed(5) +
+            ", " +
+            point.longitude.toFixed(5)
+        );
+    }
+
+    function handleGPSError(error) {
+        console.warn(
+            "Erreur GPS :",
+            error
+        );
+
+        let message =
+            "GPS indisponible.";
+
+        if (error.code === 1) {
+            message =
+                "Autorisation GPS refusée.";
+        }
+
+        if (error.code === 2) {
+            message =
+                "Position GPS indisponible.";
+        }
+
+        if (error.code === 3) {
+            message =
+                "Le GPS met trop de temps à répondre.";
+        }
+
+        displayMapMessage(message);
+    }
+
+    function calculateDistanceNm(
+        latitude1,
+        longitude1,
+        latitude2,
+        longitude2
+    ) {
+        const earthRadiusKm =
+            6371.0088;
+
+        const toRadians =
+            (degrees) =>
+                degrees *
+                Math.PI /
+                180;
+
+        const latitudeDifference =
+            toRadians(
+                latitude2 -
+                latitude1
+            );
+
+        const longitudeDifference =
+            toRadians(
+                longitude2 -
+                longitude1
+            );
+
+        const value =
+            Math.sin(
+                latitudeDifference / 2
+            ) ** 2 +
+            Math.cos(
+                toRadians(latitude1)
+            ) *
+            Math.cos(
+                toRadians(latitude2)
+            ) *
+            Math.sin(
+                longitudeDifference / 2
+            ) ** 2;
+
+        const distanceKm =
+            2 *
+            earthRadiusKm *
+            Math.asin(
+                Math.sqrt(value)
+            );
+
+        return distanceKm / 1.852;
+    }
+
+    function getElapsedMilliseconds(
+        navigation
+    ) {
+        if (!navigation?.startedAt) {
+            return 0;
+        }
+
+        const endDate =
+            navigation.endedAt
+                ? new Date(
+                    navigation.endedAt
+                )
+                : new Date();
+
+        return Math.max(
             0,
+            endDate -
+            new Date(
+                navigation.startedAt
+            )
+        );
+    }
+
+    function formatDuration(
+        milliseconds
+    ) {
+        const totalSeconds =
             Math.floor(
-                Number(totalSeconds) || 0
+                milliseconds / 1000
+            );
+
+        const hours =
+            String(
+                Math.floor(
+                    totalSeconds / 3600
+                )
+            ).padStart(2, "0");
+
+        const minutes =
+            String(
+                Math.floor(
+                    (
+                        totalSeconds %
+                        3600
+                    ) / 60
+                )
+            ).padStart(2, "0");
+
+        const seconds =
+            String(
+                totalSeconds % 60
+            ).padStart(2, "0");
+
+        return (
+            hours +
+            ":" +
+            minutes +
+            ":" +
+            seconds
+        );
+    }
+
+    function calculateVMG() {
+        const navigation =
+            state.currentNavigation;
+
+        const windRecord =
+            navigation
+                ?.windRecords
+                ?.slice(-1)[0];
+
+        const lastPoint =
+            navigation
+                ?.track
+                ?.slice(-1)[0];
+
+        if (
+            !windRecord ||
+            !lastPoint ||
+            lastPoint.speedKn === null ||
+            lastPoint.heading === null
+        ) {
+            return 0;
+        }
+
+        const angle =
+            calculateSmallestAngle(
+                lastPoint.heading,
+                windRecord.direction
+            );
+
+        return (
+            lastPoint.speedKn *
+            Math.cos(
+                angle *
+                Math.PI /
+                180
+            )
+        );
+    }
+
+    function calculateSmallestAngle(
+        angle1,
+        angle2
+    ) {
+        const difference =
+            Math.abs(
+                angle1 - angle2
+            ) % 360;
+
+        return difference > 180
+            ? 360 - difference
+            : difference;
+    }
+
+    function updateNavigationDashboard() {
+        const navigation =
+            state.currentNavigation;
+
+        if (!navigation) {
+            setText(
+                "navTime",
+                "00:00:00"
+            );
+
+            setText(
+                "navDistance",
+                "0.00 nm"
+            );
+
+            setText(
+                "navSpeed",
+                "0.0 nd"
+            );
+
+            setText(
+                "navVMG",
+                "0.0 nd"
+            );
+
+            return;
+        }
+
+        setText(
+            "navTime",
+
+            formatDuration(
+                getElapsedMilliseconds(
+                    navigation
+                )
             )
         );
 
-    const hours =
-        Math.floor(
-            safeSeconds / 3600
+        setText(
+            "navDistance",
+
+            navigation.distanceNm
+                .toFixed(2) +
+                " nm"
         );
 
-    const minutes =
-        Math.floor(
-            (safeSeconds % 3600) / 60
+        setText(
+            "navSpeed",
+
+            navigation.currentSpeedKn
+                .toFixed(1) +
+                " nd"
         );
 
-    const seconds =
-        safeSeconds % 60;
+        setText(
+            "navVMG",
 
+            calculateVMG()
+                .toFixed(1) +
+                " nd"
+        );
+    }
 
-    return [
-        hours,
-        minutes,
-        seconds
-    ]
-        .map(value =>
-            String(value).padStart(2, "0")
-        )
-        .join(":");
+    function setText(id, value) {
+        const element =
+            getElement(id);
 
-}
+        if (element) {
+            element.textContent =
+                value;
+        }
+    }
 
+    function displayMapMessage(message) {
+        const mapContainer =
+            getElement("mapContainer");
 
-function formatDistance(value) {
-
-    const distance =
-        Number(value) || 0;
-
-    return `${distance.toFixed(2)} nm`;
-
-}
-
-
-function formatSpeed(value) {
-
-    const speed =
-        Number(value) || 0;
-
-    return `${speed.toFixed(1)} nds`;
-
-}
-
-
-/* ==========================================================
-   OUTILS POUR LES OBJETS
-   ========================================================== */
-
-function deepClone(value) {
-
-    if (
-        typeof structuredClone ===
-        "function"
-    ) {
-
-        try {
-
-            return structuredClone(value);
-
-        } catch (error) {
-
-            console.warn(
-                "structuredClone indisponible",
-                error
-            );
-
+        if (!mapContainer) {
+            return;
         }
 
+        let messageElement =
+            mapContainer.querySelector(
+                ".mapStatus"
+            );
+
+        if (!messageElement) {
+            messageElement =
+                document.createElement(
+                    "div"
+                );
+
+            messageElement.className =
+                "mapStatus";
+
+            messageElement.style.padding =
+                "1rem";
+
+            messageElement.style.textAlign =
+                "center";
+
+            mapContainer.appendChild(
+                messageElement
+            );
+        }
+
+        messageElement.textContent =
+            message;
     }
 
-    return JSON.parse(
-        JSON.stringify(value)
-    );
+    function askToStopNavigation() {
+        if (
+            !state.currentNavigation ||
+            state.currentNavigation
+                .status !== "running"
+        ) {
+            showPage("homePage");
+            return;
+        }
 
-}
+        showConfirmation(
+            "Arrêter la navigation",
+            "La navigation sera enregistrée dans l'historique.",
+            finishNavigation
+        );
+    }
 
+    function finishNavigation() {
+        if (!state.currentNavigation) {
+            return;
+        }
 
-function mergeDeep(
-    target,
-    source
-) {
+        stopNavigationRuntime();
 
-    if (
-        !source ||
-        typeof source !== "object"
+        state.currentNavigation.status =
+            "completed";
+
+        state.currentNavigation.endedAt =
+            new Date().toISOString();
+
+        state.history.unshift(
+            cloneValue(
+                state.currentNavigation
+            )
+        );
+
+        saveJSON(
+            STORAGE_KEYS.history,
+            state.history
+        );
+
+        state.currentNavigation = null;
+
+        localStorage.removeItem(
+            STORAGE_KEYS.currentNavigation
+        );
+
+        state.preparation = null;
+
+        localStorage.removeItem(
+            STORAGE_KEYS.preparation
+        );
+
+        showPage("historyPage");
+    }
+
+    function openWindModal() {
+        if (!state.currentNavigation) {
+            return;
+        }
+
+        const lastRecord =
+            state.currentNavigation
+                .windRecords
+                .slice(-1)[0];
+
+        setInputValue(
+            "popupWindSpeed",
+            lastRecord?.speed
+        );
+
+        setInputValue(
+            "popupWindDirection",
+            lastRecord?.direction
+        );
+
+        setInputValue(
+            "popupWindQuality",
+            lastRecord?.quality ||
+                "green"
+        );
+
+        openModal("windModal");
+    }
+
+    function saveWindRecord() {
+        if (!state.currentNavigation) {
+            return;
+        }
+
+        const speed =
+            toNumberOrNull(
+                getElement(
+                    "popupWindSpeed"
+                )?.value
+            );
+
+        const direction =
+            toNumberOrNull(
+                getElement(
+                    "popupWindDirection"
+                )?.value
+            );
+
+        const quality =
+            getElement(
+                "popupWindQuality"
+            )?.value ||
+            "green";
+
+        if (
+            speed === null ||
+            speed < 0 ||
+            speed > 100
+        ) {
+            alert(
+                "Indique une force de vent comprise entre 0 et 100 nœuds."
+            );
+
+            return;
+        }
+
+        if (
+            direction === null ||
+            direction < 0 ||
+            direction > 359
+        ) {
+            alert(
+                "Indique une direction comprise entre 0° et 359°."
+            );
+
+            return;
+        }
+
+        state.currentNavigation
+            .windRecords
+            .push({
+                speed,
+                direction,
+                quality,
+
+                timestamp:
+                    new Date()
+                        .toISOString(),
+
+                position:
+                    state.currentNavigation
+                        .track
+                        .slice(-1)[0] ||
+                    null
+            });
+
+        saveJSON(
+            STORAGE_KEYS.currentNavigation,
+            state.currentNavigation
+        );
+
+        closeAllModals();
+
+        updateNavigationDashboard();
+    }
+
+    function readCompass() {
+        alert(
+            "Pour cette version, ouvre la boussole de l'iPhone et saisis la direction affichée. La lecture automatique sera ajoutée ensuite."
+        );
+    }
+
+    function openTrimModal() {
+        if (!state.currentNavigation) {
+            return;
+        }
+
+        const lastRecord =
+            state.currentNavigation
+                .trimRecords
+                .slice(-1)[0];
+
+        if (lastRecord) {
+            setInputValue(
+                "trimTravelerMain",
+                lastRecord.travelerMain
+            );
+
+            setInputValue(
+                "trimTravelerJib",
+                lastRecord.travelerJib
+            );
+
+            setInputValue(
+                "trimRotation",
+                lastRecord.rotation
+            );
+
+            setInputValue(
+                "trimCunningham",
+                lastRecord.cunningham
+            );
+
+            setInputValue(
+                "trimOuthaul",
+                lastRecord.outhaul
+            );
+
+            setInputValue(
+                "trimSheet",
+                lastRecord.sheet
+            );
+        }
+
+        openModal("trimModal");
+    }
+
+    function saveTrimRecord() {
+        if (!state.currentNavigation) {
+            return;
+        }
+
+        state.currentNavigation
+            .trimRecords
+            .push({
+                travelerMain:
+                    getElement(
+                        "trimTravelerMain"
+                    )?.value ||
+                    "",
+
+                travelerJib:
+                    getElement(
+                        "trimTravelerJib"
+                    )?.value ||
+                    "",
+
+                rotation:
+                    getElement(
+                        "trimRotation"
+                    )?.value ||
+                    "",
+
+                cunningham:
+                    getElement(
+                        "trimCunningham"
+                    )?.value ||
+                    "",
+
+                outhaul:
+                    getElement(
+                        "trimOuthaul"
+                    )?.value ||
+                    "",
+
+                sheet:
+                    getElement(
+                        "trimSheet"
+                    )?.value ||
+                    "",
+
+                timestamp:
+                    new Date()
+                        .toISOString(),
+
+                position:
+                    state.currentNavigation
+                        .track
+                        .slice(-1)[0] ||
+                    null
+            });
+
+        saveJSON(
+            STORAGE_KEYS.currentNavigation,
+            state.currentNavigation
+        );
+
+        closeAllModals();
+    }
+
+    function addMarker() {
+        if (!state.currentNavigation) {
+            return;
+        }
+
+        const markerName =
+            prompt(
+                "Nom du marqueur :",
+                "Observation"
+            );
+
+        if (markerName === null) {
+            return;
+        }
+
+        state.currentNavigation
+            .markers
+            .push({
+                name:
+                    markerName.trim() ||
+                    "Observation",
+
+                timestamp:
+                    new Date()
+                        .toISOString(),
+
+                position:
+                    state.currentNavigation
+                        .track
+                        .slice(-1)[0] ||
+                    null
+            });
+
+        saveJSON(
+            STORAGE_KEYS.currentNavigation,
+            state.currentNavigation
+        );
+    }
+
+    function loadSettingsForm() {
+        setInputValue(
+            "boatName",
+            state.settings.boatName
+        );
+
+        setInputValue(
+            "defaultMainSail",
+            state.settings
+                .defaultMainSail
+        );
+
+        setInputValue(
+            "defaultJib",
+            state.settings
+                .defaultJib
+        );
+
+        setInputValue(
+            "defaultSpi",
+            state.settings
+                .defaultSpi
+        );
+
+        setInputValue(
+            "defaultCrew",
+            state.settings
+                .defaultCrew
+        );
+
+        setText(
+            "appVersion",
+            APP_VERSION
+        );
+    }
+
+    function saveSettings() {
+        state.settings = {
+            boatName:
+                getElement("boatName")
+                    ?.value
+                    .trim() ||
+                "Speed Feet 18",
+
+            defaultMainSail:
+                getElement(
+                    "defaultMainSail"
+                )?.value ||
+                DEFAULT_SETTINGS
+                    .defaultMainSail,
+
+            defaultJib:
+                getElement(
+                    "defaultJib"
+                )?.value ||
+                DEFAULT_SETTINGS
+                    .defaultJib,
+
+            defaultSpi:
+                getElement(
+                    "defaultSpi"
+                )?.value ||
+                DEFAULT_SETTINGS
+                    .defaultSpi,
+
+            defaultCrew:
+                clamp(
+                    toNumberOrNull(
+                        getElement(
+                            "defaultCrew"
+                        )?.value
+                    ) ||
+                    1,
+                    1,
+                    10
+                )
+        };
+
+        saveJSON(
+            STORAGE_KEYS.settings,
+            state.settings
+        );
+
+        alert(
+            "Paramètres enregistrés."
+        );
+
+        showPage("homePage");
+    }
+
+    function renderRecentNavigations() {
+        const container =
+            getElement(
+                "recentNavigationList"
+            );
+
+        if (!container) {
+            return;
+        }
+
+        const recentNavigations =
+            state.history.slice(0, 3);
+
+        if (
+            recentNavigations.length === 0
+        ) {
+            container.innerHTML =
+                '<div class="emptyCard">Aucune navigation enregistrée.</div>';
+
+            return;
+        }
+
+        container.innerHTML =
+            recentNavigations
+                .map(createHistoryCard)
+                .join("");
+    }
+
+    function renderHistory() {
+        const container =
+            getElement("historyList");
+
+        if (!container) {
+            return;
+        }
+
+        if (state.history.length === 0) {
+            container.innerHTML =
+                '<div class="emptyCard">Aucune navigation enregistrée.</div>';
+
+            return;
+        }
+
+        container.innerHTML =
+            state.history
+                .map(createHistoryCard)
+                .join("");
+    }
+
+    function createHistoryCard(
+        navigation
     ) {
+        const date =
+            new Intl.DateTimeFormat(
+                "fr-FR",
+                {
+                    dateStyle: "medium",
+                    timeStyle: "short"
+                }
+            ).format(
+                new Date(
+                    navigation.startedAt
+                )
+            );
 
-        return target;
+        const duration =
+            formatDuration(
+                getElapsedMilliseconds(
+                    navigation
+                )
+            );
 
+        const configuration =
+            navigation.preparation ||
+            {};
+
+        return `
+            <article class="card navigationHistoryCard">
+                <h3>${escapeHTML(
+                    navigation.boatName ||
+                    "Speed Feet 18"
+                )}</h3>
+
+                <p>
+                    <strong>${escapeHTML(
+                        date
+                    )}</strong>
+                </p>
+
+                <p>
+                    ${escapeHTML(duration)}
+                    ·
+                    ${Number(
+                        navigation.distanceNm ||
+                        0
+                    ).toFixed(2)} nm
+                    ·
+                    Vmax
+                    ${Number(
+                        navigation.maxSpeedKn ||
+                        0
+                    ).toFixed(1)} nd
+                </p>
+
+                <p>
+                    ${escapeHTML(
+                        configuration.mainSail ||
+                        ""
+                    )}
+                    ·
+                    ${escapeHTML(
+                        configuration.jib ||
+                        ""
+                    )}
+                    ·
+                    ${escapeHTML(
+                        configuration.spinnaker ||
+                        ""
+                    )}
+                </p>
+            </article>
+        `;
     }
 
-    Object.keys(source)
-        .forEach(key => {
+    function escapeHTML(value) {
+        return String(value ?? "")
+            .replaceAll(
+                "&",
+                "&amp;"
+            )
+            .replaceAll(
+                "<",
+                "&lt;"
+            )
+            .replaceAll(
+                ">",
+                "&gt;"
+            )
+            .replaceAll(
+                '"',
+                "&quot;"
+            )
+            .replaceAll(
+                "'",
+                "&#039;"
+            );
+    }
 
-            const sourceValue =
-                source[key];
+    function showConfirmation(
+        title,
+        message,
+        action
+    ) {
+        setText(
+            "confirmTitle",
+            title
+        );
 
-            const targetValue =
-                target[key];
+        setText(
+            "confirmMessage",
+            message
+        );
 
+        state.confirmAction =
+            action;
 
-            if (
-                sourceValue &&
-                typeof sourceValue ===
-                    "object" &&
-                !Array.isArray(sourceValue)
-            ) {
+        openModal("confirmModal");
+    }
 
-                target[key] =
-                    mergeDeep(
-                        targetValue &&
-                        typeof targetValue ===
-                            "object"
-                            ? targetValue
-                            : {},
-                        sourceValue
-                    );
+    function confirmAction() {
+        const action =
+            state.confirmAction;
 
-            } else {
+        state.confirmAction =
+            null;
 
-                target[key] =
-                    sourceValue;
+        closeAllModals();
 
+        if (
+            typeof action ===
+            "function"
+        ) {
+            action();
+        }
+    }
+
+    function bindPreparationAutosave() {
+        const fieldIds = [
+            "weatherImage",
+            "windAverage",
+            "windGust",
+            "windDirection",
+            "seaState",
+            "weatherNotes",
+            "mainSail",
+            "jib",
+            "spinnaker",
+            "crew",
+            "navigationNotes"
+        ];
+
+        fieldIds.forEach((fieldId) => {
+            const field =
+                getElement(fieldId);
+
+            if (!field) {
+                return;
             }
 
+            field.addEventListener(
+                "input",
+                savePreparationDraft
+            );
+
+            field.addEventListener(
+                "change",
+                savePreparationDraft
+            );
         });
-
-    return target;
-
-}
-
-
-/* ==========================================================
-   PROTECTION DU HTML
-   ========================================================== */
-
-function escapeHtml(value) {
-
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-
-}
-
-
-/* ==========================================================
-   GÉNÉRATION D’UN IDENTIFIANT
-   ========================================================== */
-
-function generateId(prefix = "item") {
-
-    if (
-        window.crypto &&
-        typeof window.crypto.randomUUID ===
-            "function"
-    ) {
-
-        return `${prefix}-${crypto.randomUUID()}`;
-
     }
 
-    return (
-        `${prefix}-` +
-        Date.now() +
-        "-" +
-        Math.random()
-            .toString(16)
-            .slice(2)
-    );
+    function bindButtons() {
+        bindClick(
+            "btnPrepare",
+            () =>
+                showPage(
+                    "preparePage"
+                )
+        );
 
-}
+        bindClick(
+            "btnStartNavigation",
+            () =>
+                startNavigation(null)
+        );
 
+        bindClick(
+            "btnHistory",
+            () =>
+                showPage(
+                    "historyPage"
+                )
+        );
 
-/* ==========================================================
-   FIN DE LA PARTIE 1B
-   ========================================================== */
+        bindClick(
+            "btnSettings",
+            () =>
+                showPage(
+                    "settingsPage"
+                )
+        );
+
+        bindClick(
+            "btnBackHome",
+            () =>
+                showPage(
+                    "homePage"
+                )
+        );
+
+        bindClick(
+            "btnHistoryHome",
+            () =>
+                showPage(
+                    "homePage"
+                )
+        );
+
+        bindClick(
+            "btnSettingsHome",
+            () =>
+                showPage(
+                    "homePage"
+                )
+        );
+
+        bindClick(
+            "btnStartPreparedNavigation",
+            startPreparedNavigation
+        );
+
+        bindClick(
+            "btnSaveSettings",
+            saveSettings
+        );
+
+        bindClick(
+            "btnWind",
+            openWindModal
+        );
+
+        bindClick(
+            "btnTrim",
+            openTrimModal
+        );
+
+        bindClick(
+            "btnMarker",
+            addMarker
+        );
+
+        bindClick(
+            "btnStopNavigation",
+            askToStopNavigation
+        );
+
+        bindClick(
+            "btnCancelWind",
+            closeAllModals
+        );
+
+        bindClick(
+            "btnSaveWind",
+            saveWindRecord
+        );
+
+        bindClick(
+            "btnCompass",
+            readCompass
+        );
+
+        bindClick(
+            "btnCancelTrim",
+            closeAllModals
+        );
+
+        bindClick(
+            "btnSaveTrim",
+            saveTrimRecord
+        );
+
+        bindClick(
+            "btnConfirmCancel",
+            () => {
+                state.confirmAction =
+                    null;
+
+                closeAllModals();
+            }
+        );
+
+        bindClick(
+            "btnConfirmOk",
+            confirmAction
+        );
+
+        bindClick(
+            "btnImportPolar",
+            () => {
+                alert(
+                    "L'import de polaire sera ajouté dans le module Polaires."
+                );
+            }
+        );
+
+        bindClick(
+            "btnImportVCC",
+            () => {
+                alert(
+                    "L'import VCC sera ajouté dans le module Analyse VCC."
+                );
+            }
+        );
+
+        document
+            .querySelectorAll(".modal")
+            .forEach((modal) => {
+                modal.addEventListener(
+                    "click",
+                    (event) => {
+                        if (
+                            event.target ===
+                            modal
+                        ) {
+                            closeAllModals();
+                        }
+                    }
+                );
+            });
+
+        document.addEventListener(
+            "keydown",
+            (event) => {
+                if (
+                    event.key ===
+                    "Escape"
+                ) {
+                    closeAllModals();
+                }
+            }
+        );
+    }
+
+    function initializeApplication() {
+        initializeSelects();
+
+        loadSettingsForm();
+
+        loadPreparationForm();
+
+        bindButtons();
+
+        bindPreparationAutosave();
+
+        renderRecentNavigations();
+
+        displayMapMessage(
+            "En attente du GPS"
+        );
+
+        showPage("homePage");
+
+        window.addEventListener(
+            "beforeunload",
+            () => {
+                if (
+                    state.currentPage ===
+                    "preparePage"
+                ) {
+                    savePreparationDraft();
+                }
+
+                if (
+                    state.currentNavigation
+                ) {
+                    saveJSON(
+                        STORAGE_KEYS
+                            .currentNavigation,
+
+                        state.currentNavigation
+                    );
+                }
+            }
+        );
+    }
+
+    if (
+        document.readyState ===
+        "loading"
+    ) {
+        document.addEventListener(
+            "DOMContentLoaded",
+            initializeApplication
+        );
+    } else {
+        initializeApplication();
+    }
+})();
