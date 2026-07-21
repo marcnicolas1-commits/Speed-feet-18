@@ -119,9 +119,22 @@ Tous droits réservés.
 Mise à jour v2.5.0 : écran navigation simplifié, cap GPS, heure du téléphone, marqueurs de manœuvres, réglages numérotés 1 à 5, analyse après 2 minutes de stabilisation et carte satellite dans l’historique.
 
 
-## Version 2.5.1
+## Version 2.5.2
 - Correction de la confirmation de suppression d'une navigation.
 - Ajout d'un raccourci Windguru sur l'accueil.
 - Affichage du nom et du nombre de points de la polaire importée.
 - Conservation de la polaire lors de l'enregistrement des paramètres.
 - Mise à jour du cache PWA.
+
+
+## Version 2.5.2
+- Import des polaires JSON SpeedFeet Polar v1.
+- Import CSV/TXT compatible avec les colonnes TWS, TWA et BSP.
+- Affichage des informations de la polaire importée.
+- Mise à jour du cache PWA.
+
+
+## Version 2.5.3
+- Export complet des données dans un fichier JSON de sauvegarde.
+- Import sur un autre appareil avec remplacement confirmé des données locales.
+- Inclut paramètres, polaire, préparation, navigation en cours, historique, météo et données SpeedPuck stockées.

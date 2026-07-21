@@ -16,7 +16,7 @@
 
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-    <link rel="stylesheet" href="styles.css?v=2510">
+    <link rel="stylesheet" href="styles.css?v=2530">
 
 </head>
 
@@ -714,6 +714,18 @@
             </button>
 
             <p id="polarImportStatus" class="smallText polarImportStatus">Aucune polaire importée.</p>
+
+            <hr class="dataSeparator">
+
+            <h3>Sauvegarde et transfert</h3>
+
+            <p class="smallText">Transfère les navigations, réglages, polaire, météo et données SpeedPuck vers un autre appareil.</p>
+
+            <button id="btnExportBackup" class="secondaryButton">Exporter toutes les données</button>
+
+            <button id="btnImportBackup" class="secondaryButton">Importer une sauvegarde</button>
+
+            <p id="backupStatus" class="smallText">Le fichier peut être envoyé par AirDrop, e-mail, messagerie ou cloud.</p>
 </section>
 
 
@@ -727,7 +739,7 @@
                 Version :
                 <strong id="appVersion">
 
-                    2.5.1
+                    2.5.3
 </strong>
 
             </p>
@@ -811,7 +823,7 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=2510"></script>
+<script src="app.js?v=2530"></script>
 
 
 <script>

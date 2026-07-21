@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "2.5.1";
+    const APP_VERSION = "2.5.3";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -1494,12 +1494,7 @@
             APP_VERSION
         );
 
-        setText(
-            "polarImportStatus",
-            state.settings.polarFileName
-                ? `Polaire active : ${state.settings.polarFileName} (${Array.isArray(state.settings.polarData) ? state.settings.polarData.length : 0} points)`
-                : "Aucune polaire importée."
-        );
+        renderPolarImportStatus();
     }
 
     function saveSettings() {
@@ -2342,54 +2337,306 @@
         getElement("weatherImage")?.addEventListener("change", saveWeatherImage);
     }
 
-    function parsePolarText(text) {
-        const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-        if (lines.length < 2) return [];
-        const separator = lines[0].includes(";") ? ";" : lines[0].includes("\t") ? "\t" : ",";
-        const cells = lines.map(line => line.split(separator).map(value => value.trim().replace(/^"|"$/g, "")));
-        const number = value => Number(String(value).replace(",", "."));
-        const header = cells[0].map(value => value.toLowerCase().replace(/[^a-z0-9]/g, ""));
-        const windIndex = header.findIndex(value => ["wind", "tws", "vent", "windspeed"].some(name => value.includes(name)));
-        const angleIndex = header.findIndex(value => ["angle", "twa", "allure"].some(name => value.includes(name)));
-        const speedIndex = header.findIndex(value => ["speed", "boatspeed", "target", "vitesse"].some(name => value.includes(name)));
-        if (windIndex >= 0 && angleIndex >= 0 && speedIndex >= 0) {
-            return cells.slice(1).map(row => ({ windSpeed: number(row[windIndex]), angle: number(row[angleIndex]), speed: number(row[speedIndex]) }))
-                .filter(row => [row.windSpeed, row.angle, row.speed].every(Number.isFinite));
+    function normalizePolarPoint(point) {
+        if (!point || typeof point !== "object") return null;
+
+        const windSpeed = Number(
+            point.windSpeed ?? point.tws ?? point.wind ?? point.trueWindSpeed ?? point.TWS
+        );
+        const angle = Number(
+            point.angle ?? point.twa ?? point.trueWindAngle ?? point.TWA
+        );
+        const speed = Number(
+            point.speed ?? point.bsp ?? point.boatSpeed ?? point.target ?? point.BSP
+        );
+
+        if (![windSpeed, angle, speed].every(Number.isFinite)) return null;
+
+        return {
+            windSpeed,
+            angle,
+            speed,
+            sailPlan: point.sailPlan ?? point.sail_plan ?? null
+        };
+    }
+
+    function parsePolarJSON(text) {
+        const parsed = JSON.parse(text);
+        let rawPoints = [];
+
+        if (Array.isArray(parsed)) {
+            rawPoints = parsed;
+        } else if (Array.isArray(parsed?.points)) {
+            rawPoints = parsed.points;
+        } else if (Array.isArray(parsed?.polarData)) {
+            rawPoints = parsed.polarData;
         }
+
+        const points = rawPoints
+            .map(normalizePolarPoint)
+            .filter(Boolean);
+
+        if (!points.length) {
+            throw new Error("Aucun point de polaire reconnu dans le JSON.");
+        }
+
+        return {
+            points,
+            metadata: {
+                name: parsed?.name || parsed?.title || "Polaire importée",
+                boat: parsed?.boat || state.settings.boatName || "Speed Feet 18",
+                format: parsed?.format || "json",
+                formatVersion: parsed?.formatVersion ?? parsed?.version ?? null,
+                sourceDescription: parsed?.source?.description || null
+            }
+        };
+    }
+
+    function parsePolarTable(text) {
+        const lines = text
+            .replace(/^\uFEFF/, "")
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(Boolean);
+
+        if (lines.length < 2) return [];
+
+        const firstLine = lines[0];
+        const separator = firstLine.includes(";")
+            ? ";"
+            : firstLine.includes("\t")
+                ? "\t"
+                : ",";
+
+        const cells = lines.map(line =>
+            line.split(separator).map(value => value.trim().replace(/^"|"$/g, ""))
+        );
+        const number = value => Number(String(value).trim().replace(",", "."));
+        const normalizeHeader = value => String(value)
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]/g, "");
+        const header = cells[0].map(normalizeHeader);
+
+        const windIndex = header.findIndex(value =>
+            ["wind", "tws", "vent", "windspeed", "truewindspeed"].some(name => value.includes(name))
+        );
+        const angleIndex = header.findIndex(value =>
+            ["angle", "twa", "allure", "truewindangle"].some(name => value.includes(name))
+        );
+        const speedIndex = header.findIndex(value =>
+            ["speed", "bsp", "boatspeed", "target", "vitesse"].some(name => value.includes(name))
+        );
+        const sailPlanIndex = header.findIndex(value =>
+            ["sailplan", "voiles", "configuration"].some(name => value.includes(name))
+        );
+
+        if (windIndex >= 0 && angleIndex >= 0 && speedIndex >= 0) {
+            return cells.slice(1)
+                .map(row => normalizePolarPoint({
+                    windSpeed: number(row[windIndex]),
+                    angle: number(row[angleIndex]),
+                    speed: number(row[speedIndex]),
+                    sailPlan: sailPlanIndex >= 0 ? row[sailPlanIndex] : null
+                }))
+                .filter(Boolean);
+        }
+
         const angles = cells[0].slice(1).map(number);
         const result = [];
         cells.slice(1).forEach(row => {
             const windSpeed = number(row[0]);
             row.slice(1).forEach((value, index) => {
-                const speed = number(value);
-                const angle = angles[index];
-                if ([windSpeed, angle, speed].every(Number.isFinite)) result.push({ windSpeed, angle, speed });
+                const point = normalizePolarPoint({
+                    windSpeed,
+                    angle: angles[index],
+                    speed: number(value)
+                });
+                if (point) result.push(point);
             });
         });
         return result;
     }
 
+    function parsePolarFileContent(text, fileName = "") {
+        const trimmed = text.trim();
+        const looksLikeJSON = fileName.toLowerCase().endsWith(".json") ||
+            trimmed.startsWith("{") || trimmed.startsWith("[");
+
+        if (looksLikeJSON) return parsePolarJSON(trimmed);
+
+        const points = parsePolarTable(trimmed);
+        if (!points.length) {
+            throw new Error("Aucun point de polaire reconnu dans le tableau.");
+        }
+
+        return {
+            points,
+            metadata: {
+                name: fileName.replace(/\.[^.]+$/, "") || "Polaire importée",
+                boat: state.settings.boatName || "Speed Feet 18",
+                format: "table",
+                formatVersion: null,
+                sourceDescription: null
+            }
+        };
+    }
+
+    function formatPolarImportDate(value) {
+        if (!value) return "Date inconnue";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "Date inconnue";
+        return date.toLocaleString("fr-FR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    }
+
+    function renderPolarImportStatus() {
+        const points = Array.isArray(state.settings.polarData)
+            ? state.settings.polarData.length
+            : 0;
+
+        if (!state.settings.polarFileName || !points) {
+            setText("polarImportStatus", "Aucune polaire importée.");
+            const button = getElement("btnImportPolar");
+            if (button) button.textContent = "Importer une polaire";
+            return;
+        }
+
+        const metadata = state.settings.polarMetadata || {};
+        const version = metadata.formatVersion != null
+            ? `Version ${metadata.formatVersion}`
+            : metadata.format === "speedfeet-polar"
+                ? "Format SpeedFeet Polar"
+                : "Format CSV/TXT";
+
+        setText(
+            "polarImportStatus",
+            `Polaire importée\n${metadata.name || state.settings.polarFileName}\nBateau : ${metadata.boat || state.settings.boatName || "Speed Feet 18"}\n${version}\n${points} points\nImportée le ${formatPolarImportDate(state.settings.polarImportedAt)}`
+        );
+
+        const button = getElement("btnImportPolar");
+        if (button) button.textContent = "Remplacer la polaire";
+    }
+
     function importPolarFile() {
         const input = document.createElement("input");
         input.type = "file";
-        input.accept = ".csv,.txt,text/csv,text/plain";
+        input.accept = ".json,.csv,.txt,application/json,text/csv,text/plain";
+        input.addEventListener("change", async () => {
+            const file = input.files?.[0];
+            if (!file) return;
+
+            try {
+                const result = parsePolarFileContent(await file.text(), file.name);
+                state.settings.polarData = result.points;
+                state.settings.polarFileName = file.name;
+                state.settings.polarMetadata = result.metadata;
+                state.settings.polarImportedAt = new Date().toISOString();
+
+                if (!saveJSON(STORAGE_KEYS.settings, state.settings)) return;
+
+                renderPolarImportStatus();
+                alert(`Polaire importée : ${result.points.length} points.`);
+            } catch (error) {
+                console.error(error);
+                alert("La polaire n’a pas été reconnue. Utilisez le JSON SpeedFeet Polar ou un CSV/TXT contenant TWS, TWA et BSP.");
+            }
+        });
+        input.click();
+    }
+
+
+    function buildBackup() {
+        return {
+            format: "speedfeet-analyzer-backup",
+            formatVersion: 1,
+            appVersion: APP_VERSION,
+            exportedAt: new Date().toISOString(),
+            data: {
+                settings: cloneValue(state.settings),
+                preparation: cloneValue(state.preparation),
+                currentNavigation: cloneValue(state.currentNavigation),
+                history: cloneValue(state.history)
+            }
+        };
+    }
+
+    function exportAllData() {
+        try {
+            const backup = buildBackup();
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            const date = new Date().toISOString().slice(0, 10);
+            link.href = url;
+            link.download = `SpeedFeet_Analyzer_sauvegarde_${date}.json`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            setText("backupStatus", `${state.history.length} navigation(s) exportée(s) le ${new Date().toLocaleString("fr-FR")}.`);
+        } catch (error) {
+            console.error(error);
+            alert("L’export des données a échoué.");
+        }
+    }
+
+    function validateBackup(parsed) {
+        if (!parsed || parsed.format !== "speedfeet-analyzer-backup" || parsed.formatVersion !== 1 || !parsed.data) {
+            throw new Error("Format de sauvegarde non reconnu.");
+        }
+        if (!Array.isArray(parsed.data.history)) {
+            throw new Error("Historique absent ou invalide.");
+        }
+        if (!parsed.data.settings || typeof parsed.data.settings !== "object") {
+            throw new Error("Paramètres absents ou invalides.");
+        }
+        return parsed.data;
+    }
+
+    function applyImportedBackup(data) {
+        const importedSettings = { ...DEFAULT_SETTINGS, ...data.settings };
+        const importedPreparation = data.preparation ?? null;
+        const importedCurrentNavigation = data.currentNavigation ?? null;
+        const importedHistory = data.history;
+
+        if (!saveJSON(STORAGE_KEYS.settings, importedSettings)) return;
+        if (!saveJSON(STORAGE_KEYS.history, importedHistory)) return;
+
+        if (importedPreparation === null) localStorage.removeItem(STORAGE_KEYS.preparation);
+        else if (!saveJSON(STORAGE_KEYS.preparation, importedPreparation)) return;
+
+        if (importedCurrentNavigation === null) localStorage.removeItem(STORAGE_KEYS.currentNavigation);
+        else if (!saveJSON(STORAGE_KEYS.currentNavigation, importedCurrentNavigation)) return;
+
+        alert(`${importedHistory.length} navigation(s) importée(s). L’application va se recharger.`);
+        window.location.reload();
+    }
+
+    function importAllData() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".json,application/json";
         input.addEventListener("change", async () => {
             const file = input.files?.[0];
             if (!file) return;
             try {
-                const polarData = parsePolarText(await file.text());
-                if (!polarData.length) {
-                    alert("La polaire n’a pas été reconnue. Utilisez un CSV avec Vent/TWA/Vitesse ou un tableau Vent × angles.");
-                    return;
-                }
-                state.settings.polarData = polarData;
-                state.settings.polarFileName = file.name;
-                saveJSON(STORAGE_KEYS.settings, state.settings);
-                setText("polarImportStatus", `Polaire active : ${file.name} (${polarData.length} points)`);
-                alert(`Polaire importée : ${polarData.length} points.`);
+                const parsed = JSON.parse(await file.text());
+                const data = validateBackup(parsed);
+                showConfirmation(
+                    "Importer cette sauvegarde ?",
+                    `Elle contient ${data.history.length} navigation(s). Toutes les données présentes sur cet appareil seront remplacées, y compris les paramètres, la polaire et une éventuelle navigation en cours.`,
+                    () => applyImportedBackup(data)
+                );
             } catch (error) {
                 console.error(error);
-                alert("L’import de la polaire a échoué.");
+                alert("Cette sauvegarde SpeedFeet Analyzer n’a pas été reconnue.");
             }
         });
         input.click();
@@ -2517,6 +2764,16 @@ bindClick(
         bindClick(
             "btnImportPolar",
             importPolarFile
+        );
+
+        bindClick(
+            "btnExportBackup",
+            exportAllData
+        );
+
+        bindClick(
+            "btnImportBackup",
+            importAllData
         );
 document
             .querySelectorAll(".modal")

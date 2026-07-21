@@ -2067,3 +2067,6 @@ body {
 .windguruArrow { font-size: 1.35rem; font-weight: 800; opacity: .9 !important; }
 .polarImportStatus { margin: 12px 0 0; }
 #confirmModal { z-index: 4000; }
+
+.dataSeparator { border: 0; border-top: 1px solid var(--border); margin: 1.25rem 0; }
+#btnExportBackup, #btnImportBackup { width: 100%; margin-top: .65rem; }
