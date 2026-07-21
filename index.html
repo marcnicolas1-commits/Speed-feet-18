@@ -1,93 +1,805 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#07111f">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-180.png">
-<title>SpeedFeet Analyzer V2.3.0</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="styles.css">
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+    <title>SpeedFeet Analyzer</title>
+
+    <meta name="theme-color" content="#1565C0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="styles.css">
+
 </head>
+
 <body>
-<header><div class="head"><div><div class="brand">⛵ SpeedFeet Analyzer</div><div class="version">V2.3.0 — Navigator Edition</div></div><div id="dbState" class="version">Base locale prête</div></div></header>
-<main>
-<section id="home" class="screen active">
-  <div class="card hero"><h2>Ton carnet de navigation</h2><p class="muted">Prépare, marque, analyse et conserve chaque sortie.</p><div class="row" style="justify-content:center"><button class="btn" data-go="navigate">🚤 Préparer une sortie</button><button class="btn secondary" data-go="analyze">📂 Importer un VCC</button></div></div>
-  <div class="grid dashboard-grid">
-    <button class="stat dashboard-card" data-dashboard="sessions"><span>Sorties enregistrées</span><b id="dSessions">0</b></button>
-    <button class="stat dashboard-card" data-dashboard="tasks"><span>Points à faire</span><b id="dTasks">0</b></button>
-    <button class="stat dashboard-card" data-dashboard="last"><span>Dernière navigation</span><b id="dLastSession" style="font-size:15px">Jamais</b></button>
-    <button class="stat dashboard-card" data-dashboard="backup"><span>Dernière sauvegarde</span><b id="dBackup" style="font-size:15px">Jamais</b></button>
-  </div>
-  <div class="card"><h3>Dernières sorties</h3><div id="recentSessions" class="muted">Aucune sortie enregistrée.</div></div>
-</section>
 
-<section id="navigate" class="screen">
-  <div id="preflight">
-    <div class="card"><h2>Avant de partir</h2><p class="muted">La check-list et les rappels restent enregistrés sur cet appareil.</p></div>
-    <div class="card"><h3>✅ Check-list</h3><div id="checklist"></div><div class="row"><input id="newCheck" class="grow" placeholder="Ajouter un élément"><button id="addCheck" class="btn secondary">Ajouter</button></div></div>
-    <div class="card"><h3>🔧 À faire avant la sortie</h3><div id="openTasks"></div></div>
-    <div class="card"><h3>🌦️ Conditions prévues</h3><div class="grid2"><div><label>Vent prévu (nd)</label><input id="forecastWind" type="number" min="0" step="0.5" placeholder="Ex. 12"></div><div><label>Direction prévue</label><input id="forecastDir" type="number" min="0" max="359" placeholder="Ex. 240"></div></div><label style="margin-top:10px">État de mer / remarques</label><input id="forecastSea" placeholder="Ex. mer peu agitée, rafales 18 nd"></div>
-    <div class="card"><h3>⚙️ Configuration du bateau</h3><div class="grid2"><div><label>Grand-voile</label><select id="boatMain"><option>Nouvelle GV</option><option>Ancienne GV</option></select></div><div><label>Spi</label><select id="boatSpi"><option>Spi 32 m²</option><option>Sans spi</option><option>Autre</option></select></div></div><label style="margin-top:10px">Configuration / remarques</label><input id="boatConfig" placeholder="Ex. palan GV 4:1, avaleur monté"></div>
-    <div class="card"><h3>🧪 Essais et objectif</h3><label>Ce que tu veux tester aujourd'hui</label><textarea id="plannedTests" placeholder="Ex. chariot GV -10 cm, rotation légèrement freinée..."></textarea><label style="margin-top:10px">Objectif principal</label><select id="sessionGoal"><option>Navigation libre</option><option>Réglages</option><option>Vitesse au près</option><option>Manœuvres</option><option>Navigation sous spi</option><option>Départs</option></select></div>
-    <button id="startNav" class="btn good" style="width:100%;font-size:19px;padding:17px">▶ Commencer la navigation</button>
-  </div>
-  <div id="activeNav" class="hidden">
-    <div class="card hero"><div class="navclock" id="navClock">00:00:00</div><div class="gpsline"><span><i class="pulse"></i> <span id="gpsStatus">GPS en attente</span></span><span id="navMarkerCount">0 marqueur</span></div><button id="markBtn" class="mark">📍<br>MARQUER</button><p class="muted">Appuie, choisis éventuellement Virement ou Empannage, puis ajoute un commentaire si nécessaire.</p><div class="stat" style="text-align:left"><span>Dernier marqueur</span><b id="lastVoice" style="font-size:17px">Aucun</b></div><button id="finishNav" class="btn bad" style="width:100%;margin-top:14px">Terminer la navigation</button></div>
-  </div>
-  <div id="postflight" class="hidden">
-    <div class="card"><h2>Débriefing de la sortie</h2><p class="muted">Ces informations seront enregistrées uniquement dans cette navigation.</p>
-      <label>Ce qui a bien marché</label><textarea id="workedWell"></textarea>
-      <label style="margin-top:10px">Ce qui a moins bien marché</label><textarea id="workedBad"></textarea>
-      <label style="margin-top:10px">À faire avant la prochaine sortie</label><div class="row"><input id="newTask" class="grow" placeholder="Ex. refaire le bout de l'avaleur"><button id="addTask" class="btn secondary">Ajouter</button></div>
-      <label style="margin-top:10px">Idées / améliorations</label><textarea id="ideas"></textarea>
-      <button id="saveDebrief" class="btn good" style="width:100%;margin-top:12px">Enregistrer et terminer</button>
+<div id="app">
+
+    <!-- ====================================================== -->
+    <!-- ACCUEIL -->
+    <!-- ====================================================== -->
+
+    <section id="homePage" class="page active">
+
+        <header class="pageHeader">
+
+            <h1>⛵ SpeedFeet Analyzer</h1>
+
+            <p class="subtitle">
+
+                Analyse et optimisation des performances en navigation
+
+            </p>
+
+        </header>
+
+
+        <div class="mainMenu">
+
+            <button
+                id="btnPrepare"
+                class="menuButton">
+
+                📋 Préparer une navigation
+
+            </button>
+
+
+            <button
+                id="btnStartNavigation"
+                class="menuButton primary">
+
+                ▶ Démarrer une navigation
+
+            </button>
+
+
+            <button
+                id="btnHistory"
+                class="menuButton">
+
+                📈 Historique
+
+            </button>
+
+
+            <button
+                id="btnSettings"
+                class="menuButton">
+
+                ⚙ Paramètres
+
+            </button>
+
+        </div>
+
+
+        <section class="homeSection">
+
+            <h2>
+
+                Dernières navigations
+
+            </h2>
+
+            <div id="recentNavigationList">
+
+                <div class="emptyCard">
+
+                    Aucune navigation enregistrée.
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </section>
+        <!-- ====================================================== -->
+    <!-- PREPARATION -->
+    <!-- ====================================================== -->
+
+    <section id="preparePage" class="page">
+
+        <header class="pageHeader">
+
+            <h1>Préparer une navigation</h1>
+
+            <p class="subtitle">
+
+                Vérifiez les conditions avant le départ.
+
+            </p>
+
+        </header>
+
+
+        <!-- CONDITIONS MÉTÉO -->
+
+        <section class="card">
+
+            <h2>🌤 Conditions météo</h2>
+
+            <label for="weatherImage">
+                Capture météo
+            </label>
+
+            <input
+                id="weatherImage"
+                type="file"
+                accept="image/*">
+
+            <label for="windAverage">
+                Vent moyen (nds)
+            </label>
+
+            <input
+                id="windAverage"
+                type="number"
+                inputmode="decimal"
+                placeholder="12">
+
+            <label for="windGust">
+                Rafales (nds)
+            </label>
+
+            <input
+                id="windGust"
+                type="number"
+                inputmode="decimal"
+                placeholder="18">
+
+            <label for="windDirection">
+                Direction (°)
+            </label>
+
+            <input
+                id="windDirection"
+                type="number"
+                inputmode="numeric"
+                placeholder="240">
+
+            <label for="seaState">
+                État de la mer
+            </label>
+
+            <select id="seaState">
+
+                <option value="">Choisir...</option>
+                <option>Plate</option>
+                <option>Ridée</option>
+                <option>Peu agitée</option>
+                <option>Agitée</option>
+                <option>Très agitée</option>
+
+            </select>
+
+            <label for="weatherNotes">
+                Notes météo
+            </label>
+
+            <textarea
+                id="weatherNotes"
+                rows="3"
+                placeholder="Courant, visibilité, remarques..."></textarea>
+
+        </section>
+
+
+        <!-- CONFIGURATION -->
+
+        <section class="card">
+
+            <h2>⛵ Configuration</h2>
+
+            <p class="smallText">
+
+                Les valeurs ci-dessous sont chargées automatiquement
+                depuis les paramètres du bateau.
+
+            </p>
+
+            <label for="mainSail">
+
+                Grand-voile
+
+            </label>
+
+            <select id="mainSail"></select>
+
+
+            <label for="jib">
+
+                Foc
+
+            </label>
+
+            <select id="jib"></select>
+
+
+            <label for="spinnaker">
+
+                Spi
+
+            </label>
+
+            <select id="spinnaker"></select>
+
+
+            <label for="crew">
+
+                Équipage
+
+            </label>
+
+            <input
+                id="crew"
+                type="number"
+                min="1"
+                max="10">
+
+            <label for="navigationNotes">
+
+                Observations
+
+            </label>
+
+            <textarea
+                id="navigationNotes"
+                rows="3"
+                placeholder="Essais prévus, matériel particulier..."></textarea>
+
+        </section>
+
+
+        <!-- ACTIONS -->
+
+        <div class="buttonBar">
+
+            <button
+                id="btnBackHome"
+                class="secondaryButton">
+
+                ← Accueil
+
+            </button>
+
+            <button
+                id="btnStartPreparedNavigation"
+                class="primaryButton">
+
+                ▶ Démarrer la navigation
+
+            </button>
+
+        </div>
+          <!-- ====================================================== -->
+    <!-- NAVIGATION -->
+    <!-- ====================================================== -->
+
+    <section id="navigationPage" class="page">
+
+        <header class="pageHeader">
+
+            <h1>Navigation</h1>
+
+            <p class="subtitle">
+
+                Navigation en cours
+
+            </p>
+
+        </header>
+
+
+        <section class="navigationDashboard">
+
+            <div class="dataCard">
+                <span class="dataTitle">Temps</span>
+                <span id="navTime">00:00:00</span>
+            </div>
+
+            <div class="dataCard">
+                <span class="dataTitle">Distance</span>
+                <span id="navDistance">0.00 nm</span>
+            </div>
+
+            <div class="dataCard">
+                <span class="dataTitle">Vitesse</span>
+                <span id="navSpeed">0.0 nd</span>
+            </div>
+
+            <div class="dataCard">
+                <span class="dataTitle">VMG</span>
+                <span id="navVMG">0.0 nd</span>
+            </div>
+
+        </section>
+
+
+        <section id="mapContainer">
+
+            <!-- Carte Leaflet -->
+
+        </section>
+
+
+        <div class="navigationToolbar">
+
+            <button
+                id="btnWind"
+                class="actionButton">
+
+                🌬 Vent
+
+            </button>
+
+            <button
+                id="btnTrim"
+                class="actionButton">
+
+                ⛵ Réglages
+
+            </button>
+
+            <button
+                id="btnMarker"
+                class="actionButton">
+
+                📍 Marqueur
+
+            </button>
+
+            <button
+                id="btnStopNavigation"
+                class="dangerButton">
+
+                ■ Arrêter
+
+            </button>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ====================================================== -->
+    <!-- POPUP VENT -->
+    <!-- ====================================================== -->
+
+    <div id="windModal" class="modal">
+
+        <div class="modalContent">
+
+            <h2>Conditions de vent</h2>
+
+            <label for="popupWindSpeed">
+
+                Force du vent (nds)
+
+            </label>
+
+            <input
+                id="popupWindSpeed"
+                type="number"
+                inputmode="decimal">
+
+            <label for="popupWindDirection">
+
+                Direction (°)
+
+            </label>
+
+            <input
+                id="popupWindDirection"
+                type="number"
+                inputmode="numeric">
+
+            <button
+                id="btnCompass"
+                class="secondaryButton">
+
+                🧭 Lire la boussole
+
+            </button>
+
+            <label for="popupWindQuality">
+
+                Qualité de l'estimation
+
+            </label>
+
+            <select id="popupWindQuality">
+
+                <option value="green">
+                    🟢 Bonne
+                </option>
+
+                <option value="orange">
+                    🟠 Moyenne
+                </option>
+
+                <option value="red">
+                    🔴 Faible
+                </option>
+
+            </select>
+
+            <div class="modalButtons">
+
+                <button
+                    id="btnCancelWind"
+                    class="secondaryButton">
+
+                    Annuler
+
+                </button>
+
+                <button
+                    id="btnSaveWind"
+                    class="primaryButton">
+
+                    Enregistrer
+
+                </button>
+
+            </div>
+
+        </div>
+
     </div>
-  </div>
-</section>
 
-<section id="analyze" class="screen">
-  <div class="card"><h2>Importer et analyser</h2><div class="grid"><div style="grid-column:span 2"><label>Fichier Velocitek .VCC</label><input id="file" type="file" accept=".vcc,.xml,text/xml,application/xml"></div><div><label>Direction du vent</label><input id="windDir" type="number" min="0" max="359" value="0"></div><div><label>Vent moyen (nd)</label><input id="windSpeed" type="number" min="0" step="0.1" value="6"></div></div><div class="row" style="margin-top:10px"><button id="analyzeBtn" class="btn" disabled>Analyser</button><select id="sessionSelect" class="hidden grow"></select><span id="status" class="muted">Aucun fichier</span></div><div style="margin-top:10px"><label>Lier l’analyse à une navigation du carnet</label><select id="attachSession"><option value="">Créer une nouvelle navigation analysée</option></select></div>
-    <div class="syncbox"><div class="row"><div class="grow"><b>Synchronisation des événements</b><div id="syncState" class="muted small">Sélectionne une navigation enregistrée pour synchroniser ses événements avec la trace.</div></div><button id="autoSync" class="btn secondary" disabled>Synchroniser</button></div><div class="grid2" style="margin-top:10px"><div><label>Décalage manuel (secondes)</label><input id="manualOffset" type="number" step="1" value="0"></div><div><label>Décalage appliqué</label><div id="appliedOffset" class="stat"><b style="font-size:18px">0 s</b></div></div></div></div></div>
-  <div id="results" class="hidden">
-    <div class="grid"><div class="stat"><span>Date</span><b id="sDate">—</b></div><div class="stat"><span>Durée</span><b id="sDuration">—</b></div><div class="stat"><span>Distance</span><b id="sDistance">—</b></div><div class="stat"><span>Vitesse max</span><b id="sMax">—</b></div><div class="stat"><span>Moyenne en mouvement</span><b id="sAvg">—</b></div><div class="stat"><span>Virements</span><b id="sTacks">—</b></div><div class="stat"><span>Empannages</span><b id="sGybes">—</b></div><div class="stat"><span>Points GPS</span><b id="sPoints">—</b></div></div>
-    <div class="card"><div id="map"></div><div class="legend"><span><i class="dot" style="background:#2546c7"></i>0</span><span><i class="dot" style="background:#0ea5e9"></i>2</span><span><i class="dot" style="background:#22c55e"></i>4</span><span><i class="dot" style="background:#eab308"></i>6</span><span><i class="dot" style="background:#f97316"></i>8</span><span><i class="dot" style="background:#ef4444"></i>10</span><span><i class="dot" style="background:#c026d3"></i>12+ nd</span></div></div>
-    <div class="analysis-grid">
-      <div class="card"><h3>Polaire de la sortie</h3><canvas id="polarCanvas" width="520" height="360"></canvas><div class="muted small">Vitesse médiane des meilleurs 30 % de points par tranche de 10°.</div></div>
-      <div class="card"><h3>Tests de réglages</h3><div id="trimTestResults" class="muted">Aucun test de réglage synchronisé.</div></div>
+
+
+    <!-- ====================================================== -->
+    <!-- POPUP RÉGLAGES -->
+    <!-- ====================================================== -->
+
+    <div id="trimModal" class="modal">
+
+        <div class="modalContent">
+
+            <h2>Réglages du bateau</h2>
+
+            <label for="trimTravelerMain">
+
+                Chariot de GV
+
+            </label>
+
+            <select id="trimTravelerMain"></select>
+
+
+            <label for="trimTravelerJib">
+
+                Chariot de foc
+
+            </label>
+
+            <select id="trimTravelerJib"></select>
+
+
+            <label for="trimRotation">
+
+                Rotation du mât
+
+            </label>
+
+            <select id="trimRotation"></select>
+
+
+            <label for="trimCunningham">
+
+                Cunningham
+
+            </label>
+
+            <select id="trimCunningham"></select>
+
+
+            <label for="trimOuthaul">
+
+                Bordure
+
+            </label>
+
+            <select id="trimOuthaul"></select>
+
+
+            <label for="trimSheet">
+
+                Écoute de grand-voile
+
+            </label>
+
+            <select id="trimSheet"></select>
+
+
+            <div class="modalButtons">
+
+                <button
+                    id="btnCancelTrim"
+                    class="secondaryButton">
+
+                    Annuler
+
+                </button>
+
+                <button
+                    id="btnSaveTrim"
+                    class="primaryButton">
+
+                    Enregistrer
+
+                </button>
+
+            </div>
+
+        </div>
+
     </div>
-    <div class="card"><input id="timeline" class="timeline" type="range" min="0" max="0" value="0"><div class="row" style="margin-top:10px"><button id="play" class="btn">▶ Lecture</button><button id="reset" class="btn secondary">↺ Début</button><select id="rate" style="width:auto"><option value="1">x1</option><option value="5">x5</option><option value="10" selected>x10</option><option value="20">x20</option><option value="50">x50</option></select><button id="saveSession" class="btn good">💾 Enregistrer la sortie</button></div><div class="grid" style="margin-top:10px"><div class="stat"><span>Heure</span><b id="lTime">—</b></div><div class="stat"><span>Vitesse</span><b id="lSpeed">—</b></div><div class="stat"><span>Cap</span><b id="lHeading">—</b></div><div class="stat"><span>Angle au vent</span><b id="lTwa">—</b></div></div></div>
-  </div>
-</section>
 
-<section id="logbook" class="screen">
-  <div class="card"><h2>Carnet</h2><p class="muted">Historique complet de tes navigations. Touche une navigation pour l’ouvrir.</p><div id="sessionList" class="muted">Aucune sortie.</div></div>
-  <div id="sessionDetail" class="hidden"></div>
-</section>
+          <!-- ====================================================== -->
+    <!-- HISTORIQUE -->
+    <!-- ====================================================== -->
 
-<section id="tasks" class="screen">
-  <div class="card"><h2>Points à faire</h2><p class="muted">Toutes les actions encore en cours, quelle que soit la navigation d’origine.</p><div id="allTasks"></div></div>
-</section>
+    <section id="historyPage" class="page">
 
-<section id="settings" class="screen">
-  <div class="card"><h2>Données</h2><p class="muted">Importation, synchronisation et gestion de la base locale.</p><div class="grid2"><button id="deleteOneNav" class="btn warn">Supprimer une navigation</button><button id="deleteAllNav" class="btn bad">Supprimer toutes les navigations</button></div><button id="resetDatabase" class="btn bad" style="width:100%;margin-top:10px">Réinitialiser complètement la base</button></div>
-  <div class="card"><h2>Sauvegarde locale</h2><p class="muted">Les données restent dans la mémoire locale du navigateur. Sur iPhone, Mac et iPad, chaque appareil a sa propre base tant que tu n'importes pas une sauvegarde.</p><div class="row"><button id="exportData" class="btn">📦 Sauvegarder en local</button><label class="btn secondary" style="color:white;cursor:pointer">📥 Restaurer<input id="importData" type="file" accept=".json,.sfbackup" style="display:none"></label></div><div id="storageInfo" class="muted" style="margin-top:12px"></div></div>
-  <div class="card"><h3>Protection future</h3><p class="muted">L'architecture conserve des identifiants uniques pour permettre plus tard un compte utilisateur et une synchronisation sécurisée, sans l'activer dans cette V2.0.</p></div>
-</section>
-</main>
-<nav class="navbar" style="grid-template-columns:repeat(4,1fr)"><button class="navbtn active" data-go="home"><i>⌂</i>Accueil</button><button class="navbtn" data-go="analyze"><i>📊</i>Analyser</button><button class="navbtn" data-go="logbook"><i>📖</i>Carnet</button><button class="navbtn" data-go="settings"><i>⚙️</i>Réglages</button></nav>
-<div id="markerModal" class="modal hidden"><div class="modalbox">
-  <h3>Nouveau marqueur</h3>
-  <div class="choicegrid eventchoices"><button class="choicebtn" data-marker-type="wind">💨 Vent</button><button class="choicebtn" data-marker-type="trim">⚙️ Réglage</button><button class="choicebtn" data-marker-type="tack">⛵ Virement</button><button class="choicebtn" data-marker-type="gybe">↪️ Empannage</button><button class="choicebtn" data-marker-type="spi-hoist">⬆️ Envoi spi</button><button class="choicebtn" data-marker-type="spi-drop">⬇️ Affalage spi</button></div>
-  <div id="windFields" class="dynamic-fields hidden"><div class="grid2"><div><label>Force du vent (nd)</label><input id="eventWindSpeed" type="number" min="0" step="0.5"></div><div><label>Direction du vent</label><input id="eventWindDir" type="number" min="0" max="359"></div></div></div>
-  <div id="trimFields" class="dynamic-fields hidden"><div class="grid2"><div><label>Chariot GV (cm)</label><input id="trimMainTraveler" type="number" step="1"></div><div><label>Chariot foc</label><input id="trimJibTraveler" placeholder="Ex. arrière max"></div><div><label>Rotation du mât</label><input id="trimMastRotation" placeholder="Ex. libre / 45°"></div><div><label>Cunningham</label><input id="trimCunningham" placeholder="Ex. mou / 3/6"></div><div><label>Bordure</label><input id="trimOuthaul" placeholder="Ex. 70 %"></div><div><label>Tension écoute GV</label><input id="trimMainSheet" placeholder="Ex. modérée"></div></div><label style="margin-top:8px"><input id="startTrimTest" type="checkbox" style="width:auto"> Démarrer un nouveau test de réglage</label></div>
-  <label>Commentaire facultatif</label><div class="row dictation-row"><textarea id="markerComment" class="grow" placeholder="Ex. Cunningham +2, rotation bloquée..."></textarea><button id="dictateMarker" class="btn secondary micbtn" type="button">🎤 Dicter</button></div><div id="speechState" class="muted small"></div>
-  <div class="row" style="margin-top:12px"><button id="cancelMarker" class="btn secondary grow">Annuler</button><button id="saveMarker" class="btn grow">Enregistrer</button></div>
-</div></div>
-<div id="toast" class="toast"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js" defer></script>
+        <header class="pageHeader">
+
+            <h1>Historique</h1>
+
+            <p class="subtitle">
+
+                Consultez et analysez vos navigations.
+
+            </p>
+
+        </header>
+
+        <section id="historyList">
+
+            <div class="emptyCard">
+
+                Aucune navigation enregistrée.
+
+            </div>
+
+        </section>
+
+        <div class="buttonBar">
+
+            <button
+                id="btnHistoryHome"
+                class="secondaryButton">
+
+                ← Accueil
+
+            </button>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ====================================================== -->
+    <!-- PARAMÈTRES -->
+    <!-- ====================================================== -->
+
+    <section id="settingsPage" class="page">
+
+        <header class="pageHeader">
+
+            <h1>Paramètres</h1>
+
+            <p class="subtitle">
+
+                Configuration de l'application
+
+            </p>
+
+        </header>
+
+
+
+        <section class="card">
+
+            <h2>Bateau</h2>
+
+            <label for="boatName">
+
+                Nom du bateau
+
+            </label>
+
+            <input
+                id="boatName"
+                type="text"
+                placeholder="Speed Feet 18">
+
+        </section>
+
+
+
+        <section class="card">
+
+            <h2>Configuration par défaut</h2>
+
+            <label for="defaultMainSail">
+
+                Grand-voile
+
+            </label>
+
+            <select id="defaultMainSail"></select>
+
+
+            <label for="defaultJib">
+
+                Foc
+
+            </label>
+
+            <select id="defaultJib"></select>
+
+
+            <label for="defaultSpi">
+
+                Spi
+
+            </label>
+
+            <select id="defaultSpi"></select>
+
+
+            <label for="defaultCrew">
+
+                Nombre de personnes
+
+            </label>
+
+            <input
+                id="defaultCrew"
+                type="number"
+                min="1"
+                max="10">
+
+        </section>
+
+
+
+        <section class="card">
+
+            <h2>Données</h2>
+
+            <button
+                id="btnImportPolar"
+                class="secondaryButton">
+
+                Importer une polaire
+
+            </button>
+
+            <button
+                id="btnImportVCC"
+                class="secondaryButton">
+
+                Importer un VCC
+
+            </button>
+
+        </section>
+
+
+
+        <section class="card">
+
+            <h2>Application</h2>
+
+            <p>
+
+                Version :
+                <strong id="appVersion">
+
+                    2.3.1
+
+                </strong>
+
+            </p>
+
+        </section>
+
+
+
+        <div class="buttonBar">
+
+            <button
+                id="btnSaveSettings"
+                class="primaryButton">
+
+                Enregistrer
+
+            </button>
+
+            <button
+                id="btnSettingsHome"
+                class="secondaryButton">
+
+                ← Accueil
+
+            </button>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ====================================================== -->
+    <!-- FENÊTRE DE CONFIRMATION -->
+    <!-- ====================================================== -->
+
+    <div
+        id="confirmModal"
+        class="modal">
+
+        <div class="modalContent">
+
+            <h2 id="confirmTitle">
+
+                Confirmation
+
+            </h2>
+
+            <p id="confirmMessage">
+
+                Êtes-vous sûr ?
+
+            </p>
+
+            <div class="modalButtons">
+
+                <button
+                    id="btnConfirmCancel"
+                    class="secondaryButton">
+
+                    Annuler
+
+                </button>
+
+                <button
+                    id="btnConfirmOk"
+                    class="primaryButton">
+
+                    Confirmer
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+
+</div>
+
+<script src="app.js"></script>
+
 </body>
+
 </html>
+
+    </section>
+    
