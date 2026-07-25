@@ -2277,3 +2277,118 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 .navigationV3Page{max-width:820px!important;padding-top:10px!important}.navInstrumentShell{display:grid;gap:12px}.navTopMetrics{display:grid;grid-template-columns:1fr 1fr;gap:12px}.navTopMetrics article{border:1px solid #244762;background:linear-gradient(145deg,#0b2035,#061626);border-radius:22px;padding:16px;text-align:center}.navTopMetrics .navSpeedHero{grid-column:1/-1}.navTopMetrics small{display:block;letter-spacing:.08em;color:#b3c3d4}.navTopMetrics strong{display:block;font-size:3rem;color:#fff}.navSpeedHero strong{font-size:6rem}.navSpeedHero em{font-size:.42em;font-style:normal}.navTopMetrics i{display:block;height:10px;background:#020b13;border-radius:999px;overflow:hidden}.navTopMetrics i b{display:block;height:100%;width:0;background:#1688ff;border-radius:inherit}.windCompassCard{position:relative;min-height:560px;border:1px solid #244762;border-radius:26px;background:radial-gradient(circle at center,#102944 0,#061626 62%);overflow:hidden}.compassScale{position:absolute;inset:42px;border:20px solid #18b54c;border-radius:50%;border-top-color:#f33441;border-bottom-color:#1688ff;opacity:.92}.compassScale:before,.compassScale:after{content:"30   60   90   120   150";position:absolute;color:white;letter-spacing:36px;font-size:.88rem;top:48%;left:-25px;right:-25px;transform:translateY(-50%);text-align:center;opacity:.7}.windReadout{position:absolute;top:86px;left:0;right:0;text-align:center}.windReadout strong{font-size:3rem}.windReadout span{display:block;color:#4fe866;font-weight:900}.boatCompass{position:absolute;inset:0;display:grid;place-items:center;font-size:120px;filter:drop-shadow(0 10px 15px #000)}.windArrow{position:absolute;top:145px;right:150px;font-size:84px;color:#4fe04d;transform-origin:center}.headingReadout{position:absolute;bottom:56px;left:0;right:0;text-align:center}.headingReadout strong{display:block;font-size:4rem}.headingReadout small{color:#a9b9ca}.navTimer{display:flex;align-items:center;justify-content:center;gap:14px;border:1px solid #244762;border-radius:18px;padding:14px;background:#091b2d}.navTimer strong{font-size:2rem}.navTimer small{color:#91a6ba}.navManeuverGrid{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #244762;border-radius:22px;overflow:hidden}.navManeuverGrid button,.navUtilityGrid button{background:#07192a;border:0;color:white;min-height:110px}.navManeuverGrid button+button{border-left:1px solid #244762}.navManeuverGrid span,.navUtilityGrid span{display:block;font-size:40px}.navManeuverGrid strong,.navUtilityGrid strong{display:block;margin-top:8px}.navManeuverGrid .tack{color:#4fe04d}.navManeuverGrid .gybe{color:#ff9f1a}.navManeuverGrid .spiDown{color:#ff4048}.navManeuverGrid .spiUp{color:#4fe04d}.navUtilityGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.navUtilityGrid button{border:1px solid #244762;border-radius:20px;color:#9dccff}.navStopButton{min-height:52px;border:1px solid #7c3038;border-radius:14px;background:#35151b;color:#ff8a92;font-weight:800}
 @media(min-width:1000px){.navigationV3Page{max-width:1180px!important}.navInstrumentShell{grid-template-columns:1.15fr .85fr}.navTopMetrics,.windCompassCard{grid-column:1}.navTimer,.navManeuverGrid,.navUtilityGrid,.navStopButton{grid-column:2}.navTimer{grid-row:1}.navManeuverGrid{grid-row:2;grid-template-columns:repeat(2,1fr)}.navManeuverGrid button+button{border-left:0;border-top:1px solid #244762}.navUtilityGrid{grid-row:3}.navStopButton{grid-row:4}.windCompassCard{grid-row:2/7}}
 @media(max-width:560px){.navSpeedHero strong{font-size:4.7rem}.windCompassCard{min-height:480px}.compassScale{inset:34px}.windArrow{right:85px}.navManeuverGrid strong,.navUtilityGrid strong{font-size:.72rem}.navManeuverGrid span,.navUtilityGrid span{font-size:30px}}
+
+/* SpeedFeet V3.0.2 — optimisation écran Navigation iPhone */
+.navigationV3Page{
+  max-width:820px!important;
+  padding:6px 10px 10px!important;
+  overflow:hidden;
+}
+.navInstrumentShell{
+  display:grid;
+  gap:6px;
+  align-content:start;
+}
+.navControlBar{
+  min-height:40px;
+  display:grid;
+  grid-template-columns:42px 1fr 42px;
+  align-items:center;
+  border:1px solid #244762;
+  border-radius:14px;
+  background:#07192a;
+}
+.navMenuButton{
+  width:42px;
+  height:38px;
+  border:0;
+  background:transparent;
+  color:#35a0ff;
+  font-size:1.65rem;
+  line-height:1;
+}
+.navRunningStatus{
+  grid-column:2;
+  justify-self:center;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:#45e66a;
+  font-weight:800;
+  font-size:.9rem;
+}
+.navRunningStatus .gpsMiniDot{position:static;display:inline-block;flex:0 0 auto}
+.navTopMetrics{gap:6px}
+.navTopMetrics article{
+  border-radius:16px;
+  padding:8px 10px;
+}
+.navTopMetrics .navSpeedHero{padding:8px 10px 5px}
+.navTopMetrics small{font-size:.68rem}
+.navTopMetrics strong{font-size:2.15rem;line-height:1.05}
+.navSpeedHero strong{font-size:clamp(4.7rem,20vw,6.4rem);line-height:.95}
+.navSpeedHero em{font-size:.32em}
+.navTopMetrics i{height:6px;margin-top:5px}
+.windCompassCard{
+  width:min(100%,clamp(270px,42svh,355px));
+  aspect-ratio:1/1;
+  min-height:0;
+  justify-self:center;
+  border-radius:20px;
+}
+.compassScale{inset:7%;border-width:13px}
+.compassScale:before,.compassScale:after{display:none}
+.windReadout{top:17%}
+.windReadout strong{font-size:clamp(2rem,8vw,2.8rem)}
+.windReadout span{font-size:clamp(.72rem,3vw,.95rem)}
+.boatCompass{font-size:clamp(74px,24vw,108px)}
+.windArrow{top:26%;right:20%;font-size:clamp(48px,15vw,70px)}
+.headingReadout{bottom:8%}
+.headingReadout strong{font-size:clamp(2.6rem,12vw,3.8rem)}
+.headingReadout small{font-size:.75rem}
+.navManeuverGrid{border-radius:16px}
+.navManeuverGrid button{min-height:72px;padding:5px 2px}
+.navManeuverGrid span{font-size:27px}
+.navManeuverGrid strong{margin-top:3px;font-size:.67rem}
+.navUtilityGrid{gap:6px}
+.navUtilityGrid button{
+  min-height:52px;
+  border-radius:14px;
+  padding:4px 2px;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  align-items:center;
+  justify-content:center;
+  column-gap:5px;
+}
+.navUtilityGrid span{font-size:21px}
+.navUtilityGrid strong{margin:0;font-size:.66rem}
+.navOptionsContent{max-width:420px}
+.navMenuStopButton{
+  width:100%;
+  min-height:54px;
+  border:1px solid #8b3540;
+  border-radius:14px;
+  background:#3b171e;
+  color:#ff929a;
+  font:inherit;
+  font-weight:900;
+}
+@media(max-height:740px) and (max-width:600px){
+  .navigationV3Page{padding-top:3px!important}
+  .navInstrumentShell{gap:4px}
+  .navControlBar{min-height:35px}
+  .navMenuButton{height:34px}
+  .navTopMetrics article{padding:5px 8px}
+  .navSpeedHero strong{font-size:4.35rem}
+  .navTopMetrics strong{font-size:1.85rem}
+  .windCompassCard{width:min(100%,38svh)}
+  .navManeuverGrid button{min-height:62px}
+  .navUtilityGrid button{min-height:46px}
+}
+@media(min-width:700px) and (max-width:999px){
+  .navigationV3Page{padding:10px 18px!important}
+  .navInstrumentShell{gap:10px}
+  .windCompassCard{width:min(72vw,520px)}
+  .navUtilityGrid button{min-height:68px}
+}

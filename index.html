@@ -147,6 +147,10 @@
 <!-- ====================================================== -->
 <section class="page navigationV3Page" id="navigationPage">
 <section class="navInstrumentShell">
+  <div class="navControlBar">
+    <button class="navMenuButton" id="btnNavigationMenu" type="button" aria-label="Ouvrir le menu de navigation">☰</button>
+    <span class="navRunningStatus"><i class="gpsMiniDot searching" id="navGPSDot"></i>Navigation en cours</span>
+  </div>
   <div class="navTopMetrics">
     <article class="navSpeedHero"><small>VITESSE GPS</small><strong id="navSpeed">0.0 <em>nd</em></strong></article>
     <article><small>VITESSE CIBLE</small><strong id="navTargetSpeed">— nd</strong><i><b id="targetProgress"></b></i></article>
@@ -159,7 +163,6 @@
     <div class="windArrow" id="navWindArrow">➤</div>
     <div class="headingReadout"><strong id="navHeading">---°</strong><small>CAP GPS</small></div>
   </article>
-  <article class="navTimer"><span>◷</span><strong id="navClock">--:--</strong><small id="navElapsed">00:00:00</small><span class="gpsMiniDot searching" id="navGPSDot"></span></article>
   <section class="navManeuverGrid">
     <button class="tack" id="btnQuickTack" type="button"><span>↻</span><strong>VIREMENT</strong></button>
     <button class="gybe" id="btnQuickGybe" type="button"><span>↺</span><strong>EMPANNAGE</strong></button>
@@ -171,9 +174,15 @@
     <button id="btnTrim" type="button"><span>☷</span><strong>RÉGLAGES</strong></button>
     <button id="btnMarker" type="button"><span>●</span><strong>MARQUEUR</strong></button>
   </section>
-  <button class="navStopButton" id="btnStopNavigation" type="button">■ Terminer la navigation</button>
 </section>
 </section>
+<div class="modal navOptionsModal" id="navigationOptionsModal">
+  <div class="modalContent navOptionsContent">
+    <div class="modalHeader"><h2>Options de navigation</h2><button class="iconButton" id="btnCloseNavigationMenu" type="button" aria-label="Fermer">✕</button></div>
+    <button class="navMenuStopButton" id="btnStopNavigation" type="button">■ Terminer la navigation</button>
+  </div>
+</div>
+
 <!-- ====================================================== -->
 <!-- POPUP VENT -->
 <!-- ====================================================== -->

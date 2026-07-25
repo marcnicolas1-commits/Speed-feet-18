@@ -3454,9 +3454,11 @@ bindClick(
         bindClick("btnClearNextNavigationNotes", clearNextNavigationNotes);
         bindClick("btnEditNextNavigationNotes", editNextNavigationNotes);
 
+        bindClick("btnNavigationMenu", () => openModal("navigationOptionsModal"));
+        bindClick("btnCloseNavigationMenu", closeAllModals);
         bindClick(
             "btnStopNavigation",
-            askToStopNavigation
+            () => { closeAllModals(); askToStopNavigation(); }
         );
 
         bindClick("btnCancelFinish", closeAllModals);
