@@ -162,10 +162,11 @@
       <span class="a0">0°</span><span class="a30r">30°</span><span class="a60r">60°</span><span class="a90r">90°</span><span class="a120r">120°</span><span class="a150r">150°</span>
       <span class="a150l">150°</span><span class="a120l">120°</span><span class="a90l">90°</span><span class="a60l">60°</span><span class="a30l">30°</span>
     </div>
-    <div class="windReadout"><strong id="navWindAngle">—°</strong><span id="navTack">VENT NON RENSEIGNÉ</span></div>
-    <div class="boatCompass">⛵</div>
-    <div class="windArrow" id="navWindArrow">➤</div>
-    <div class="headingReadout"><strong id="navHeading">---°</strong><small>CAP GPS</small></div><span class="navCompassRefreshHint">↻ Toucher pour actualiser le vent</span>
+    <div class="windReadout"><small>VENT ESTIMÉ</small><strong id="navWindAngle">—°</strong><span id="navTack">VENT NON CALIBRÉ</span></div>
+    <div class="windNeedle" id="navWindNeedle" aria-hidden="true"><i></i></div>
+    <div class="needleHub" aria-hidden="true"></div>
+    <div class="boatCompass" aria-hidden="true">⛵</div>
+    <div class="headingReadout"><strong id="navHeading">---°</strong><small>CAP GPS</small></div><span class="navCompassRefreshHint">Toucher pour définir l’axe du vent au près</span>
   </article>
   <section class="navManeuverGrid">
     <button class="tack" id="btnQuickTack" type="button"><span>↻</span><strong>VIREMENT</strong></button>
@@ -187,6 +188,29 @@
   </div>
 </div>
 
+<!-- ====================================================== -->
+<!-- CALIBRAGE DE L’AXE DU VENT -->
+<!-- ====================================================== -->
+<div class="modal" id="windAxisModal">
+  <div class="modalContent windAxisModalContent">
+    <h2>Définir l’axe du vent</h2>
+    <p>Place le bateau sur ton cap habituel au près, puis indique l’amure actuelle. SpeedFeet calculera la direction de référence du vent à partir du cap GPS.</p>
+    <div class="windAxisSummary">
+      <span>Cap GPS actuel</span><strong id="windAxisCurrentHeading">—°</strong>
+      <span>Cap bon au près</span><strong id="windAxisCloseHauled">37,5°</strong>
+    </div>
+    <label>Amure au moment du calibrage</label>
+    <div class="windAxisTackChoices" id="windAxisTackChoices">
+      <button type="button" data-tack="starboard">Tribord</button>
+      <button type="button" data-tack="port">Bâbord</button>
+    </div>
+    <p class="smallText">Cette action remplace la précédente référence d’axe du vent. Elle ne modifie pas la force du vent.</p>
+    <div class="modalButtons">
+      <button class="secondaryButton" id="btnCancelWindAxis" type="button">Annuler</button>
+      <button class="primaryButton" id="btnSaveWindAxis" type="button">Calibrer</button>
+    </div>
+  </div>
+</div>
 <!-- ====================================================== -->
 <!-- POPUP VENT -->
 <!-- ====================================================== -->
@@ -434,6 +458,9 @@
 
             </label>
 <input id="defaultCrew" max="10" min="1" type="number"/>
+<label for="closeHauledAngle">Cap bon au près (°)</label>
+<input id="closeHauledAngle" inputmode="decimal" max="60" min="20" step="0.5" type="number" value="37.5"/>
+<p class="smallText">Valeur utilisée pour recalibrer l’axe du vent depuis le cadran de navigation. Réglage conseillé pour le Speed Feet 18 : 37,5°.</p>
 </section>
 <section class="card">
 <h2>Contact de sécurité</h2>
@@ -509,11 +536,11 @@
 </div>
 </div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=3000"></script>
+<script src="app.js?v=3004"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=3000')
+    navigator.serviceWorker.register('./sw.js?v=3004')
       .catch(error => console.error('Service Worker non enregistré :', error));
   });
 }

@@ -1,1 +1,7 @@
-SpeedFeet V3.0.3 — préparation de navigation refondue, checklist personnalisable, écran navigation à cadran, correction couleurs apprentissage.
+# SpeedFeet V3.0.4
+
+- Cadran de vent inspiré d’un instrument analogique à aiguille.
+- Aiguille blanche indiquant l’angle estimé du vent par rapport au bateau.
+- Calibrage de l’axe du vent au près depuis le cadran, avec choix bâbord/tribord.
+- Cap bon au près configurable, valeur par défaut 37,5°.
+- La prise de vent reste dédiée à la force et aux conditions de vent.

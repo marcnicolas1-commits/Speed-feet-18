@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.0.0";
+    const APP_VERSION = "3.0.4";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -19,7 +19,8 @@
         defaultSpi: "Spi 32",
         defaultCrew: 1,
         safetyContactName: "",
-        safetyContactPhone: ""
+        safetyContactPhone: "",
+        closeHauledAngle: 37.5
     };
 
     const SELECT_OPTIONS = {
@@ -894,7 +895,10 @@
             currentSpeedKn: 0,
             maxSpeedKn: 0,
             currentHeading: null,
-            gpsStatus: "searching"
+            gpsStatus: "searching",
+            windAxisDirection: null,
+            windAxisCalibratedAt: null,
+            windAxisTack: null
         };
 
         saveJSON(
@@ -1362,14 +1366,26 @@
         const h = Math.floor(elapsed / 3600000), m = Math.floor(elapsed % 3600000 / 60000), s = Math.floor(elapsed % 60000 / 1000);
         setText("navElapsed", [h,m,s].map(v => String(v).padStart(2,"0")).join(":"));
         const lastWind = navigation.windRecords?.slice(-1)[0];
-        if (Number.isFinite(lastWind?.direction) && Number.isFinite(navigation.currentHeading)) {
-            let angle = ((lastWind.direction - navigation.currentHeading + 540) % 360) - 180;
+        const windAxisDirection = Number.isFinite(Number(navigation.windAxisDirection))
+            ? Number(navigation.windAxisDirection)
+            : Number(lastWind?.direction);
+        const needle = getElement("navWindNeedle");
+        if (Number.isFinite(windAxisDirection) && Number.isFinite(navigation.currentHeading)) {
+            const angle = ((windAxisDirection - navigation.currentHeading + 540) % 360) - 180;
             const side = angle >= 0 ? "TRIBORD" : "BÂBORD";
             setText("navWindAngle", Math.round(Math.abs(angle)) + "°");
             setText("navTack", side);
-            const arrow = getElement("navWindArrow"); if (arrow) arrow.style.transform = `rotate(${angle - 90}deg)`;
+            if (needle) {
+                needle.style.transform = `rotate(${angle - 90}deg)`;
+                needle.classList.add("active");
+            }
         } else {
-            setText("navWindAngle", "—°"); setText("navTack", "VENT NON RENSEIGNÉ");
+            setText("navWindAngle", "—°");
+            setText("navTack", "VENT NON CALIBRÉ");
+            if (needle) {
+                needle.style.transform = "rotate(-90deg)";
+                needle.classList.remove("active");
+            }
         }
     }
 
@@ -1465,6 +1481,50 @@
         if (shouldPrepareSafetyMessage) {
             prepareSafetyMessage(completedNavigation);
         }
+    }
+
+    let selectedWindAxisTack = "starboard";
+
+    function getCloseHauledAngle() {
+        const value = Number(state.settings?.closeHauledAngle);
+        return Number.isFinite(value) && value >= 20 && value <= 60 ? value : 37.5;
+    }
+
+    function updateWindAxisTackButtons() {
+        document.querySelectorAll("#windAxisTackChoices [data-tack]").forEach(button => {
+            button.classList.toggle("selected", button.dataset.tack === selectedWindAxisTack);
+        });
+    }
+
+    function openWindAxisModal() {
+        const navigation = state.currentNavigation;
+        if (!navigation) return;
+        if (!Number.isFinite(Number(navigation.currentHeading))) {
+            showToast("Attends que le GPS fournisse un cap avant de calibrer le vent.");
+            return;
+        }
+        selectedWindAxisTack = navigation.windAxisTack === "port" ? "port" : "starboard";
+        setText("windAxisCurrentHeading", Math.round(Number(navigation.currentHeading)).toString().padStart(3, "0") + "°");
+        setText("windAxisCloseHauled", getCloseHauledAngle().toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + "°");
+        updateWindAxisTackButtons();
+        openModal("windAxisModal");
+    }
+
+    function saveWindAxisCalibration() {
+        const navigation = state.currentNavigation;
+        if (!navigation || !Number.isFinite(Number(navigation.currentHeading))) {
+            showToast("Cap GPS indisponible : calibrage impossible.");
+            return;
+        }
+        const closeHauledAngle = getCloseHauledAngle();
+        const sign = selectedWindAxisTack === "port" ? -1 : 1;
+        navigation.windAxisDirection = (Number(navigation.currentHeading) + sign * closeHauledAngle + 360) % 360;
+        navigation.windAxisCalibratedAt = new Date().toISOString();
+        navigation.windAxisTack = selectedWindAxisTack;
+        saveJSON(STORAGE_KEYS.currentNavigation, navigation);
+        closeAllModals();
+        updateNavigationDashboard();
+        showToast(`Axe du vent recalibré au près (${closeHauledAngle.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}°).`);
     }
 
     function openWindModal() {
@@ -1709,6 +1769,7 @@
 
         setInputValue("safetyContactName", state.settings.safetyContactName || "");
         setInputValue("safetyContactPhone", state.settings.safetyContactPhone || "");
+        setInputValue("closeHauledAngle", getCloseHauledAngle());
 
         setText(
             "appVersion",
@@ -1761,7 +1822,8 @@
                 ),
 
             safetyContactName: getElement("safetyContactName")?.value.trim() || "",
-            safetyContactPhone: getElement("safetyContactPhone")?.value.trim() || ""
+            safetyContactPhone: getElement("safetyContactPhone")?.value.trim() || "",
+            closeHauledAngle: clamp(toNumberOrNull(getElement("closeHauledAngle")?.value) || 37.5, 20, 60)
         };
 
         saveJSON(
@@ -3436,6 +3498,12 @@ bindClick(
             "btnWind",
             openWindModal
         );
+        document.querySelectorAll("#windAxisTackChoices [data-tack]").forEach(button => button.addEventListener("click", () => {
+            selectedWindAxisTack = button.dataset.tack === "port" ? "port" : "starboard";
+            updateWindAxisTackButtons();
+        }));
+        bindClick("btnCancelWindAxis", closeAllModals);
+        bindClick("btnSaveWindAxis", saveWindAxisCalibration);
 
         bindClick(
             "btnTrim",
@@ -3465,7 +3533,7 @@ bindClick(
             );
         };
         bindClick("navSpeedRefresh", refreshGPSNow);
-        bindClick("navWindRefresh", openWindModal);
+        bindClick("navWindRefresh", openWindAxisModal);
         const bindKeyboardRefresh = (id, callback) => {
             const el = getElement(id);
             if (!el) return;
@@ -3474,7 +3542,7 @@ bindClick(
             });
         };
         bindKeyboardRefresh("navSpeedRefresh", refreshGPSNow);
-        bindKeyboardRefresh("navWindRefresh", openWindModal);
+        bindKeyboardRefresh("navWindRefresh", openWindAxisModal);
 
         bindClick("btnNavigationMenu", () => openModal("navigationOptionsModal"));
         bindClick("btnCloseNavigationMenu", closeAllModals);
