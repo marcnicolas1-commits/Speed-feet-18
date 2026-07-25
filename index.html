@@ -10,71 +10,64 @@
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
-<link href="styles.css?v=3000" rel="stylesheet"/>
+<link href="styles.css?v=3001" rel="stylesheet"/>
 </head>
 <body>
 <div class="v3AppShell" id="app">
 <!-- ====================================================== -->
 <!-- ACCUEIL -->
 <!-- ====================================================== -->
-<section class="page active" id="homePage">
-<header class="pageHeader v3HomeHeader"><span class="v3Badge">V3.0</span>
-<h1>SpeedFeet</h1>
-<p class="subtitle">Navigation, analyse et progression</p>
-</header><section class="v3IntroCard"><div><span class="v3Eyebrow">TON SPEED FEET 18</span><h2>Prêt pour la prochaine sortie</h2><p>Prépare, navigue, puis analyse ta progression dans une interface entièrement repensée.</p></div><div aria-hidden="true" class="v3BoatMark">⛵</div></section>
-<div class="mainMenu v3MainMenu">
-<button class="menuButton primary v3MenuButton" id="btnStartNavigation"><span class="menuIcon">▶</span><span><strong>Nouvelle navigation</strong><small>Préparer puis démarrer</small></span></button>
-<button class="menuButton v3MenuButton" id="btnHistory"><span class="menuIcon">◫</span><span><strong>Historique</strong><small>Sorties et analyses</small></span></button>
-<button class="menuButton v3MenuButton" id="btnSettings"><span class="menuIcon">⚙</span><span><strong>Réglages</strong><small>Bateau et préférences</small></span></button>
-</div>
-<section class="homeSection quickWeatherSection">
-<h2>Météo</h2>
-<a aria-label="Ouvrir les prévisions Windguru de Brest Moulin Blanc" class="windguruCard" href="https://www.windguru.cz/53" rel="noopener noreferrer" target="_blank">
-<div aria-hidden="true" class="windguruIcon">🌬️</div>
-<div>
-<strong>Prévisions Windguru</strong>
-<span>Moulin Blanc · Brest</span>
-</div>
-<span aria-hidden="true" class="windguruArrow">↗</span>
-</a>
+<section class="page active v3DashboardPage" id="homePage">
+<header class="speedfeetBrandHeader">
+  <div class="speedfeetWordmark"><span>SPEEDFEET</span><b> ANALYZER</b></div>
+  <small>V3.0.0</small>
+</header>
+<section class="readyHero">
+  <div class="readyLine"><span></span><strong>PRÊT À NAVIGUER</strong><span></span></div>
+  <div class="readyBoat">⛵</div>
 </section>
-<section class="homeSection homeStatsSection">
-<div class="homeStatsGrid">
-<button class="homeStatTile" id="btnRecords" type="button">
-<span class="homeStatIcon">🏆</span>
-<span><strong>Records</strong><small id="homeRecordSummary">Aucun record</small></span>
+<button class="newNavigationHero" id="btnStartNavigation" type="button">
+  <span class="heroSail">⛵</span><strong>NOUVELLE NAVIGATION</strong><span class="heroArrow">›</span>
 </button>
-<button class="homeStatTile" id="btnAchievements" type="button">
-<span class="homeStatIcon">🎖</span>
-<span><strong>Succès</strong><small id="homeAchievementSummary">0 découvert</small></span>
-</button>
-<button class="homeStatTile learningTile" id="btnLearning" type="button">
-<span class="homeStatIcon">🧠</span>
-<span><strong>Apprentissage</strong><small id="homeLearningSummary">Aucune observation</small></span>
-</button>
-</div>
+<section class="dashboardTwinGrid">
+  <article class="dashboardPanel lastNavigationPanel">
+    <h2>DERNIÈRE NAVIGATION</h2>
+    <div id="recentNavigationList"><div class="emptyCard">Aucune navigation enregistrée.</div></div>
+    <button class="panelAction" id="btnHistory" type="button">VOIR L’ANALYSE <span>›</span></button>
+  </article>
+  <article class="dashboardPanel achievementsPreviewPanel">
+    <h2>DERNIERS SUCCÈS</h2>
+    <div class="achievementPreviewList" id="homeAchievementPreview">
+      <div class="achievementPreview empty">Aucun succès découvert.</div>
+    </div>
+    <button class="panelAction" id="btnAchievements" type="button">VOIR TOUS LES SUCCÈS <span>›</span></button>
+  </article>
 </section>
-<section class="homeSection nextNavigationHomeSection" hidden="" id="nextNavigationHomeSection">
-<div class="sectionTitleRow">
-<h2>À penser pour la prochaine navigation</h2>
-<button class="textButton" id="btnEditNextNavigationNotes" type="button">Modifier</button>
-</div>
-<div class="nextNavigationNoteCard" id="nextNavigationHomeNotes"></div>
+<section class="dashboardPanel globalStatsPanel">
+  <h2>VOS STATISTIQUES</h2>
+  <div class="globalStatsGrid">
+    <div><span class="statIcon">⛵</span><strong id="homeTotalTrips">0</strong><small>SORTIES</small></div>
+    <div><span class="statIcon">⌁</span><strong id="homeTotalMiles">0</strong><small>MILLES</small></div>
+    <div><span class="statIcon">◷</span><strong id="homeTotalTime">0 h</strong><small>TEMPS SUR L’EAU</small></div>
+    <div><span class="statIcon">◉</span><strong id="homeTopSpeed">0.0 nd</strong><small>RECORD VITESSE</small></div>
+  </div>
 </section>
-<section class="homeSection">
-<h2>
-
-                Dernière sortie
-
-            </h2>
-<div id="recentNavigationList">
-<div class="emptyCard">
-
-                    Aucune navigation enregistrée.
-
-                </div>
-</div>
+<section class="dashboardQuickGrid">
+  <button class="dashboardQuickButton" id="btnHistoryQuick" type="button"><span>◷</span>HISTORIQUE</button>
+  <button class="dashboardQuickButton" id="btnRecords" type="button"><span>🏆</span>RECORDS</button>
+  <button class="dashboardQuickButton" id="btnLearning" type="button"><span>🧠</span>APPRENTISSAGE</button>
+  <button class="dashboardQuickButton" id="btnSettings" type="button"><span>⚙</span>RÉGLAGES</button>
 </section>
+<section class="dashboardExtrasGrid">
+  <a class="dashboardPanel weatherCompact" href="https://www.windguru.cz/53" rel="noopener noreferrer" target="_blank"><span>🌬️</span><div><strong>MÉTÉO</strong><small>Moulin Blanc · Brest</small></div><b>↗</b></a>
+  <button class="dashboardPanel compactInfoButton" id="btnRecordsSummary" type="button"><span>🏆</span><div><strong>Records</strong><small id="homeRecordSummary">Aucun record</small></div></button>
+  <button class="dashboardPanel compactInfoButton" id="btnLearningSummary" type="button"><span>🧠</span><div><strong>Apprentissage</strong><small id="homeLearningSummary">Aucune observation</small></div></button>
+</section>
+<section class="homeSection nextNavigationHomeSection" hidden id="nextNavigationHomeSection">
+  <div class="sectionTitleRow"><h2>À penser pour la prochaine navigation</h2><button class="textButton" id="btnEditNextNavigationNotes" type="button">Modifier</button></div>
+  <div class="nextNavigationNoteCard" id="nextNavigationHomeNotes"></div>
+</section>
+<span id="homeAchievementSummary" hidden>0 découvert</span>
 </section>
 <!-- ====================================================== -->
 <!-- PREPARATION -->

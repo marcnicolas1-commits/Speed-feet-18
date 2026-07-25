@@ -1738,6 +1738,18 @@
         setText("homeRecordSummary", bestSpeed ? `${bestSpeed.record.value.toFixed(1)} nd au maximum` : "Aucun record");
         const achievements = getUnlockedAchievements();
         setText("homeAchievementSummary", `${achievements.unlocked.length} découvert${achievements.unlocked.length > 1 ? "s" : ""}`);
+        const totalMiles = state.history.reduce((sum, item) => sum + (Number(item.distanceNm) || 0), 0);
+        const totalMinutes = state.history.reduce((sum, item) => sum + navigationDurationMinutes(item), 0);
+        const topSpeed = state.history.reduce((max, item) => Math.max(max, Number(item.maxSpeedKn) || 0), 0);
+        setText("homeTotalTrips", String(state.history.length));
+        setText("homeTotalMiles", totalMiles.toFixed(totalMiles >= 100 ? 0 : 1));
+        const hours = Math.floor(totalMinutes / 60), minutes = Math.round(totalMinutes % 60);
+        setText("homeTotalTime", hours ? `${hours}h ${String(minutes).padStart(2,"0")}` : `${minutes} min`);
+        setText("homeTopSpeed", `${topSpeed.toFixed(1)} nd`);
+        const preview = getElement("homeAchievementPreview");
+        if (preview) preview.innerHTML = achievements.unlocked.length
+            ? achievements.unlocked.slice(-3).reverse().map((item, index) => `<div class="achievementPreview"><span class="medal">${index === 0 ? "🏆" : "🏅"}</span><div><strong>${escapeHTML(item.title)}</strong><small>${escapeHTML(item.description)}</small></div></div>`).join("")
+            : '<div class="achievementPreview empty">Aucun succès découvert.</div>';
     }
 
     function renderRecords() {
@@ -3268,6 +3280,9 @@ bindClick(
         bindClick("btnRecords", () => showPage("recordsPage"));
         bindClick("btnAchievements", () => showPage("achievementsPage"));
         bindClick("btnLearning", () => showPage("learningPage"));
+        bindClick("btnHistoryQuick", () => showPage("historyPage"));
+        bindClick("btnRecordsSummary", () => showPage("recordsPage"));
+        bindClick("btnLearningSummary", () => showPage("learningPage"));
         bindClick("btnRecordsHome", () => showPage("homePage"));
         bindClick("btnAchievementsHome", () => showPage("homePage"));
         bindClick("btnLearningHome", () => showPage("homePage"));
