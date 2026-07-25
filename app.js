@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "2.6.0";
+    const APP_VERSION = "2.7.0";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -16,7 +16,9 @@
         defaultMainSail: "GV Régate",
         defaultJib: "Foc Régate",
         defaultSpi: "Spi 32",
-        defaultCrew: 1
+        defaultCrew: 1,
+        safetyContactName: "",
+        safetyContactPhone: ""
     };
 
     const SELECT_OPTIONS = {
@@ -339,6 +341,7 @@
         if (pageId === "homePage") {
             renderRecentNavigations();
             renderNextNavigationNotes();
+            renderHomeStats();
         }
 
         if (pageId === "preparePage") {
@@ -351,6 +354,14 @@
 
         if (pageId === "settingsPage") {
             loadSettingsForm();
+        }
+
+        if (pageId === "recordsPage") {
+            renderRecords();
+        }
+
+        if (pageId === "achievementsPage") {
+            renderAchievements();
         }
 
         if (pageId === "navigationPage") {
@@ -1292,11 +1303,12 @@
             return;
         }
 
-        showConfirmation(
-            "Arrêter la navigation",
-            "La navigation sera enregistrée dans l'historique.",
-            finishNavigation
-        );
+        setInputValue("finishRating", "");
+        setInputValue("finishNotes", "");
+        setInputValue("finishNextNotes", state.nextNavigationNotes || "");
+        const safetyCheckbox = getElement("finishSendSafety");
+        if (safetyCheckbox) safetyCheckbox.checked = false;
+        openModal("finishNavigationModal");
     }
 
     function finishNavigation() {
@@ -1311,6 +1323,16 @@
 
         state.currentNavigation.endedAt =
             new Date().toISOString();
+
+        state.currentNavigation.review = {
+            rating: toNumberOrNull(getElement("finishRating")?.value),
+            notes: getElement("finishNotes")?.value.trim() || "",
+            nextNavigationNotes: getElement("finishNextNotes")?.value.trim() || ""
+        };
+
+        saveNextNavigationNotes(state.currentNavigation.review.nextNavigationNotes);
+        const shouldPrepareSafetyMessage = Boolean(getElement("finishSendSafety")?.checked);
+        const completedNavigation = cloneValue(state.currentNavigation);
 
         state.history.unshift(
             cloneValue(
@@ -1335,7 +1357,12 @@
             STORAGE_KEYS.preparation
         );
 
+        closeAllModals();
         showPage("historyPage");
+
+        if (shouldPrepareSafetyMessage) {
+            prepareSafetyMessage(completedNavigation);
+        }
     }
 
     function openWindModal() {
@@ -1578,6 +1605,9 @@
                 .defaultCrew
         );
 
+        setInputValue("safetyContactName", state.settings.safetyContactName || "");
+        setInputValue("safetyContactPhone", state.settings.safetyContactPhone || "");
+
         setText(
             "appVersion",
             APP_VERSION
@@ -1626,7 +1656,10 @@
                     1,
                     1,
                     10
-                )
+                ),
+
+            safetyContactName: getElement("safetyContactName")?.value.trim() || "",
+            safetyContactPhone: getElement("safetyContactPhone")?.value.trim() || ""
         };
 
         saveJSON(
@@ -1639,6 +1672,84 @@
         );
 
         showPage("homePage");
+    }
+
+    function navigationDurationMinutes(navigation) {
+        const start = new Date(navigation?.startedAt || 0).getTime();
+        const end = new Date(navigation?.endedAt || navigation?.startedAt || 0).getTime();
+        return Math.max(0, Math.round((end - start) / 60000));
+    }
+
+    function getRecordDefinitions() {
+        const completed = state.history.filter(item => item && item.status === "completed");
+        const bestBy = (selector) => completed.reduce((best, item) => {
+            const value = selector(item);
+            return Number.isFinite(value) && (!best || value > best.value) ? { navigation: item, value } : best;
+        }, null);
+        return [
+            { key: "speed", label: "Vitesse maximale", unit: "nd", record: bestBy(item => Number(item.maxSpeedKn)) },
+            { key: "distance", label: "Plus grande distance", unit: "NM", record: bestBy(item => Number(item.distanceNm)) },
+            { key: "duration", label: "Plus longue navigation", unit: "min", record: bestBy(item => navigationDurationMinutes(item)) },
+            { key: "tacks", label: "Plus de virements", unit: "", record: bestBy(item => (item.markers || []).filter(marker => marker.type === "tack").length) },
+            { key: "gybes", label: "Plus d’empannages", unit: "", record: bestBy(item => (item.markers || []).filter(marker => marker.type === "gybe").length) }
+        ];
+    }
+
+    function getUnlockedAchievements() {
+        const totalDistance = state.history.reduce((sum, item) => sum + (Number(item.distanceNm) || 0), 0);
+        const maximumSpeed = state.history.reduce((max, item) => Math.max(max, Number(item.maxSpeedKn) || 0), 0);
+        const maneuverCount = state.history.reduce((sum, item) => sum + (item.markers || []).filter(marker => ["tack", "gybe"].includes(marker.type)).length, 0);
+        const definitions = [
+            { id: "first-navigation", title: "Première trace", description: "Terminer une première navigation.", unlocked: state.history.length >= 1 },
+            { id: "five-navigations", title: "Habitué du bord", description: "Terminer cinq navigations.", unlocked: state.history.length >= 5 },
+            { id: "ten-miles", title: "Dix milles", description: "Cumuler 10 NM de navigation.", unlocked: totalDistance >= 10 },
+            { id: "fast-eight", title: "Au-dessus de huit", description: "Dépasser 8 nd de vitesse GPS.", unlocked: maximumSpeed >= 8 },
+            { id: "maneuverer", title: "Manœuvrier", description: "Enregistrer 20 virements ou empannages.", unlocked: maneuverCount >= 20 }
+        ];
+        return { unlocked: definitions.filter(item => item.unlocked), total: definitions.length };
+    }
+
+    function renderHomeStats() {
+        const records = getRecordDefinitions().filter(item => item.record);
+        const bestSpeed = records.find(item => item.key === "speed");
+        setText("homeRecordSummary", bestSpeed ? `${bestSpeed.record.value.toFixed(1)} nd au maximum` : "Aucun record");
+        const achievements = getUnlockedAchievements();
+        setText("homeAchievementSummary", `${achievements.unlocked.length} découvert${achievements.unlocked.length > 1 ? "s" : ""}`);
+    }
+
+    function renderRecords() {
+        const container = getElement("recordsList");
+        if (!container) return;
+        const records = getRecordDefinitions();
+        container.innerHTML = records.map(item => {
+            if (!item.record) return `<div class="recordCard emptyRecord"><strong>${item.label}</strong><span>Pas encore de donnée</span></div>`;
+            const value = item.key === "speed" || item.key === "distance" ? item.record.value.toFixed(1) : Math.round(item.record.value);
+            return `<button class="recordCard" type="button" data-navigation-id="${item.record.navigation.id}"><strong>${item.label}</strong><span>${value}${item.unit ? " " + item.unit : ""}</span><small>${formatDateTime(item.record.navigation.startedAt)}</small></button>`;
+        }).join("");
+        container.querySelectorAll("[data-navigation-id]").forEach(button => button.addEventListener("click", () => openNavigationDetails(button.dataset.navigationId)));
+    }
+
+    function renderAchievements() {
+        const container = getElement("achievementsList");
+        if (!container) return;
+        const achievements = getUnlockedAchievements();
+        const percentage = achievements.total ? Math.round(achievements.unlocked.length / achievements.total * 100) : 0;
+        setText("achievementProgressText", `${achievements.unlocked.length} succès découvert${achievements.unlocked.length > 1 ? "s" : ""} · ${percentage} %`);
+        const bar = getElement("achievementProgressBar");
+        if (bar) bar.style.width = `${percentage}%`;
+        container.innerHTML = achievements.unlocked.length ? achievements.unlocked.map(item => `<article class="achievementCard"><span class="achievementBadge">🎖</span><div><strong>${item.title}</strong><p>${item.description}</p></div></article>`).join("") : `<div class="emptyCard">Aucun succès découvert pour le moment.</div>`;
+    }
+
+    function prepareSafetyMessage(navigation) {
+        const phone = String(state.settings.safetyContactPhone || "").replace(/\s+/g, "");
+        const name = state.settings.safetyContactName || "";
+        const duration = navigationDurationMinutes(navigation);
+        const message = `Fin de navigation${name ? " pour " + name : ""} : je suis rentré. Sortie de ${duration} min, ${Number(navigation.distanceNm || 0).toFixed(1)} NM. Message envoyé depuis SpeedFeet.`;
+        if (!phone) {
+            alert(`Aucun numéro de contact de sécurité n’est enregistré.\n\nMessage préparé :\n${message}`);
+            return;
+        }
+        window.location.href = `sms:${encodeURIComponent(phone)}?body=${encodeURIComponent(message)}`;
     }
 
     function renderRecentNavigations() {
@@ -2748,6 +2859,11 @@ bindClick(
                 )
         );
 
+        bindClick("btnRecords", () => showPage("recordsPage"));
+        bindClick("btnAchievements", () => showPage("achievementsPage"));
+        bindClick("btnRecordsHome", () => showPage("homePage"));
+        bindClick("btnAchievementsHome", () => showPage("homePage"));
+
         bindClick(
             "btnSettings",
             () =>
@@ -2814,6 +2930,9 @@ bindClick(
             "btnStopNavigation",
             askToStopNavigation
         );
+
+        bindClick("btnCancelFinish", closeAllModals);
+        bindClick("btnConfirmFinish", finishNavigation);
 
         bindClick(
             "btnCancelWind",
@@ -2918,6 +3037,7 @@ document
 
         renderRecentNavigations();
         renderNextNavigationNotes();
+        renderHomeStats();
 
         displayMapMessage(
             "En attente du GPS"

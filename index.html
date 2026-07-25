@@ -16,7 +16,7 @@
 
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-    <link rel="stylesheet" href="styles.css?v=2600">
+    <link rel="stylesheet" href="styles.css?v=2700">
 
 </head>
 
@@ -88,6 +88,19 @@
                 <span class="windguruArrow" aria-hidden="true">↗</span>
             </a>
 
+        </section>
+
+        <section class="homeSection homeStatsSection">
+            <div class="homeStatsGrid">
+                <button id="btnRecords" class="homeStatTile" type="button">
+                    <span class="homeStatIcon">🏆</span>
+                    <span><strong>Records</strong><small id="homeRecordSummary">Aucun record</small></span>
+                </button>
+                <button id="btnAchievements" class="homeStatTile" type="button">
+                    <span class="homeStatIcon">🎖</span>
+                    <span><strong>Succès</strong><small id="homeAchievementSummary">0 découvert</small></span>
+                </button>
+            </div>
         </section>
 
         <section id="nextNavigationHomeSection" class="homeSection nextNavigationHomeSection" hidden>
@@ -617,6 +630,31 @@
         </div>
     </div>
 
+    <div id="finishNavigationModal" class="modal">
+        <div class="modalContent finishNavigationContent">
+            <h2>Fin de navigation</h2>
+            <p class="smallText">Ajoute les informations utiles avant l’enregistrement définitif.</p>
+            <label for="finishRating">Ressenti général</label>
+            <select id="finishRating">
+                <option value="">Non renseigné</option>
+                <option value="1">1 – Difficile</option>
+                <option value="2">2 – Moyen</option>
+                <option value="3">3 – Correct</option>
+                <option value="4">4 – Bon</option>
+                <option value="5">5 – Excellent</option>
+            </select>
+            <label for="finishNotes">Notes de sortie</label>
+            <textarea id="finishNotes" rows="4" placeholder="Réglages, sensations, conditions, points à retenir…"></textarea>
+            <label for="finishNextNotes">À penser pour la prochaine navigation</label>
+            <textarea id="finishNextNotes" rows="3" placeholder="Contrôle, réparation, essai à prévoir…"></textarea>
+            <label class="checklistItem"><input id="finishSendSafety" type="checkbox"> <span>Préparer le message de fin de navigation</span></label>
+            <div class="modalButtons">
+                <button id="btnCancelFinish" class="secondaryButton">Revenir</button>
+                <button id="btnConfirmFinish" class="primaryButton">Enregistrer la sortie</button>
+            </div>
+        </div>
+    </div>
+
           <!-- ====================================================== -->
     <!-- HISTORIQUE -->
     <!-- ====================================================== -->
@@ -662,6 +700,19 @@
 
 
     <div id="appToast" class="appToast" role="status" aria-live="polite"></div>
+
+    <section id="recordsPage" class="page">
+        <header class="pageHeader"><h1>Records</h1><p class="subtitle">Tes meilleures performances personnelles.</p></header>
+        <section id="recordsList" class="recordsGrid"></section>
+        <div class="buttonBar"><button id="btnRecordsHome" class="secondaryButton">← Accueil</button></div>
+    </section>
+
+    <section id="achievementsPage" class="page">
+        <header class="pageHeader"><h1>Succès</h1><p class="subtitle">Seuls les succès déjà découverts sont affichés.</p></header>
+        <section class="card achievementProgressCard"><strong id="achievementProgressText">0 succès découvert</strong><div class="progressTrack"><span id="achievementProgressBar"></span></div></section>
+        <section id="achievementsList" class="achievementsList"></section>
+        <div class="buttonBar"><button id="btnAchievementsHome" class="secondaryButton">← Accueil</button></div>
+    </section>
 
     <!-- ====================================================== -->
     <!-- PARAMÈTRES -->
@@ -750,6 +801,15 @@
 
 
         <section class="card">
+            <h2>Contact de sécurité</h2>
+            <label for="safetyContactName">Nom</label>
+            <input id="safetyContactName" type="text" placeholder="Contact à prévenir">
+            <label for="safetyContactPhone">Téléphone</label>
+            <input id="safetyContactPhone" type="tel" inputmode="tel" placeholder="06 00 00 00 00">
+            <p class="smallText">À la fin d’une sortie, SpeedFeet peut préparer un SMS. L’envoi reste sous ton contrôle.</p>
+        </section>
+
+        <section class="card">
 
             <h2>Données</h2>
 
@@ -787,7 +847,7 @@
                 Version :
                 <strong id="appVersion">
 
-                    2.5.3
+                    2.7.0
 </strong>
 
             </p>

@@ -2092,3 +2092,25 @@ body {
 .appToast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:5000;opacity:0;pointer-events:none;background:#121821;color:#fff;border:1px solid rgba(255,255,255,.16);box-shadow:0 12px 35px rgba(0,0,0,.4);border-radius:999px;padding:11px 18px;font-weight:750;transition:opacity .18s ease,transform .18s ease;white-space:nowrap}
 .appToast.visible{opacity:1;transform:translate(-50%,0)}
 @media(min-width:760px){.checklistGrid{grid-template-columns:1fr 1fr}.maneuverButton{min-height:105px}.maneuverButtonLabel{font-size:1.45rem}}
+
+
+/* V2.7 — Records, succès et fin de navigation */
+.homeStatsGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.homeStatTile { display:flex; align-items:center; gap:12px; width:100%; padding:16px; border:1px solid rgba(255,255,255,.12); border-radius:16px; background:rgba(255,255,255,.06); color:inherit; text-align:left; }
+.homeStatTile strong,.homeStatTile small { display:block; }
+.homeStatTile small { margin-top:4px; opacity:.72; }
+.homeStatIcon { font-size:28px; }
+.recordsGrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; }
+.recordCard { min-height:130px; padding:18px; border-radius:18px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); color:inherit; text-align:left; display:flex; flex-direction:column; justify-content:space-between; }
+.recordCard span { font-size:1.7rem; font-weight:800; }
+.recordCard small { opacity:.68; }
+.emptyRecord { opacity:.7; }
+.achievementProgressCard { margin-bottom:14px; }
+.progressTrack { height:10px; border-radius:999px; background:rgba(255,255,255,.1); overflow:hidden; margin-top:12px; }
+.progressTrack span { display:block; height:100%; width:0; background:#32d583; border-radius:inherit; transition:width .25s ease; }
+.achievementsList { display:grid; gap:12px; }
+.achievementCard { display:flex; align-items:center; gap:14px; padding:16px; border:1px solid rgba(255,255,255,.12); border-radius:16px; background:rgba(255,255,255,.06); }
+.achievementCard p { margin:4px 0 0; opacity:.72; }
+.achievementBadge { font-size:28px; }
+.finishNavigationContent { max-width:560px; max-height:90vh; overflow:auto; }
+@media (max-width:560px){ .homeStatsGrid{grid-template-columns:1fr 1fr}.homeStatTile{padding:13px;gap:8px}.homeStatIcon{font-size:24px}.recordsGrid{grid-template-columns:1fr 1fr}.recordCard{min-height:112px;padding:14px}.recordCard span{font-size:1.35rem} }
