@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "2.10.0";
+    const APP_VERSION = "2.11.0";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -346,6 +346,7 @@
             renderRecentNavigations();
             renderNextNavigationNotes();
             renderHomeStats();
+            renderHomeLearningSummary();
         }
 
         if (pageId === "preparePage") {
@@ -366,6 +367,10 @@
 
         if (pageId === "achievementsPage") {
             renderAchievements();
+        }
+
+        if (pageId === "learningPage") {
+            renderLearningDashboard();
         }
 
         if (pageId === "navigationPage") {
@@ -2195,6 +2200,68 @@
         return { analyses, averageScore, regularityScore, navigationScore, best, recommendations, tackCount, gybeCount, tackMaturity, gybeMaturity };
     }
 
+    function getLearningStats(type) {
+        let recorded = 0;
+        let usable = 0;
+        state.history
+            .filter(navigation => navigation && navigation.status === "completed")
+            .forEach(navigation => {
+                (navigation.markers || [])
+                    .filter(marker => marker.type === type)
+                    .forEach(marker => {
+                        recorded += 1;
+                        const analysis = rawManeuverAnalysis(navigation, marker);
+                        if (Number.isFinite(analysis.rawScore)) usable += 1;
+                    });
+            });
+        return { recorded, usable, maturity: getManeuverMaturity(usable) };
+    }
+
+    function getNextLearningThreshold(count) {
+        if (count < 10) return { threshold: 10, label: "Premières références" };
+        if (count < 30) return { threshold: 30, label: "Références fiables" };
+        if (count < 100) return { threshold: 100, label: "Références très solides" };
+        return null;
+    }
+
+    function createLearningCardHTML(type, title) {
+        const stats = getLearningStats(type);
+        const next = getNextLearningThreshold(stats.usable);
+        const remaining = next ? Math.max(0, next.threshold - stats.usable) : 0;
+        const nextText = next
+            ? `Encore ${remaining} manœuvre${remaining > 1 ? "s" : ""} exploitable${remaining > 1 ? "s" : ""} avant « ${next.label} ».`
+            : "Niveau maximal atteint : les références sont très solides.";
+        const qualityText = stats.recorded === stats.usable
+            ? `${stats.usable} manœuvre${stats.usable > 1 ? "s" : ""} enregistrée${stats.usable > 1 ? "s" : ""} et exploitable${stats.usable > 1 ? "s" : ""}.`
+            : `${stats.recorded} enregistrée${stats.recorded > 1 ? "s" : ""}, dont ${stats.usable} exploitable${stats.usable > 1 ? "s" : ""} avec la trace GPS.`;
+        return `<article class="learningDashboardCard ${stats.maturity.key}">
+            <div class="learningDashboardHeader">
+                <div><h2>${escapeHTML(title)}</h2><p>${escapeHTML(stats.maturity.label)} · confiance ${escapeHTML(stats.maturity.confidence)}</p></div>
+                <div class="learningCountBadge"><strong>${stats.usable}</strong><small>observations</small></div>
+            </div>
+            <div class="learningProgressTrack" aria-label="Progression ${escapeHTML(title)}"><span style="width:${stats.maturity.progress}%"></span></div>
+            <p class="learningNextStep">${escapeHTML(nextText)}</p>
+            <p class="learningDataQuality">${escapeHTML(qualityText)}</p>
+        </article>`;
+    }
+
+    function renderLearningDashboard() {
+        const container = getElement("learningOverview");
+        if (!container) return;
+        container.innerHTML = createLearningCardHTML("tack", "Virements") + createLearningCardHTML("gybe", "Empannages");
+    }
+
+    function renderHomeLearningSummary() {
+        const element = getElement("homeLearningSummary");
+        if (!element) return;
+        const tack = getLearningStats("tack");
+        const gybe = getLearningStats("gybe");
+        const total = tack.usable + gybe.usable;
+        element.textContent = total
+            ? `${tack.usable} virement${tack.usable > 1 ? "s" : ""} · ${gybe.usable} empannage${gybe.usable > 1 ? "s" : ""}`
+            : "Aucune observation exploitable";
+    }
+
     function createPerformanceSummaryHTML(navigation) {
         const summary = getNavigationPerformanceSummary(navigation);
         return `<div class="performanceSummary">
@@ -3200,8 +3267,10 @@ bindClick(
 
         bindClick("btnRecords", () => showPage("recordsPage"));
         bindClick("btnAchievements", () => showPage("achievementsPage"));
+        bindClick("btnLearning", () => showPage("learningPage"));
         bindClick("btnRecordsHome", () => showPage("homePage"));
         bindClick("btnAchievementsHome", () => showPage("homePage"));
+        bindClick("btnLearningHome", () => showPage("homePage"));
 
         bindClick(
             "btnSettings",

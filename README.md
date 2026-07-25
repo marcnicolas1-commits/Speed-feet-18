@@ -1,12 +1,14 @@
-# SpeedFeet Analyzer V2.10.0
+# SpeedFeet Analyzer V2.11.0
 
-## Nouveautés
-- Relecture synchronisée de la trace GPS sur carte satellite.
-- Curseur temporel et lecture automatique.
-- Graphiques vitesse et cap synchronisés avec la position du bateau.
-- Virements et empannages visibles sur la trace.
-- Analyse de chaque manœuvre : durée estimée, vitesse d’entrée, vitesse minimale et vitesse de sortie.
-- Notes personnelles enregistrables sur chaque manœuvre.
+## Nouveautés de la dernière version V2
+- Nouveau tableau de bord « Apprentissage SpeedFeet ».
+- Compteurs séparés des virements et des empannages.
+- Barres de progression vers 10, 30 et 100 observations exploitables.
+- Niveau de maturité et niveau de confiance clairement affichés.
+- Nombre de manœuvres restant avant le prochain niveau.
+- Distinction entre manœuvres enregistrées et manœuvres réellement exploitables avec la trace GPS.
+- Résumé de l’apprentissage directement sur l’accueil.
+- Cache PWA renouvelé pour forcer le chargement de la V2.11.
 
 SpeedFeet Analyzer v2.5.0
 

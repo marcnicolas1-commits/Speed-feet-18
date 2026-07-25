@@ -2181,3 +2181,35 @@ body {
 .maneuverLearningLine span { font-weight:800; font-size:.82rem; }
 .maneuverLearningLine small { color:var(--mutedText,#aab3c2); text-align:right; }
 @media (max-width:520px){ .learningStatusGrid{grid-template-columns:1fr;} .maneuverLearningLine{align-items:flex-start;flex-direction:column;} .maneuverLearningLine small{text-align:left;} }
+
+/* ====================================================== */
+/* V2.11 — TABLEAU DE BORD APPRENTISSAGE */
+/* ====================================================== */
+.learningTile { grid-column: 1 / -1; }
+.learningOverview { display: grid; gap: 16px; margin-bottom: 16px; }
+.learningDashboardCard {
+    background: var(--card-background, #fff);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.08);
+}
+.learningDashboardHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.learningDashboardHeader h2 { margin: 0 0 4px; }
+.learningDashboardHeader p { margin: 0; opacity: .72; }
+.learningCountBadge { min-width: 72px; text-align: center; border-radius: 14px; padding: 10px 12px; background: rgba(21,101,192,.10); }
+.learningCountBadge strong { display: block; font-size: 1.65rem; line-height: 1; }
+.learningCountBadge small { display: block; margin-top: 4px; }
+.learningProgressTrack { height: 12px; overflow: hidden; border-radius: 999px; background: rgba(127,127,127,.18); margin: 12px 0 8px; }
+.learningProgressTrack span { display: block; height: 100%; min-width: 2px; border-radius: inherit; background: linear-gradient(90deg, #1565c0, #36a2ff); }
+.learningNextStep { margin: 0; font-weight: 700; }
+.learningDataQuality { margin: 8px 0 0; font-size: .9rem; opacity: .7; }
+.learningDashboardCard.first .learningCountBadge { background: rgba(46,125,50,.12); }
+.learningDashboardCard.reliable .learningCountBadge { background: rgba(2,136,209,.12); }
+.learningDashboardCard.solid .learningCountBadge { background: rgba(123,31,162,.12); }
+.learningLegend { display: grid; gap: 8px; }
+.learningLegend p { display: flex; justify-content: space-between; gap: 14px; margin: 0; padding: 10px 0; border-bottom: 1px solid rgba(127,127,127,.18); }
+.learningLegend p:last-child { border-bottom: 0; }
+@media (min-width: 760px) {
+    .learningOverview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .learningTile { grid-column: auto; }
+}

@@ -16,7 +16,7 @@
 
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-    <link rel="stylesheet" href="styles.css?v=2100">
+    <link rel="stylesheet" href="styles.css?v=2110">
 
 </head>
 
@@ -99,6 +99,10 @@
                 <button id="btnAchievements" class="homeStatTile" type="button">
                     <span class="homeStatIcon">🎖</span>
                     <span><strong>Succès</strong><small id="homeAchievementSummary">0 découvert</small></span>
+                </button>
+                <button id="btnLearning" class="homeStatTile learningTile" type="button">
+                    <span class="homeStatIcon">🧠</span>
+                    <span><strong>Apprentissage</strong><small id="homeLearningSummary">Aucune observation</small></span>
                 </button>
             </div>
         </section>
@@ -714,6 +718,25 @@
         <div class="buttonBar"><button id="btnAchievementsHome" class="secondaryButton">← Accueil</button></div>
     </section>
 
+    <section id="learningPage" class="page">
+        <header class="pageHeader">
+            <h1>🧠 Apprentissage SpeedFeet</h1>
+            <p class="subtitle">La fiabilité augmente avec le nombre de manœuvres réellement observées.</p>
+        </header>
+        <section id="learningOverview" class="learningOverview"></section>
+        <section class="card learningExplanationCard">
+            <h2>Comment lire ces niveaux ?</h2>
+            <div class="learningLegend">
+                <p><strong>0 à 9</strong><span>Apprentissage</span></p>
+                <p><strong>10 à 29</strong><span>Premières références</span></p>
+                <p><strong>30 à 99</strong><span>Références fiables</span></p>
+                <p><strong>100 et +</strong><span>Références très solides</span></p>
+            </div>
+            <p class="smallText">Les virements et les empannages progressent séparément. Une sortie avec beaucoup de manœuvres fait donc avancer l’apprentissage plus vite.</p>
+        </section>
+        <div class="buttonBar"><button id="btnLearningHome" class="secondaryButton">← Accueil</button></div>
+    </section>
+
     <!-- ====================================================== -->
     <!-- PARAMÈTRES -->
     <!-- ====================================================== -->
@@ -931,13 +954,13 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=2100"></script>
+<script src="app.js?v=2110"></script>
 
 
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=2800')
+    navigator.serviceWorker.register('./sw.js?v=2110')
       .catch(error => console.error('Service Worker non enregistré :', error));
   });
 }
