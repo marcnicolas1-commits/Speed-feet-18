@@ -1,13 +1,14 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "2.5.3";
+    const APP_VERSION = "2.6.0";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
         preparation: "speedfeet_preparation",
         currentNavigation: "speedfeet_current_navigation",
-        history: "speedfeet_history"
+        history: "speedfeet_history",
+        nextNavigationNotes: "speedfeet_next_navigation_notes"
     };
 
     const DEFAULT_SETTINGS = {
@@ -80,11 +81,17 @@
             []
         ),
 
+        nextNavigationNotes: loadJSON(
+            STORAGE_KEYS.nextNavigationNotes,
+            ""
+        ),
+
         currentPage: "homePage",
         timerId: null,
         gpsWatchId: null,
         confirmAction: null,
-        historyMap: null
+        historyMap: null,
+        toastTimerId: null
     };
 
     function getElement(id) {
@@ -331,6 +338,7 @@
 
         if (pageId === "homePage") {
             renderRecentNavigations();
+            renderNextNavigationNotes();
         }
 
         if (pageId === "preparePage") {
@@ -460,6 +468,21 @@
                     .trim() ||
                 "",
 
+            checklist: {
+                drainPlug: Boolean(getElement("checkDrainPlug")?.checked),
+                rig: Boolean(getElement("checkRig")?.checked),
+                sails: Boolean(getElement("checkSails")?.checked),
+                safety: Boolean(getElement("checkSafety")?.checked),
+                battery: Boolean(getElement("checkBattery")?.checked),
+                weather: Boolean(getElement("checkWeather")?.checked)
+            },
+
+            nextNavigationNotes:
+                getElement("nextNavigationNotes")
+                    ?.value
+                    .trim() ||
+                "",
+
             updatedAt:
                 new Date().toISOString()
         };
@@ -473,6 +496,8 @@
             STORAGE_KEYS.preparation,
             state.preparation
         );
+
+        saveNextNavigationNotes(state.preparation.nextNavigationNotes);
     }
 
     function loadPreparationForm() {
@@ -495,7 +520,9 @@
                 crew:
                     state.settings
                         .defaultCrew,
-                navigationNotes: ""
+                navigationNotes: "",
+                checklist: {},
+                nextNavigationNotes: state.nextNavigationNotes || ""
             };
 
         setInputValue(
@@ -555,6 +582,66 @@
             "navigationNotes",
             data.navigationNotes
         );
+
+        const checklist = data.checklist || {};
+        [
+            ["checkDrainPlug", "drainPlug"],
+            ["checkRig", "rig"],
+            ["checkSails", "sails"],
+            ["checkSafety", "safety"],
+            ["checkBattery", "battery"],
+            ["checkWeather", "weather"]
+        ].forEach(([id, key]) => {
+            const element = getElement(id);
+            if (element) element.checked = Boolean(checklist[key]);
+        });
+
+        setInputValue(
+            "nextNavigationNotes",
+            data.nextNavigationNotes ?? state.nextNavigationNotes ?? ""
+        );
+    }
+
+    function saveNextNavigationNotes(value) {
+        state.nextNavigationNotes = String(value || "").trim();
+        saveJSON(STORAGE_KEYS.nextNavigationNotes, state.nextNavigationNotes);
+        renderNextNavigationNotes();
+    }
+
+    function renderNextNavigationNotes() {
+        const section = getElement("nextNavigationHomeSection");
+        const content = getElement("nextNavigationHomeNotes");
+        if (!section || !content) return;
+
+        const notes = String(state.nextNavigationNotes || "").trim();
+        section.hidden = !notes;
+        content.textContent = notes;
+    }
+
+    function clearNextNavigationNotes() {
+        setInputValue("nextNavigationNotes", "");
+        saveNextNavigationNotes("");
+        if (state.preparation) {
+            state.preparation.nextNavigationNotes = "";
+            saveJSON(STORAGE_KEYS.preparation, state.preparation);
+        }
+    }
+
+    function editNextNavigationNotes() {
+        showPage("preparePage");
+        window.setTimeout(() => getElement("nextNavigationNotes")?.focus(), 50);
+    }
+
+    function showToast(message) {
+        const toast = getElement("appToast");
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.add("visible");
+        if (state.toastTimerId !== null) clearTimeout(state.toastTimerId);
+        state.toastTimerId = window.setTimeout(() => {
+            toast.classList.remove("visible");
+            state.toastTimerId = null;
+        }, 1800);
     }
 
     function setInputValue(id, value) {
@@ -653,6 +740,7 @@
             preparation
         );
 
+        saveNextNavigationNotes(preparation.nextNavigationNotes);
         startNavigation(preparation);
     }
 
@@ -1457,6 +1545,7 @@
         });
         saveJSON(STORAGE_KEYS.currentNavigation, state.currentNavigation);
         closeAllModals();
+        showToast(`${MARKER_LABELS[type]} enregistré`);
     }
 
     function loadSettingsForm() {
@@ -2716,6 +2805,11 @@ bindClick(
             addMarker
         );
 
+        bindClick("btnQuickTack", () => saveTypedMarker("tack"));
+        bindClick("btnQuickGybe", () => saveTypedMarker("gybe"));
+        bindClick("btnClearNextNavigationNotes", clearNextNavigationNotes);
+        bindClick("btnEditNextNavigationNotes", editNextNavigationNotes);
+
         bindClick(
             "btnStopNavigation",
             askToStopNavigation
@@ -2823,6 +2917,7 @@ document
         bindClick("btnCancelMarker", closeAllModals);
 
         renderRecentNavigations();
+        renderNextNavigationNotes();
 
         displayMapMessage(
             "En attente du GPS"

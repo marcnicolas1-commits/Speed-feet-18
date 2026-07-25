@@ -2070,3 +2070,25 @@ body {
 
 .dataSeparator { border: 0; border-top: 1px solid var(--border); margin: 1.25rem 0; }
 #btnExportBackup, #btnImportBackup { width: 100%; margin-top: .65rem; }
+
+
+/* === SpeedFeet 2.6.0 : checklist, rappels et manœuvres directes === */
+.sectionTitleRow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sectionTitleRow h2{margin:0}
+.textButton{border:0;background:transparent;color:var(--primary,#2f8cff);font:inherit;font-weight:700;padding:8px;cursor:pointer}
+.nextNavigationNoteCard{white-space:pre-wrap;line-height:1.5;padding:16px;border-radius:16px;background:rgba(47,140,255,.09);border:1px solid rgba(47,140,255,.25)}
+.checklistGrid{display:grid;gap:10px;margin-top:12px}
+.checklistItem{display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);cursor:pointer}
+.checklistItem input{width:22px;height:22px;margin:0;accent-color:var(--primary,#2f8cff);flex:0 0 auto}
+.checklistItem span{line-height:1.35}
+.compactButton{width:auto;margin-top:12px;padding:10px 14px}
+.maneuverQuickActions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.maneuverButton{min-height:92px;border:0;border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#fff;font:inherit;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.22);touch-action:manipulation}
+.maneuverButton:active{transform:scale(.98)}
+.tackButton{background:linear-gradient(145deg,#087fdb,#005aa8)}
+.gybeButton{background:linear-gradient(145deg,#e66b22,#a94200)}
+.maneuverButtonLabel{font-size:1.25rem}
+.maneuverButtonHint{font-size:.76rem;font-weight:600;opacity:.84}
+.appToast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:5000;opacity:0;pointer-events:none;background:#121821;color:#fff;border:1px solid rgba(255,255,255,.16);box-shadow:0 12px 35px rgba(0,0,0,.4);border-radius:999px;padding:11px 18px;font-weight:750;transition:opacity .18s ease,transform .18s ease;white-space:nowrap}
+.appToast.visible{opacity:1;transform:translate(-50%,0)}
+@media(min-width:760px){.checklistGrid{grid-template-columns:1fr 1fr}.maneuverButton{min-height:105px}.maneuverButtonLabel{font-size:1.45rem}}

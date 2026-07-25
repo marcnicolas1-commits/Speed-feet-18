@@ -16,7 +16,7 @@
 
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-    <link rel="stylesheet" href="styles.css?v=2530">
+    <link rel="stylesheet" href="styles.css?v=2600">
 
 </head>
 
@@ -77,27 +77,29 @@
 
         <section class="homeSection quickWeatherSection">
 
-    <h2>Météo</h2>
+            <h2>Météo</h2>
 
-    <a class="windguruCard" href="https://www.windguru.cz/1275104" target="_blank" rel="noopener noreferrer">
-        <div class="windguruIcon" aria-hidden="true">☀️</div>
-        <div>
-            <strong>Prévisions Windguru</strong>
-            <span>Moulin Blanc · Brest</span>
-        </div>
-        <span class="windguruArrow" aria-hidden="true">↗</span>
-    </a>
+            <a class="windguruCard" href="https://www.windguru.cz/53" target="_blank" rel="noopener noreferrer" aria-label="Ouvrir les prévisions Windguru de Brest Moulin Blanc">
+                <div class="windguruIcon" aria-hidden="true">🌬️</div>
+                <div>
+                    <strong>Prévisions Windguru</strong>
+                    <span>Moulin Blanc · Brest</span>
+                </div>
+                <span class="windguruArrow" aria-hidden="true">↗</span>
+            </a>
 
-    <a class="windguruCard" href="https://www.windguru.cz/station/14580" target="_blank" rel="noopener noreferrer">
-        <div class="windguruIcon" aria-hidden="true">🌬️</div>
-        <div>
-            <strong>Vent réel</strong>
-            <span>Pilotage Brest</span>
-        </div>
-        <span class="windguruArrow" aria-hidden="true">↗</span>
-    </a>
+        </section>
 
-</section>
+        <section id="nextNavigationHomeSection" class="homeSection nextNavigationHomeSection" hidden>
+
+            <div class="sectionTitleRow">
+                <h2>À penser pour la prochaine navigation</h2>
+                <button id="btnEditNextNavigationNotes" class="textButton" type="button">Modifier</button>
+            </div>
+
+            <div id="nextNavigationHomeNotes" class="nextNavigationNoteCard"></div>
+
+        </section>
 
         <section class="homeSection">
 
@@ -138,6 +140,30 @@
 
         </header>
 
+
+        <!-- CHECKLIST AVANT SORTIE -->
+
+        <section class="card preparationChecklistCard">
+
+            <h2>Checklist avant sortie</h2>
+
+            <div class="checklistGrid">
+                <label class="checklistItem"><input id="checkDrainPlug" type="checkbox"> <span>Bouchon et coque contrôlés</span></label>
+                <label class="checklistItem"><input id="checkRig" type="checkbox"> <span>Gréement et haubans contrôlés</span></label>
+                <label class="checklistItem"><input id="checkSails" type="checkbox"> <span>Voiles et bouts prêts</span></label>
+                <label class="checklistItem"><input id="checkSafety" type="checkbox"> <span>Équipement de sécurité à bord</span></label>
+                <label class="checklistItem"><input id="checkBattery" type="checkbox"> <span>Téléphone / tablette suffisamment chargés</span></label>
+                <label class="checklistItem"><input id="checkWeather" type="checkbox"> <span>Météo et zone de navigation vérifiées</span></label>
+            </div>
+
+        </section>
+
+        <section class="card nextNavigationPrepCard">
+            <h2>À penser pour la prochaine navigation</h2>
+            <p class="smallText">Les remarques restent visibles sur l’accueil jusqu’à ce que tu les effaces.</p>
+            <textarea id="nextNavigationNotes" rows="4" placeholder="Ex. reprendre la tension des haubans, vérifier l’avaleur de spi…"></textarea>
+            <button id="btnClearNextNavigationNotes" type="button" class="secondaryButton compactButton">Effacer les remarques</button>
+        </section>
 
         <!-- CONDITIONS MÉTÉO -->
 
@@ -345,6 +371,17 @@
             </div>
         </section>
 
+
+        <section class="maneuverQuickActions" aria-label="Enregistrer une manœuvre">
+            <button id="btnQuickTack" type="button" class="maneuverButton tackButton">
+                <span class="maneuverButtonLabel">Virement</span>
+                <span class="maneuverButtonHint">Enregistrer maintenant</span>
+            </button>
+            <button id="btnQuickGybe" type="button" class="maneuverButton gybeButton">
+                <span class="maneuverButtonLabel">Empannage</span>
+                <span class="maneuverButtonHint">Enregistrer maintenant</span>
+            </button>
+        </section>
 
         <div class="navigationToolbar">
 
@@ -623,6 +660,8 @@
     </section>
 
 
+
+    <div id="appToast" class="appToast" role="status" aria-live="polite"></div>
 
     <!-- ====================================================== -->
     <!-- PARAMÈTRES -->
