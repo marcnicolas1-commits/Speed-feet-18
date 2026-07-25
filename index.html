@@ -1,973 +1,595 @@
 <!DOCTYPE html>
+
 <html lang="fr">
-
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1, viewport-fit=cover">
-
-    <title>SpeedFeet Analyzer</title>
-
-    <meta name="theme-color" content="#1565C0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-    <link rel="stylesheet" href="styles.css?v=2110">
-
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<title>SpeedFeet V3</title>
+<meta content="#07111f" name="theme-color"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="default" name="apple-mobile-web-app-status-bar-style"/>
+<link href="manifest.webmanifest" rel="manifest"/>
+<link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
+<link href="styles.css?v=3000" rel="stylesheet"/>
 </head>
-
 <body>
-
-<div id="app">
-
-    <!-- ====================================================== -->
-    <!-- ACCUEIL -->
-    <!-- ====================================================== -->
-
-    <section id="homePage" class="page active">
-
-        <header class="pageHeader">
-
-            <h1>⛵ SpeedFeet Analyzer</h1>
-
-            <p class="subtitle">
-
-                Analyse et optimisation des performances en navigation
-
-            </p>
-
-        </header>
-
-
-        <div class="mainMenu">
-
-
-            <button
-                id="btnStartNavigation"
-                class="menuButton primary">
-
-                ▶ Démarrer une navigation
-
-            </button>
-
-
-            <button
-                id="btnHistory"
-                class="menuButton">
-
-                📈 Historique
-
-            </button>
-
-
-            <button
-                id="btnSettings"
-                class="menuButton">
-
-                ⚙ Paramètres
-
-            </button>
-
-        </div>
-
-
-        <section class="homeSection quickWeatherSection">
-
-            <h2>Météo</h2>
-
-            <a class="windguruCard" href="https://www.windguru.cz/53" target="_blank" rel="noopener noreferrer" aria-label="Ouvrir les prévisions Windguru de Brest Moulin Blanc">
-                <div class="windguruIcon" aria-hidden="true">🌬️</div>
-                <div>
-                    <strong>Prévisions Windguru</strong>
-                    <span>Moulin Blanc · Brest</span>
-                </div>
-                <span class="windguruArrow" aria-hidden="true">↗</span>
-            </a>
-
-        </section>
-
-        <section class="homeSection homeStatsSection">
-            <div class="homeStatsGrid">
-                <button id="btnRecords" class="homeStatTile" type="button">
-                    <span class="homeStatIcon">🏆</span>
-                    <span><strong>Records</strong><small id="homeRecordSummary">Aucun record</small></span>
-                </button>
-                <button id="btnAchievements" class="homeStatTile" type="button">
-                    <span class="homeStatIcon">🎖</span>
-                    <span><strong>Succès</strong><small id="homeAchievementSummary">0 découvert</small></span>
-                </button>
-                <button id="btnLearning" class="homeStatTile learningTile" type="button">
-                    <span class="homeStatIcon">🧠</span>
-                    <span><strong>Apprentissage</strong><small id="homeLearningSummary">Aucune observation</small></span>
-                </button>
-            </div>
-        </section>
-
-        <section id="nextNavigationHomeSection" class="homeSection nextNavigationHomeSection" hidden>
-
-            <div class="sectionTitleRow">
-                <h2>À penser pour la prochaine navigation</h2>
-                <button id="btnEditNextNavigationNotes" class="textButton" type="button">Modifier</button>
-            </div>
-
-            <div id="nextNavigationHomeNotes" class="nextNavigationNoteCard"></div>
-
-        </section>
-
-        <section class="homeSection">
-
-            <h2>
+<div class="v3AppShell" id="app">
+<!-- ====================================================== -->
+<!-- ACCUEIL -->
+<!-- ====================================================== -->
+<section class="page active" id="homePage">
+<header class="pageHeader v3HomeHeader"><span class="v3Badge">V3.0</span>
+<h1>SpeedFeet</h1>
+<p class="subtitle">Navigation, analyse et progression</p>
+</header><section class="v3IntroCard"><div><span class="v3Eyebrow">TON SPEED FEET 18</span><h2>Prêt pour la prochaine sortie</h2><p>Prépare, navigue, puis analyse ta progression dans une interface entièrement repensée.</p></div><div aria-hidden="true" class="v3BoatMark">⛵</div></section>
+<div class="mainMenu v3MainMenu">
+<button class="menuButton primary v3MenuButton" id="btnStartNavigation"><span class="menuIcon">▶</span><span><strong>Nouvelle navigation</strong><small>Préparer puis démarrer</small></span></button>
+<button class="menuButton v3MenuButton" id="btnHistory"><span class="menuIcon">◫</span><span><strong>Historique</strong><small>Sorties et analyses</small></span></button>
+<button class="menuButton v3MenuButton" id="btnSettings"><span class="menuIcon">⚙</span><span><strong>Réglages</strong><small>Bateau et préférences</small></span></button>
+</div>
+<section class="homeSection quickWeatherSection">
+<h2>Météo</h2>
+<a aria-label="Ouvrir les prévisions Windguru de Brest Moulin Blanc" class="windguruCard" href="https://www.windguru.cz/53" rel="noopener noreferrer" target="_blank">
+<div aria-hidden="true" class="windguruIcon">🌬️</div>
+<div>
+<strong>Prévisions Windguru</strong>
+<span>Moulin Blanc · Brest</span>
+</div>
+<span aria-hidden="true" class="windguruArrow">↗</span>
+</a>
+</section>
+<section class="homeSection homeStatsSection">
+<div class="homeStatsGrid">
+<button class="homeStatTile" id="btnRecords" type="button">
+<span class="homeStatIcon">🏆</span>
+<span><strong>Records</strong><small id="homeRecordSummary">Aucun record</small></span>
+</button>
+<button class="homeStatTile" id="btnAchievements" type="button">
+<span class="homeStatIcon">🎖</span>
+<span><strong>Succès</strong><small id="homeAchievementSummary">0 découvert</small></span>
+</button>
+<button class="homeStatTile learningTile" id="btnLearning" type="button">
+<span class="homeStatIcon">🧠</span>
+<span><strong>Apprentissage</strong><small id="homeLearningSummary">Aucune observation</small></span>
+</button>
+</div>
+</section>
+<section class="homeSection nextNavigationHomeSection" hidden="" id="nextNavigationHomeSection">
+<div class="sectionTitleRow">
+<h2>À penser pour la prochaine navigation</h2>
+<button class="textButton" id="btnEditNextNavigationNotes" type="button">Modifier</button>
+</div>
+<div class="nextNavigationNoteCard" id="nextNavigationHomeNotes"></div>
+</section>
+<section class="homeSection">
+<h2>
 
                 Dernière sortie
 
             </h2>
-
-            <div id="recentNavigationList">
-
-                <div class="emptyCard">
+<div id="recentNavigationList">
+<div class="emptyCard">
 
                     Aucune navigation enregistrée.
 
                 </div>
+</div>
+</section>
+</section>
+<!-- ====================================================== -->
+<!-- PREPARATION -->
+<!-- ====================================================== -->
+<section class="page" id="preparePage">
+<header class="pageHeader"><div class="pageHeaderTop"><button class="pageBackButton" id="btnBackHome">← Accueil</button><h1>Préparer une navigation</h1></div>
 
-            </div>
-
-        </section>
-
-    </section>
-        <!-- ====================================================== -->
-    <!-- PREPARATION -->
-    <!-- ====================================================== -->
-
-    <section id="preparePage" class="page">
-
-        <header class="pageHeader">
-
-            <h1>Préparer une navigation</h1>
-
-            <p class="subtitle">
+<p class="subtitle">
 
                 Vérifiez les conditions avant le départ.
 
             </p>
-
-        </header>
-
-
-        <!-- CHECKLIST AVANT SORTIE -->
-
-        <section class="card preparationChecklistCard">
-
-            <h2>Checklist avant sortie</h2>
-
-            <div class="checklistGrid">
-                <label class="checklistItem"><input id="checkDrainPlug" type="checkbox"> <span>Bouchon et coque contrôlés</span></label>
-                <label class="checklistItem"><input id="checkRig" type="checkbox"> <span>Gréement et haubans contrôlés</span></label>
-                <label class="checklistItem"><input id="checkSails" type="checkbox"> <span>Voiles et bouts prêts</span></label>
-                <label class="checklistItem"><input id="checkSafety" type="checkbox"> <span>Équipement de sécurité à bord</span></label>
-                <label class="checklistItem"><input id="checkBattery" type="checkbox"> <span>Téléphone / tablette suffisamment chargés</span></label>
-                <label class="checklistItem"><input id="checkWeather" type="checkbox"> <span>Météo et zone de navigation vérifiées</span></label>
-            </div>
-
-        </section>
-
-        <section class="card nextNavigationPrepCard">
-            <h2>À penser pour la prochaine navigation</h2>
-            <p class="smallText">Les remarques restent visibles sur l’accueil jusqu’à ce que tu les effaces.</p>
-            <textarea id="nextNavigationNotes" rows="4" placeholder="Ex. reprendre la tension des haubans, vérifier l’avaleur de spi…"></textarea>
-            <button id="btnClearNextNavigationNotes" type="button" class="secondaryButton compactButton">Effacer les remarques</button>
-        </section>
-
-        <!-- CONDITIONS MÉTÉO -->
-
-        <section class="card">
-
-            <h2>🌤 Conditions météo</h2>
-
-            <label for="weatherImage">
+</header>
+<!-- CHECKLIST AVANT SORTIE -->
+<section class="card preparationChecklistCard">
+<h2>Checklist avant sortie</h2>
+<div class="checklistGrid">
+<label class="checklistItem"><input id="checkDrainPlug" type="checkbox"/> <span>Bouchon et coque contrôlés</span></label>
+<label class="checklistItem"><input id="checkRig" type="checkbox"/> <span>Gréement et haubans contrôlés</span></label>
+<label class="checklistItem"><input id="checkSails" type="checkbox"/> <span>Voiles et bouts prêts</span></label>
+<label class="checklistItem"><input id="checkSafety" type="checkbox"/> <span>Équipement de sécurité à bord</span></label>
+<label class="checklistItem"><input id="checkBattery" type="checkbox"/> <span>Téléphone / tablette suffisamment chargés</span></label>
+<label class="checklistItem"><input id="checkWeather" type="checkbox"/> <span>Météo et zone de navigation vérifiées</span></label>
+</div>
+</section>
+<section class="card nextNavigationPrepCard">
+<h2>À penser pour la prochaine navigation</h2>
+<p class="smallText">Les remarques restent visibles sur l’accueil jusqu’à ce que tu les effaces.</p>
+<textarea id="nextNavigationNotes" placeholder="Ex. reprendre la tension des haubans, vérifier l’avaleur de spi…" rows="4"></textarea>
+<button class="secondaryButton compactButton" id="btnClearNextNavigationNotes" type="button">Effacer les remarques</button>
+</section>
+<!-- CONDITIONS MÉTÉO -->
+<section class="card">
+<h2>🌤 Conditions météo</h2>
+<label for="weatherImage">
                 Capture météo
             </label>
-
-            <input
-                id="weatherImage"
-                type="file"
-                accept="image/*">
-
-            <label for="windAverage">
+<input accept="image/*" id="weatherImage" type="file"/>
+<label for="windAverage">
                 Vent moyen (nds)
             </label>
-
-            <input
-                id="windAverage"
-                type="number"
-                inputmode="decimal"
-                placeholder="12">
-
-            <label for="windGust">
+<input id="windAverage" inputmode="decimal" placeholder="12" type="number"/>
+<label for="windGust">
                 Rafales (nds)
             </label>
-
-            <input
-                id="windGust"
-                type="number"
-                inputmode="decimal"
-                placeholder="18">
-
-            <label for="windDirection">
+<input id="windGust" inputmode="decimal" placeholder="18" type="number"/>
+<label for="windDirection">
                 Direction (°)
             </label>
-
-            <input
-                id="windDirection"
-                type="number"
-                inputmode="numeric"
-                placeholder="240">
-
-            <label for="seaState">
+<input id="windDirection" inputmode="numeric" placeholder="240" type="number"/>
+<label for="seaState">
                 État de la mer
             </label>
-
-            <select id="seaState">
-
-                <option value="">Choisir...</option>
-                <option>Plate</option>
-                <option>Ridée</option>
-                <option>Peu agitée</option>
-                <option>Agitée</option>
-                <option>Très agitée</option>
-
-            </select>
-
-            <label for="weatherNotes">
+<select id="seaState">
+<option value="">Choisir...</option>
+<option>Plate</option>
+<option>Ridée</option>
+<option>Peu agitée</option>
+<option>Agitée</option>
+<option>Très agitée</option>
+</select>
+<label for="weatherNotes">
                 Notes météo
             </label>
-
-            <textarea
-                id="weatherNotes"
-                rows="3"
-                placeholder="Courant, visibilité, remarques..."></textarea>
-
-        </section>
-
-
-        <!-- CONFIGURATION -->
-
-        <section class="card">
-
-            <h2>⛵ Configuration</h2>
-
-            <p class="smallText">
+<textarea id="weatherNotes" placeholder="Courant, visibilité, remarques..." rows="3"></textarea>
+</section>
+<!-- CONFIGURATION -->
+<section class="card">
+<h2>⛵ Configuration</h2>
+<p class="smallText">
 
                 Les valeurs ci-dessous sont chargées automatiquement
                 depuis les paramètres du bateau.
 
             </p>
-
-            <label for="mainSail">
+<label for="mainSail">
 
                 Grand-voile
 
             </label>
-
-            <select id="mainSail"></select>
-
-
-            <label for="jib">
+<select id="mainSail"></select>
+<label for="jib">
 
                 Foc
 
             </label>
-
-            <select id="jib"></select>
-
-
-            <label for="spinnaker">
+<select id="jib"></select>
+<label for="spinnaker">
 
                 Spi
 
             </label>
-
-            <select id="spinnaker"></select>
-
-
-            <label for="crew">
+<select id="spinnaker"></select>
+<label for="crew">
 
                 Équipage
 
             </label>
-
-            <input
-                id="crew"
-                type="number"
-                min="1"
-                max="10">
-
-            <label for="navigationNotes">
+<input id="crew" max="10" min="1" type="number"/>
+<label for="navigationNotes">
 
                 Observations
 
             </label>
+<textarea id="navigationNotes" placeholder="Essais prévus, matériel particulier..." rows="3"></textarea>
+</section>
+<!-- ACTIONS -->
+<div class="buttonBar">
 
-            <textarea
-                id="navigationNotes"
-                rows="3"
-                placeholder="Essais prévus, matériel particulier..."></textarea>
-
-        </section>
-
-
-        <!-- ACTIONS -->
-
-        <div class="buttonBar">
-
-            <button
-                id="btnBackHome"
-                class="secondaryButton">
-
-                ← Accueil
-
-            </button>
-
-            <button
-                id="btnStartPreparedNavigation"
-                class="primaryButton">
+<button class="primaryButton fullWidthAction" id="btnStartPreparedNavigation">
 
                 ▶ Démarrer la navigation
 
             </button>
-
-        </div>
+</div>
 </section>
-
 <!-- ====================================================== -->
 <!-- NAVIGATION -->
 <!-- ====================================================== -->
-
 <!-- ====================================================== -->
-    <!-- NAVIGATION -->
-    <!-- ====================================================== -->
-
-    <section id="navigationPage" class="page">
-
-        <header class="pageHeader">
-
-            <h1>Navigation</h1>
-
-            <p class="subtitle navigationStatusLine">
+<!-- NAVIGATION -->
+<!-- ====================================================== -->
+<section class="page" id="navigationPage">
+<header class="pageHeader">
+<h1>Navigation</h1>
+<p class="subtitle navigationStatusLine">
                 Navigation en cours
-                <span id="navGPSDot" class="gpsMiniDot searching" aria-label="GPS en recherche" title="GPS en recherche"></span>
-            </p>
-
-        </header>
-
-
-        <section class="navigationDashboard navigationDashboardLive">
-            <div class="dataCard primaryDataCard speedHeroCard">
-                <span class="dataTitle">Vitesse GPS</span>
-                <span id="navSpeed">0.0 nd</span>
-            </div>
-            <div class="dataCard">
-                <span class="dataTitle">Cap GPS</span>
-                <span id="navHeading">---°</span>
-            </div>
-            <div class="dataCard">
-                <span class="dataTitle">Polaire</span>
-                <span id="navPolar">— %</span>
-            </div>
-            <div class="dataCard">
-                <span class="dataTitle">Vitesse cible</span>
-                <span id="navTargetSpeed">— nd</span>
-            </div>
-            <div class="dataCard clockDataCard">
-                <span class="dataTitle">Heure</span>
-                <span id="navClock">--:--</span>
-            </div>
-        </section>
-
-
-        <section class="maneuverQuickActions" aria-label="Enregistrer une manœuvre">
-            <button id="btnQuickTack" type="button" class="maneuverButton tackButton">
-                <span class="maneuverButtonLabel">Virement</span>
-                <span class="maneuverButtonHint">Enregistrer maintenant</span>
-            </button>
-            <button id="btnQuickGybe" type="button" class="maneuverButton gybeButton">
-                <span class="maneuverButtonLabel">Empannage</span>
-                <span class="maneuverButtonHint">Enregistrer maintenant</span>
-            </button>
-        </section>
-
-        <div class="navigationToolbar">
-
-            <button
-                id="btnWind"
-                class="actionButton">
+                <span aria-label="GPS en recherche" class="gpsMiniDot searching" id="navGPSDot" title="GPS en recherche"></span>
+</p>
+</header>
+<section class="navigationDashboard navigationDashboardLive">
+<div class="dataCard primaryDataCard speedHeroCard">
+<span class="dataTitle">Vitesse GPS</span>
+<span id="navSpeed">0.0 nd</span>
+</div>
+<div class="dataCard">
+<span class="dataTitle">Cap GPS</span>
+<span id="navHeading">---°</span>
+</div>
+<div class="dataCard">
+<span class="dataTitle">Polaire</span>
+<span id="navPolar">— %</span>
+</div>
+<div class="dataCard">
+<span class="dataTitle">Vitesse cible</span>
+<span id="navTargetSpeed">— nd</span>
+</div>
+<div class="dataCard clockDataCard">
+<span class="dataTitle">Heure</span>
+<span id="navClock">--:--</span>
+</div>
+</section>
+<section aria-label="Enregistrer une manœuvre" class="maneuverQuickActions">
+<button class="maneuverButton tackButton" id="btnQuickTack" type="button">
+<span class="maneuverButtonLabel">Virement</span>
+<span class="maneuverButtonHint">Enregistrer maintenant</span>
+</button>
+<button class="maneuverButton gybeButton" id="btnQuickGybe" type="button">
+<span class="maneuverButtonLabel">Empannage</span>
+<span class="maneuverButtonHint">Enregistrer maintenant</span>
+</button>
+</section>
+<div class="navigationToolbar">
+<button class="actionButton" id="btnWind">
 
                 🌬 Vent
 
             </button>
-
-            <button
-                id="btnTrim"
-                class="actionButton">
+<button class="actionButton" id="btnTrim">
 
                 ⛵ Réglages
 
             </button>
-
-            <button
-                id="btnMarker"
-                class="actionButton">
+<button class="actionButton" id="btnMarker">
 
                 📍 Marqueur
 
             </button>
-
-            <button
-                id="btnStopNavigation"
-                class="dangerButton">
+<button class="dangerButton" id="btnStopNavigation">
 
                 ■ Arrêter
 
             </button>
-
-        </div>
-
-    </section>
-
-
-
-    <!-- ====================================================== -->
-    <!-- POPUP VENT -->
-    <!-- ====================================================== -->
-
-    <div id="windModal" class="modal">
-
-        <div class="modalContent">
-
-            <h2>Conditions de vent</h2>
-
-            <label for="popupWindSpeed">
+</div>
+</section>
+<!-- ====================================================== -->
+<!-- POPUP VENT -->
+<!-- ====================================================== -->
+<div class="modal" id="windModal">
+<div class="modalContent">
+<h2>Conditions de vent</h2>
+<label for="popupWindSpeed">
 
                 Force du vent (nds)
 
             </label>
-
-            <input
-                id="popupWindSpeed"
-                type="number"
-                inputmode="decimal">
-
-            <label for="popupWindDirection">
+<input id="popupWindSpeed" inputmode="decimal" type="number"/>
+<label for="popupWindDirection">
 
                 Direction (°)
 
             </label>
-
-            <input
-                id="popupWindDirection"
-                type="number"
-                inputmode="numeric">
-
-            <button
-                id="btnCompass"
-                class="secondaryButton">
+<input id="popupWindDirection" inputmode="numeric" type="number"/>
+<button class="secondaryButton" id="btnCompass">
 
                 🧭 Lire la boussole
 
             </button>
-
-            <label for="popupWindQuality">
+<label for="popupWindQuality">
 
                 Qualité de l'estimation
 
             </label>
-
-            <select id="popupWindQuality">
-
-                <option value="green">
+<select id="popupWindQuality">
+<option value="green">
                     🟢 Bonne
                 </option>
-
-                <option value="orange">
+<option value="orange">
                     🟠 Moyenne
                 </option>
-
-                <option value="red">
+<option value="red">
                     🔴 Faible
                 </option>
-
-            </select>
-
-            <div class="modalButtons">
-
-                <button
-                    id="btnCancelWind"
-                    class="secondaryButton">
+</select>
+<div class="modalButtons">
+<button class="secondaryButton" id="btnCancelWind">
 
                     Annuler
 
                 </button>
-
-                <button
-                    id="btnSaveWind"
-                    class="primaryButton">
+<button class="primaryButton" id="btnSaveWind">
 
                     Enregistrer
 
                 </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-
-    <!-- ====================================================== -->
-    <!-- POPUP RÉGLAGES -->
-    <!-- ====================================================== -->
-
-    <div id="trimModal" class="modal">
-
-        <div class="modalContent">
-
-            <h2>Réglages du bateau</h2>
-
-            <label for="trimTravelerMain">
+</div>
+</div>
+</div>
+<!-- ====================================================== -->
+<!-- POPUP RÉGLAGES -->
+<!-- ====================================================== -->
+<div class="modal" id="trimModal">
+<div class="modalContent">
+<h2>Réglages du bateau</h2>
+<label for="trimTravelerMain">
 
                 Chariot de GV
 
             </label>
-
-            <select id="trimTravelerMain"></select>
-
-
-            <label for="trimTravelerJib">
+<select id="trimTravelerMain"></select>
+<label for="trimTravelerJib">
 
                 Chariot de foc
 
             </label>
-
-            <select id="trimTravelerJib"></select>
-
-
-            <label for="trimRotation">
+<select id="trimTravelerJib"></select>
+<label for="trimRotation">
 
                 Rotation du mât
 
             </label>
-
-            <select id="trimRotation"></select>
-
-
-            <label for="trimCunningham">
+<select id="trimRotation"></select>
+<label for="trimCunningham">
 
                 Cunningham
 
             </label>
-
-            <select id="trimCunningham"></select>
-
-
-            <label for="trimOuthaul">
+<select id="trimCunningham"></select>
+<label for="trimOuthaul">
 
                 Bordure
 
             </label>
-
-            <select id="trimOuthaul"></select>
-
-
-            <label for="trimSheet">
+<select id="trimOuthaul"></select>
+<label for="trimSheet">
 
                 Écoute de grand-voile
 
             </label>
-
-            <select id="trimSheet"></select>
-
-
-            <div class="modalButtons">
-
-                <button
-                    id="btnCancelTrim"
-                    class="secondaryButton">
+<select id="trimSheet"></select>
+<div class="modalButtons">
+<button class="secondaryButton" id="btnCancelTrim">
 
                     Annuler
 
                 </button>
-
-                <button
-                    id="btnSaveTrim"
-                    class="primaryButton">
+<button class="primaryButton" id="btnSaveTrim">
 
                     Enregistrer
 
                 </button>
+</div>
+</div>
+</div>
+<!-- POPUP MARQUEUR -->
+<div class="modal" id="markerModal">
+<div class="modalContent">
+<h2>Ajouter une manœuvre</h2>
+<div class="markerChoiceGrid">
+<button class="markerChoiceButton" data-marker-type="tack" type="button">Virement</button>
+<button class="markerChoiceButton" data-marker-type="gybe" type="button">Empannage</button>
+<button class="markerChoiceButton" data-marker-type="spi-hoist" type="button">Envoi de spi</button>
+<button class="markerChoiceButton" data-marker-type="spi-drop" type="button">Affalage du spi</button>
+<button class="markerChoiceButton" data-marker-type="other" type="button">Autre</button>
+</div>
+<div class="modalButtons">
+<button class="secondaryButton" id="btnCancelMarker">Annuler</button>
+</div>
+</div>
+</div>
+<div class="modal" id="finishNavigationModal">
+<div class="modalContent finishNavigationContent">
+<h2>Fin de navigation</h2>
+<p class="smallText">Ajoute les informations utiles avant l’enregistrement définitif.</p>
+<label for="finishRating">Ressenti général</label>
+<select id="finishRating">
+<option value="">Non renseigné</option>
+<option value="1">1 – Difficile</option>
+<option value="2">2 – Moyen</option>
+<option value="3">3 – Correct</option>
+<option value="4">4 – Bon</option>
+<option value="5">5 – Excellent</option>
+</select>
+<label for="finishNotes">Notes de sortie</label>
+<textarea id="finishNotes" placeholder="Réglages, sensations, conditions, points à retenir…" rows="4"></textarea>
+<label for="finishNextNotes">À penser pour la prochaine navigation</label>
+<textarea id="finishNextNotes" placeholder="Contrôle, réparation, essai à prévoir…" rows="3"></textarea>
+<label class="checklistItem"><input id="finishSendSafety" type="checkbox"/> <span>Préparer le message de fin de navigation</span></label>
+<div class="modalButtons">
+<button class="secondaryButton" id="btnCancelFinish">Revenir</button>
+<button class="primaryButton" id="btnConfirmFinish">Enregistrer la sortie</button>
+</div>
+</div>
+</div>
+<!-- ====================================================== -->
+<!-- HISTORIQUE -->
+<!-- ====================================================== -->
+<section class="page" id="historyPage">
+<header class="pageHeader"><div class="pageHeaderTop"><button class="pageBackButton" id="btnHistoryHome">← Accueil</button><h1>Historique</h1></div>
 
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- POPUP MARQUEUR -->
-    <div id="markerModal" class="modal">
-        <div class="modalContent">
-            <h2>Ajouter une manœuvre</h2>
-            <div class="markerChoiceGrid">
-                <button type="button" class="markerChoiceButton" data-marker-type="tack">Virement</button>
-                <button type="button" class="markerChoiceButton" data-marker-type="gybe">Empannage</button>
-                <button type="button" class="markerChoiceButton" data-marker-type="spi-hoist">Envoi de spi</button>
-                <button type="button" class="markerChoiceButton" data-marker-type="spi-drop">Affalage du spi</button>
-                <button type="button" class="markerChoiceButton" data-marker-type="other">Autre</button>
-            </div>
-            <div class="modalButtons">
-                <button id="btnCancelMarker" class="secondaryButton">Annuler</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="finishNavigationModal" class="modal">
-        <div class="modalContent finishNavigationContent">
-            <h2>Fin de navigation</h2>
-            <p class="smallText">Ajoute les informations utiles avant l’enregistrement définitif.</p>
-            <label for="finishRating">Ressenti général</label>
-            <select id="finishRating">
-                <option value="">Non renseigné</option>
-                <option value="1">1 – Difficile</option>
-                <option value="2">2 – Moyen</option>
-                <option value="3">3 – Correct</option>
-                <option value="4">4 – Bon</option>
-                <option value="5">5 – Excellent</option>
-            </select>
-            <label for="finishNotes">Notes de sortie</label>
-            <textarea id="finishNotes" rows="4" placeholder="Réglages, sensations, conditions, points à retenir…"></textarea>
-            <label for="finishNextNotes">À penser pour la prochaine navigation</label>
-            <textarea id="finishNextNotes" rows="3" placeholder="Contrôle, réparation, essai à prévoir…"></textarea>
-            <label class="checklistItem"><input id="finishSendSafety" type="checkbox"> <span>Préparer le message de fin de navigation</span></label>
-            <div class="modalButtons">
-                <button id="btnCancelFinish" class="secondaryButton">Revenir</button>
-                <button id="btnConfirmFinish" class="primaryButton">Enregistrer la sortie</button>
-            </div>
-        </div>
-    </div>
-
-          <!-- ====================================================== -->
-    <!-- HISTORIQUE -->
-    <!-- ====================================================== -->
-
-    <section id="historyPage" class="page">
-
-        <header class="pageHeader">
-
-            <h1>Historique</h1>
-
-            <p class="subtitle">
+<p class="subtitle">
 
                 Consultez et analysez vos navigations.
 
             </p>
-
-        </header>
-
-        <section id="historyList">
-
-            <div class="emptyCard">
+</header>
+<section id="historyList">
+<div class="emptyCard">
 
                 Aucune navigation enregistrée.
 
             </div>
+</section>
 
-        </section>
+</section>
+<div aria-live="polite" class="appToast" id="appToast" role="status"></div>
+<section class="page" id="recordsPage">
+<header class="pageHeader"><div class="pageHeaderTop"><button class="pageBackButton" id="btnRecordsHome">← Accueil</button><h1>Records</h1></div><p class="subtitle">Tes meilleures performances personnelles.</p></header>
+<section class="recordsGrid" id="recordsList"></section>
 
-        <div class="buttonBar">
+</section>
+<section class="page" id="achievementsPage">
+<header class="pageHeader"><div class="pageHeaderTop"><button class="pageBackButton" id="btnAchievementsHome">← Accueil</button><h1>Succès</h1></div><p class="subtitle">Seuls les succès déjà découverts sont affichés.</p></header>
+<section class="card achievementProgressCard"><strong id="achievementProgressText">0 succès découvert</strong><div class="progressTrack"><span id="achievementProgressBar"></span></div></section>
+<section class="achievementsList" id="achievementsList"></section>
 
-            <button
-                id="btnHistoryHome"
-                class="secondaryButton">
+</section>
+<section class="page" id="learningPage">
+<header class="pageHeader"><div class="pageHeaderTop"><button class="pageBackButton" id="btnLearningHome">← Accueil</button><h1>🧠 Apprentissage SpeedFeet</h1></div>
 
-                ← Accueil
+<p class="subtitle">La fiabilité augmente avec le nombre de manœuvres réellement observées.</p>
+</header>
+<section class="learningOverview" id="learningOverview"></section>
+<section class="card learningExplanationCard">
+<h2>Comment lire ces niveaux ?</h2>
+<div class="learningLegend">
+<p><strong>0 à 9</strong><span>Apprentissage</span></p>
+<p><strong>10 à 29</strong><span>Premières références</span></p>
+<p><strong>30 à 99</strong><span>Références fiables</span></p>
+<p><strong>100 et +</strong><span>Références très solides</span></p>
+</div>
+<p class="smallText">Les virements et les empannages progressent séparément. Une sortie avec beaucoup de manœuvres fait donc avancer l’apprentissage plus vite.</p>
+</section>
 
-            </button>
+</section>
+<!-- ====================================================== -->
+<!-- PARAMÈTRES -->
+<!-- ====================================================== -->
+<section class="page" id="settingsPage">
+<header class="pageHeader"><div class="pageHeaderTop"><button class="pageBackButton" id="btnSettingsHome">← Accueil</button><h1>Paramètres</h1></div>
 
-        </div>
-
-    </section>
-
-
-
-    <div id="appToast" class="appToast" role="status" aria-live="polite"></div>
-
-    <section id="recordsPage" class="page">
-        <header class="pageHeader"><h1>Records</h1><p class="subtitle">Tes meilleures performances personnelles.</p></header>
-        <section id="recordsList" class="recordsGrid"></section>
-        <div class="buttonBar"><button id="btnRecordsHome" class="secondaryButton">← Accueil</button></div>
-    </section>
-
-    <section id="achievementsPage" class="page">
-        <header class="pageHeader"><h1>Succès</h1><p class="subtitle">Seuls les succès déjà découverts sont affichés.</p></header>
-        <section class="card achievementProgressCard"><strong id="achievementProgressText">0 succès découvert</strong><div class="progressTrack"><span id="achievementProgressBar"></span></div></section>
-        <section id="achievementsList" class="achievementsList"></section>
-        <div class="buttonBar"><button id="btnAchievementsHome" class="secondaryButton">← Accueil</button></div>
-    </section>
-
-    <section id="learningPage" class="page">
-        <header class="pageHeader">
-            <h1>🧠 Apprentissage SpeedFeet</h1>
-            <p class="subtitle">La fiabilité augmente avec le nombre de manœuvres réellement observées.</p>
-        </header>
-        <section id="learningOverview" class="learningOverview"></section>
-        <section class="card learningExplanationCard">
-            <h2>Comment lire ces niveaux ?</h2>
-            <div class="learningLegend">
-                <p><strong>0 à 9</strong><span>Apprentissage</span></p>
-                <p><strong>10 à 29</strong><span>Premières références</span></p>
-                <p><strong>30 à 99</strong><span>Références fiables</span></p>
-                <p><strong>100 et +</strong><span>Références très solides</span></p>
-            </div>
-            <p class="smallText">Les virements et les empannages progressent séparément. Une sortie avec beaucoup de manœuvres fait donc avancer l’apprentissage plus vite.</p>
-        </section>
-        <div class="buttonBar"><button id="btnLearningHome" class="secondaryButton">← Accueil</button></div>
-    </section>
-
-    <!-- ====================================================== -->
-    <!-- PARAMÈTRES -->
-    <!-- ====================================================== -->
-
-    <section id="settingsPage" class="page">
-
-        <header class="pageHeader">
-
-            <h1>Paramètres</h1>
-
-            <p class="subtitle">
+<p class="subtitle">
 
                 Configuration de l'application
 
             </p>
-
-        </header>
-
-
-
-        <section class="card">
-
-            <h2>Bateau</h2>
-
-            <label for="boatName">
+</header>
+<section class="card">
+<h2>Bateau</h2>
+<label for="boatName">
 
                 Nom du bateau
 
             </label>
-
-            <input
-                id="boatName"
-                type="text"
-                placeholder="Speed Feet 18">
-
-        </section>
-
-
-
-        <section class="card">
-
-            <h2>Configuration par défaut</h2>
-
-            <label for="defaultMainSail">
+<input id="boatName" placeholder="Speed Feet 18" type="text"/>
+</section>
+<section class="card">
+<h2>Configuration par défaut</h2>
+<label for="defaultMainSail">
 
                 Grand-voile
 
             </label>
-
-            <select id="defaultMainSail"></select>
-
-
-            <label for="defaultJib">
+<select id="defaultMainSail"></select>
+<label for="defaultJib">
 
                 Foc
 
             </label>
-
-            <select id="defaultJib"></select>
-
-
-            <label for="defaultSpi">
+<select id="defaultJib"></select>
+<label for="defaultSpi">
 
                 Spi
 
             </label>
-
-            <select id="defaultSpi"></select>
-
-
-            <label for="defaultCrew">
+<select id="defaultSpi"></select>
+<label for="defaultCrew">
 
                 Nombre de personnes
 
             </label>
-
-            <input
-                id="defaultCrew"
-                type="number"
-                min="1"
-                max="10">
-
-        </section>
-
-
-
-        <section class="card">
-            <h2>Contact de sécurité</h2>
-            <label for="safetyContactName">Nom</label>
-            <input id="safetyContactName" type="text" placeholder="Contact à prévenir">
-            <label for="safetyContactPhone">Téléphone</label>
-            <input id="safetyContactPhone" type="tel" inputmode="tel" placeholder="06 00 00 00 00">
-            <p class="smallText">À la fin d’une sortie, SpeedFeet peut préparer un SMS. L’envoi reste sous ton contrôle.</p>
-        </section>
-
-        <section class="card">
-
-            <h2>Données</h2>
-
-            <button
-                id="btnImportPolar"
-                class="secondaryButton">
+<input id="defaultCrew" max="10" min="1" type="number"/>
+</section>
+<section class="card">
+<h2>Contact de sécurité</h2>
+<label for="safetyContactName">Nom</label>
+<input id="safetyContactName" placeholder="Contact à prévenir" type="text"/>
+<label for="safetyContactPhone">Téléphone</label>
+<input id="safetyContactPhone" inputmode="tel" placeholder="06 00 00 00 00" type="tel"/>
+<p class="smallText">À la fin d’une sortie, SpeedFeet peut préparer un SMS. L’envoi reste sous ton contrôle.</p>
+</section>
+<section class="card">
+<h2>Données</h2>
+<button class="secondaryButton" id="btnImportPolar">
 
                 Importer une polaire
 
             </button>
-
-            <p id="polarImportStatus" class="smallText polarImportStatus">Aucune polaire importée.</p>
-
-            <hr class="dataSeparator">
-
-            <h3>Sauvegarde et transfert</h3>
-
-            <p class="smallText">Transfère les navigations, réglages, polaire, météo et données SpeedPuck vers un autre appareil.</p>
-
-            <button id="btnExportBackup" class="secondaryButton">Exporter toutes les données</button>
-
-            <button id="btnImportBackup" class="secondaryButton">Importer une sauvegarde</button>
-
-            <p id="backupStatus" class="smallText">Le fichier peut être envoyé par AirDrop, e-mail, messagerie ou cloud.</p>
+<p class="smallText polarImportStatus" id="polarImportStatus">Aucune polaire importée.</p>
+<hr class="dataSeparator"/>
+<h3>Sauvegarde et transfert</h3>
+<p class="smallText">Transfère les navigations, réglages, polaire, météo et données SpeedPuck vers un autre appareil.</p>
+<button class="secondaryButton" id="btnExportBackup">Exporter toutes les données</button>
+<button class="secondaryButton" id="btnImportBackup">Importer une sauvegarde</button>
+<p class="smallText" id="backupStatus">Le fichier peut être envoyé par AirDrop, e-mail, messagerie ou cloud.</p>
 </section>
-
-
-
-        <section class="card">
-
-            <h2>Application</h2>
-
-            <p>
+<section class="card">
+<h2>Application</h2>
+<p>
 
                 Version :
                 <strong id="appVersion">
 
                     2.7.0
 </strong>
-
-            </p>
-
-        </section>
-
-
-
-        <div class="buttonBar">
-
-            <button
-                id="btnSaveSettings"
-                class="primaryButton">
+</p>
+</section>
+<div class="buttonBar">
+<button class="primaryButton fullWidthAction" id="btnSaveSettings">
 
                 Enregistrer
 
             </button>
 
-            <button
-                id="btnSettingsHome"
-                class="secondaryButton">
-
-                ← Accueil
-
-            </button>
-
-        </div>
-
-    </section>
-
-
-
-    <!-- ====================================================== -->
-    <!-- FENÊTRE DE CONFIRMATION -->
-    <!-- ====================================================== -->
-
-    <div
-        id="confirmModal"
-        class="modal">
-
-        <div class="modalContent">
-
-            <h2 id="confirmTitle">
+</div>
+</section>
+<!-- ====================================================== -->
+<!-- FENÊTRE DE CONFIRMATION -->
+<!-- ====================================================== -->
+<div class="modal" id="confirmModal">
+<div class="modalContent">
+<h2 id="confirmTitle">
 
                 Confirmation
 
             </h2>
-
-            <p id="confirmMessage">
+<p id="confirmMessage">
 
                 Êtes-vous sûr ?
 
             </p>
-
-            <div class="modalButtons">
-
-                <button
-                    id="btnConfirmCancel"
-                    class="secondaryButton">
+<div class="modalButtons">
+<button class="secondaryButton" id="btnConfirmCancel">
 
                     Annuler
 
                 </button>
-
-                <button
-                    id="btnConfirmOk"
-                    class="primaryButton">
+<button class="primaryButton" id="btnConfirmOk">
 
                     Confirmer
 
                 </button>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-
 </div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=2110"></script>
-
-
+</div>
+</div>
+</div>
+<script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js?v=3000"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=2110')
+    navigator.serviceWorker.register('./sw.js?v=3000')
       .catch(error => console.error('Service Worker non enregistré :', error));
   });
 }
 </script>
-
 </body>
-
 </html>
-
-

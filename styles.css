@@ -2213,3 +2213,39 @@ body {
     .learningOverview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .learningTile { grid-column: auto; }
 }
+
+/* ==========================================================
+   SPEEDFEET V3.0 — REFONTE VISUELLE ET CHARTE D'INTERFACE
+   ========================================================== */
+:root{
+  --v3-bg:#06101d;
+  --v3-surface:#0b1929;
+  --v3-surface-2:#10233a;
+  --v3-border:#203650;
+  --v3-accent:#4aa8ff;
+  --v3-text:#f4f8fc;
+  --v3-muted:#9eb0c4;
+}
+html,body{background:radial-gradient(circle at 50% -10%,#173450 0,#091522 36%,#06101d 72%);color:var(--v3-text)}
+body{padding-bottom:env(safe-area-inset-bottom)}
+.v3AppShell{width:min(100%,1180px);margin:0 auto;padding:0 16px 34px}
+.page{padding:0 0 26px}
+.pageHeader{position:static!important;top:auto!important;z-index:auto!important;background:transparent!important;backdrop-filter:none!important;border-bottom:0!important;padding:calc(22px + env(safe-area-inset-top)) 0 18px!important;margin:0!important}
+.pageHeader h1{margin:0;font-size:clamp(1.65rem,4vw,2.35rem);letter-spacing:-.035em;color:var(--v3-text)}
+.pageHeader .subtitle{margin:7px 0 0;color:var(--v3-muted);font-size:.95rem}
+.pageHeaderTop{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:14px;margin-bottom:5px}
+.pageBackButton{border:1px solid var(--v3-border);background:#0b1b2d;color:#dcecff;border-radius:12px;padding:10px 13px;font-weight:750;white-space:nowrap}
+.pageBackButton:active{transform:scale(.97)}
+.v3HomeHeader{padding-bottom:15px!important}
+.v3HomeHeader h1{font-size:clamp(2.15rem,7vw,3.25rem)}
+.v3Badge{display:inline-flex;padding:5px 9px;margin-bottom:10px;border:1px solid #4aa8ff55;border-radius:999px;background:#4aa8ff18;color:#8dcbff;font-size:.72rem;font-weight:850;letter-spacing:.08em}
+.v3IntroCard{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 18px;padding:18px;border:1px solid #315071;border-radius:22px;background:linear-gradient(135deg,#12345a,#0b1d31 70%);box-shadow:0 18px 45px #0005}
+.v3IntroCard h2{margin:4px 0 7px;font-size:1.25rem}.v3IntroCard p{margin:0;color:#bdd0e2;line-height:1.4;font-size:.9rem}.v3Eyebrow{font-size:.68rem;font-weight:850;letter-spacing:.11em;color:#7bc3ff}.v3BoatMark{display:grid;place-items:center;flex:0 0 62px;height:62px;border-radius:18px;background:#ffffff0d;border:1px solid #ffffff18;font-size:2rem}
+.v3MainMenu{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:12px;margin-bottom:22px}
+.v3MenuButton{display:flex!important;align-items:center;gap:13px;min-height:86px!important;padding:16px!important}.v3MenuButton span:last-child{display:flex;flex-direction:column;gap:3px}.v3MenuButton strong{font-size:1rem}.v3MenuButton small{font-size:.76rem;font-weight:550;color:var(--v3-muted)}.v3MenuButton.primary small{color:#d9eeff}.menuIcon{display:grid;place-items:center;flex:0 0 38px;height:38px;border-radius:12px;background:#ffffff12;font-size:1.1rem}
+.homeSection{margin-top:18px}.homeSection>h2,.sectionTitleRow h2{font-size:1.05rem;letter-spacing:-.01em}
+.homeStatTile,.learningCard,.learningExplanationCard{color:var(--v3-text)!important}.homeStatTile strong,.homeStatTile small,.learningCard h2,.learningCard p,.learningCard strong,.learningCard span,.learningExplanationCard h2,.learningExplanationCard p,.learningExplanationCard strong,.learningExplanationCard span{color:inherit}.homeStatTile small,.learningCard .smallText,.learningExplanationCard .smallText,.learningLegend span{color:var(--v3-muted)!important}
+.buttonBar{position:static!important;display:flex;gap:10px;margin-top:18px;padding:0!important;background:none!important;border:0!important}.buttonBar .fullWidthAction,.buttonBar:has(.fullWidthAction) .fullWidthAction{width:100%}
+.card{border-color:var(--v3-border);background:linear-gradient(180deg,#10233a,#0b1929);box-shadow:0 12px 34px #0003}
+@media(max-width:760px){.v3MainMenu{grid-template-columns:1fr 1fr}.v3MainMenu #btnStartNavigation{grid-column:1/-1}.pageHeaderTop{grid-template-columns:auto minmax(0,1fr)}.pageHeaderTop h1{font-size:1.55rem}.v3AppShell{padding-inline:12px}.v3IntroCard{padding:16px}.v3BoatMark{flex-basis:54px;height:54px}.buttonBar{flex-direction:column}}
+@media(max-width:420px){.pageBackButton{padding:9px 10px;font-size:.85rem}.v3MainMenu{gap:9px}.v3MenuButton{min-height:80px!important}.v3MenuButton small{font-size:.7rem}}
