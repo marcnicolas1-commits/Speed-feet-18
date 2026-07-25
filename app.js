@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "2.7.0";
+    const APP_VERSION = "2.8.0";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -93,6 +93,10 @@
         gpsWatchId: null,
         confirmAction: null,
         historyMap: null,
+        replayMap: null,
+        replayBoatMarker: null,
+        replayCursorIndex: 0,
+        replayNavigationId: null,
         toastTimerId: null
     };
 
@@ -386,6 +390,7 @@
     }
 
     function closeAllModals() {
+        if (modalCleanupReplay) { modalCleanupReplay(); modalCleanupReplay = null; }
         document
             .querySelectorAll(".modal")
             .forEach((modal) => {
@@ -1993,6 +1998,199 @@
         }).join("");
     }
 
+
+
+    function pointTimeMs(point, fallback) {
+        const value = new Date(point?.timestamp).getTime();
+        return Number.isFinite(value) ? value : fallback;
+    }
+
+    function nearestTrackIndex(track, timestamp) {
+        if (!Array.isArray(track) || !track.length) return -1;
+        const target = new Date(timestamp).getTime();
+        if (!Number.isFinite(target)) return 0;
+        let low = 0, high = track.length - 1;
+        while (low < high) {
+            const mid = Math.floor((low + high) / 2);
+            if (pointTimeMs(track[mid], mid) < target) low = mid + 1;
+            else high = mid;
+        }
+        if (low > 0) {
+            const before = Math.abs(pointTimeMs(track[low - 1], low - 1) - target);
+            const after = Math.abs(pointTimeMs(track[low], low) - target);
+            if (before <= after) return low - 1;
+        }
+        return low;
+    }
+
+    function mean(values) {
+        const valid = values.filter(Number.isFinite);
+        return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
+    }
+
+    function circularMean(values) {
+        const valid = values.filter(Number.isFinite);
+        if (!valid.length) return null;
+        const sin = valid.reduce((sum, value) => sum + Math.sin(value * Math.PI / 180), 0);
+        const cos = valid.reduce((sum, value) => sum + Math.cos(value * Math.PI / 180), 0);
+        return (Math.atan2(sin, cos) * 180 / Math.PI + 360) % 360;
+    }
+
+    function maneuverAnalysis(navigation, marker) {
+        const track = navigation?.track || [];
+        const center = nearestTrackIndex(track, marker.timestamp);
+        if (center < 0) return { marker, center, durationSeconds: null, entrySpeed: null, exitSpeed: null, minimumSpeed: null, speedLoss: null };
+        const centerTime = pointTimeMs(track[center], center);
+        const before = track.filter(point => {
+            const t = pointTimeMs(point, 0);
+            return t >= centerTime - 20000 && t <= centerTime - 5000;
+        });
+        const after = track.filter(point => {
+            const t = pointTimeMs(point, 0);
+            return t >= centerTime + 5000 && t <= centerTime + 25000;
+        });
+        const window = track.filter(point => Math.abs(pointTimeMs(point, 0) - centerTime) <= 45000);
+        const entrySpeed = mean(before.map(point => Number(point.speedKn)));
+        const exitSpeed = mean(after.map(point => Number(point.speedKn)));
+        const validSpeeds = window.map(point => Number(point.speedKn)).filter(Number.isFinite);
+        const minimumSpeed = validSpeeds.length ? Math.min(...validSpeeds) : null;
+        const speedLoss = Number.isFinite(entrySpeed) && Number.isFinite(minimumSpeed) ? entrySpeed - minimumSpeed : null;
+        const headingBefore = circularMean(before.map(point => Number(point.heading)));
+        const headingAfter = circularMean(after.map(point => Number(point.heading)));
+        let durationSeconds = null;
+        if (Number.isFinite(headingBefore) && Number.isFinite(headingAfter)) {
+            const totalTurn = calculateSmallestAngle(headingBefore, headingAfter);
+            const startThreshold = Math.max(8, totalTurn * .18);
+            let startIndex = center, endIndex = center;
+            for (let i = center; i >= 0; i--) {
+                const heading = Number(track[i].heading);
+                if (!Number.isFinite(heading) || calculateSmallestAngle(heading, headingBefore) <= startThreshold) { startIndex = i; break; }
+            }
+            for (let i = center; i < track.length; i++) {
+                const heading = Number(track[i].heading);
+                if (!Number.isFinite(heading) || calculateSmallestAngle(heading, headingAfter) <= startThreshold) { endIndex = i; break; }
+            }
+            const startTime = pointTimeMs(track[startIndex], startIndex);
+            const endTime = pointTimeMs(track[endIndex], endIndex);
+            if (endTime >= startTime) durationSeconds = Math.max(1, Math.round((endTime - startTime) / 1000));
+        }
+        return { marker, center, durationSeconds, entrySpeed, exitSpeed, minimumSpeed, speedLoss, headingBefore, headingAfter };
+    }
+
+    function createReplayChartSVG(track, cursorIndex, key, label, unit, maxValue) {
+        if (!track.length) return '';
+        const width = 760, height = 160, padX = 34, padY = 20;
+        const values = track.map(point => Number(point[key]));
+        const valid = values.filter(Number.isFinite);
+        if (!valid.length) return `<div class="emptyCard">Aucune donnée ${escapeHTML(label.toLowerCase())}.</div>`;
+        const min = key === 'speedKn' ? 0 : 0;
+        const max = Number.isFinite(maxValue) ? maxValue : Math.max(...valid, min + 1);
+        const points = values.map((value, index) => {
+            const x = padX + index / Math.max(1, track.length - 1) * (width - padX * 2);
+            const normalized = Number.isFinite(value) ? (value - min) / Math.max(.001, max - min) : 0;
+            const y = height - padY - Math.max(0, Math.min(1, normalized)) * (height - padY * 2);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        const cursorX = padX + cursorIndex / Math.max(1, track.length - 1) * (width - padX * 2);
+        const current = values[cursorIndex];
+        return `<div class="replayChart"><div class="replayChartHeader"><strong>${escapeHTML(label)}</strong><span>${Number.isFinite(current) ? current.toFixed(key === 'speedKn' ? 1 : 0) + ' ' + unit : '—'}</span></div><svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Graphique ${escapeHTML(label)}"><line x1="${padX}" y1="${height-padY}" x2="${width-padX}" y2="${height-padY}" class="chartAxis"/><polyline points="${points}" class="chartLine"/><line x1="${cursorX}" y1="${padY}" x2="${cursorX}" y2="${height-padY}" class="chartCursor"/></svg></div>`;
+    }
+
+    function createReplayHTML(navigation) {
+        const track = navigation?.track || [];
+        if (track.length < 2) return `<div class="emptyCard">Aucune trace GPS exploitable pour la relecture.</div>`;
+        const maneuvers = (navigation.markers || []).filter(marker => ['tack','gybe'].includes(marker.type));
+        return `<div class="replayWorkspace">
+            <div id="replayMap" class="historySatelliteMap replayMap" aria-label="Relecture synchronisée de la trace"></div>
+            <div class="replayControls">
+                <button type="button" id="btnReplayPlay" class="secondaryButton compactButton">▶ Lire</button>
+                <input id="replaySlider" type="range" min="0" max="${track.length-1}" value="0" step="1" aria-label="Position dans la navigation">
+                <strong id="replayTime">00:00</strong>
+            </div>
+            <div id="replayLiveStats" class="replayLiveStats"></div>
+            <div id="replayCharts"></div>
+            <div class="maneuverAnalysisPanel"><h4>Manœuvres détectées / enregistrées</h4><div id="replayManeuverList">${maneuvers.length ? '' : '<p>Aucun virement ou empannage enregistré.</p>'}</div></div>
+        </div>`;
+    }
+
+    function initializeReplay(navigation) {
+        const track = navigation?.track || [];
+        const container = getElement('replayMap');
+        const slider = getElement('replaySlider');
+        if (!container || !slider || track.length < 2 || typeof L === 'undefined') return;
+        if (state.replayMap) state.replayMap.remove();
+        state.replayNavigationId = navigation.id;
+        state.replayCursorIndex = 0;
+        const map = L.map(container, { zoomControl: true });
+        state.replayMap = map;
+        L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' }).addTo(map);
+        const latlngs = track.map(point => [point.latitude, point.longitude]);
+        L.polyline(latlngs, { color: '#42a5ff', weight: 5, opacity: .9 }).addTo(map);
+        state.replayBoatMarker = L.circleMarker(latlngs[0], { radius: 9, color: '#fff', weight: 3, fillColor: '#12b76a', fillOpacity: 1 }).addTo(map).bindTooltip('Bateau', { permanent: false });
+        (navigation.markers || []).filter(marker => marker.position).forEach((marker, markerIndex) => {
+            const analysis = ['tack','gybe'].includes(marker.type) ? maneuverAnalysis(navigation, marker) : null;
+            const popup = analysis ? `<strong>${escapeHTML(MARKER_LABELS[marker.type])}</strong><br>${analysis.durationSeconds ?? '—'} s · entrée ${analysis.entrySpeed?.toFixed(1) ?? '—'} nd · sortie ${analysis.exitSpeed?.toFixed(1) ?? '—'} nd` : `<strong>${escapeHTML(MARKER_LABELS[marker.type] || marker.name || 'Marqueur')}</strong>`;
+            const dot = L.circleMarker([marker.position.latitude, marker.position.longitude], { radius: 7, color: '#fff', weight: 2, fillColor: marker.type === 'tack' ? '#2e90fa' : marker.type === 'gybe' ? '#f79009' : '#fdb022', fillOpacity: 1 }).addTo(map).bindPopup(popup);
+            dot.on('click', () => setReplayIndex(navigation, nearestTrackIndex(track, marker.timestamp)));
+        });
+        map.fitBounds(L.latLngBounds(latlngs), { padding: [24,24], maxZoom: 17 });
+        slider.addEventListener('input', () => setReplayIndex(navigation, Number(slider.value)));
+        let playTimer = null;
+        const playButton = getElement('btnReplayPlay');
+        playButton?.addEventListener('click', () => {
+            if (playTimer) { clearInterval(playTimer); playTimer = null; playButton.textContent = '▶ Lire'; return; }
+            playButton.textContent = '⏸ Pause';
+            playTimer = setInterval(() => {
+                let next = Number(slider.value) + Math.max(1, Math.round(track.length / 600));
+                if (next >= track.length) { next = 0; }
+                slider.value = String(next); setReplayIndex(navigation, next);
+            }, 120);
+        });
+        modalCleanupReplay = () => { if (playTimer) clearInterval(playTimer); };
+        renderReplayManeuvers(navigation);
+        setReplayIndex(navigation, 0);
+        setTimeout(() => map.invalidateSize(), 80);
+    }
+
+    let modalCleanupReplay = null;
+
+    function setReplayIndex(navigation, requestedIndex) {
+        const track = navigation?.track || [];
+        if (!track.length) return;
+        const index = Math.max(0, Math.min(track.length - 1, Math.round(requestedIndex || 0)));
+        state.replayCursorIndex = index;
+        const slider = getElement('replaySlider'); if (slider) slider.value = String(index);
+        const point = track[index];
+        if (state.replayBoatMarker && Number.isFinite(point.latitude) && Number.isFinite(point.longitude)) state.replayBoatMarker.setLatLng([point.latitude, point.longitude]);
+        const start = pointTimeMs(track[0], 0), now = pointTimeMs(point, index);
+        setText('replayTime', formatDuration(Math.max(0, now - start)));
+        const stats = getElement('replayLiveStats');
+        if (stats) stats.innerHTML = `<div><span>Vitesse</span><strong>${Number.isFinite(Number(point.speedKn)) ? Number(point.speedKn).toFixed(1) : '—'} nd</strong></div><div><span>Cap</span><strong>${Number.isFinite(Number(point.heading)) ? Math.round(Number(point.heading)).toString().padStart(3,'0') : '—'}°</strong></div><div><span>Heure</span><strong>${new Date(point.timestamp).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</strong></div>`;
+        const charts = getElement('replayCharts');
+        if (charts) charts.innerHTML = createReplayChartSVG(track,index,'speedKn','Vitesse','nd') + createReplayChartSVG(track,index,'heading','Cap','°',360);
+        document.querySelectorAll('.maneuverReplayCard').forEach(card => card.classList.toggle('active', Math.abs(Number(card.dataset.trackIndex)-index) <= Math.max(2, track.length/200)));
+    }
+
+    function renderReplayManeuvers(navigation) {
+        const container = getElement('replayManeuverList');
+        if (!container) return;
+        const maneuvers = (navigation.markers || []).filter(marker => ['tack','gybe'].includes(marker.type));
+        container.innerHTML = maneuvers.map((marker, index) => {
+            const a = maneuverAnalysis(navigation, marker);
+            return `<article class="maneuverReplayCard" data-marker-index="${index}" data-track-index="${a.center}"><button type="button" class="maneuverReplayJump"><strong>${escapeHTML(MARKER_LABELS[marker.type])}</strong><span>${escapeHTML(formatDateTime(marker.timestamp))}</span></button><div class="maneuverMetrics"><span>Durée <b>${a.durationSeconds ?? '—'} s</b></span><span>Entrée <b>${a.entrySpeed?.toFixed(1) ?? '—'} nd</b></span><span>Mini <b>${a.minimumSpeed?.toFixed(1) ?? '—'} nd</b></span><span>Sortie <b>${a.exitSpeed?.toFixed(1) ?? '—'} nd</b></span></div><label>Note<textarea rows="2" class="maneuverNote" placeholder="Conditions, qualité, réglage…">${escapeHTML(marker.note || '')}</textarea></label><button type="button" class="secondaryButton compactButton saveManeuverNote">Enregistrer la note</button></article>`;
+        }).join('') || '<p>Aucun virement ou empannage enregistré.</p>';
+        container.querySelectorAll('.maneuverReplayCard').forEach(card => {
+            const markerIndex = Number(card.dataset.markerIndex);
+            const marker = maneuvers[markerIndex];
+            card.querySelector('.maneuverReplayJump')?.addEventListener('click', () => setReplayIndex(navigation, Number(card.dataset.trackIndex)));
+            card.querySelector('.saveManeuverNote')?.addEventListener('click', () => {
+                marker.note = card.querySelector('.maneuverNote')?.value.trim() || '';
+                saveJSON(STORAGE_KEYS.history, state.history);
+                showToast('Note de manœuvre enregistrée');
+            });
+        });
+    }
+
     function openNavigationDetails(navigationId) {
         const navigation = findNavigationById(navigationId);
 
@@ -2163,8 +2361,9 @@
             </section>
 
             <section class="historyDetailSection">
-                <h3>Trace GPS sur carte satellite</h3>
-                ${createHistoricalTrackSVG(navigation)}
+                <h3>Relecture synchronisée</h3>
+                <p class="smallText">Déplace le curseur pour suivre le bateau sur la carte et lire la vitesse et le cap au même instant.</p>
+                ${createReplayHTML(navigation)}
             </section>
 
             <section class="historyDetailSection">
@@ -2195,7 +2394,7 @@
         getElement("btnDeleteNavigation")?.addEventListener("click", () => deleteNavigation(navigation.id));
 
         openModal("navigationDetailsModal");
-        window.setTimeout(() => initializeHistorySatelliteMap(navigation), 50);
+        window.setTimeout(() => initializeReplay(navigation), 50);
     }
 
     function bindHistoryCards() {
