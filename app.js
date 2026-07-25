@@ -3454,6 +3454,28 @@ bindClick(
         bindClick("btnClearNextNavigationNotes", clearNextNavigationNotes);
         bindClick("btnEditNextNavigationNotes", editNextNavigationNotes);
 
+        const refreshGPSNow = () => {
+            if (!state.currentNavigation || !("geolocation" in navigator)) return;
+            updateGPSIndicator("searching");
+            showToast("Actualisation GPS…");
+            navigator.geolocation.getCurrentPosition(
+                position => { handleGPSPosition(position); updateNavigationDashboard(); showToast("Vitesse GPS actualisée"); },
+                error => { handleGPSError(error); showToast("Actualisation GPS impossible"); },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 12000 }
+            );
+        };
+        bindClick("navSpeedRefresh", refreshGPSNow);
+        bindClick("navWindRefresh", openWindModal);
+        const bindKeyboardRefresh = (id, callback) => {
+            const el = getElement(id);
+            if (!el) return;
+            el.addEventListener("keydown", event => {
+                if (event.key === "Enter" || event.key === " ") { event.preventDefault(); callback(); }
+            });
+        };
+        bindKeyboardRefresh("navSpeedRefresh", refreshGPSNow);
+        bindKeyboardRefresh("navWindRefresh", openWindModal);
+
         bindClick("btnNavigationMenu", () => openModal("navigationOptionsModal"));
         bindClick("btnCloseNavigationMenu", closeAllModals);
         bindClick(

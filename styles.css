@@ -2392,3 +2392,33 @@ body{padding-bottom:env(safe-area-inset-bottom)}
   .windCompassCard{width:min(72vw,520px)}
   .navUtilityGrid button{min-height:68px}
 }
+
+/* SpeedFeet V3.0.3 — cadran enrichi et actualisation tactile */
+.navRefreshCard{cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.navRefreshCard:active{filter:brightness(1.14);transform:scale(.997)}
+.navRefreshCard:focus-visible{outline:2px solid #1688ff;outline-offset:2px}
+.navRefreshHint,.navCompassRefreshHint{display:block;color:#78bfff;font-size:.68rem;font-weight:700;letter-spacing:0;margin-top:3px;opacity:.9}
+.navCompassRefreshHint{position:absolute;left:0;right:0;bottom:2.2%;text-align:center;font-size:.62rem;z-index:7;pointer-events:none}
+.windCompassCard{overflow:visible}
+.compassScale{z-index:1}
+.compassAngles{position:absolute;inset:0;z-index:5;pointer-events:none;color:#fff;font-size:clamp(.65rem,2.8vw,.88rem);font-weight:750;text-shadow:0 1px 4px #000}
+.compassAngles span{position:absolute;transform:translate(-50%,-50%)}
+.compassAngles .a0{left:50%;top:4.2%}
+.compassAngles .a30r{left:72.5%;top:10.5%}.compassAngles .a60r{left:89.2%;top:28%}.compassAngles .a90r{left:95%;top:50%}.compassAngles .a120r{left:89.2%;top:72%}.compassAngles .a150r{left:72.5%;top:89.5%}
+.compassAngles .a150l{left:27.5%;top:89.5%}.compassAngles .a120l{left:10.8%;top:72%}.compassAngles .a90l{left:5%;top:50%}.compassAngles .a60l{left:10.8%;top:28%}.compassAngles .a30l{left:27.5%;top:10.5%}
+.windReadout,.boatCompass,.headingReadout{z-index:3}
+.windArrow{z-index:6;top:20%;right:-1.5%;font-size:clamp(46px,14vw,68px);filter:drop-shadow(0 4px 8px #0008)}
+@media(max-width:600px){
+  .navigationV3Page{min-height:calc(100svh - env(safe-area-inset-top));display:flex;align-items:flex-start}
+  .navInstrumentShell{width:100%;min-height:calc(100svh - 18px);grid-template-rows:auto auto auto auto auto;align-content:space-between}
+  .windCompassCard{width:min(100%,clamp(300px,45svh,380px))}
+  .navSpeedHero strong{font-size:clamp(5rem,22vw,6.8rem)}
+  .navUtilityGrid button{min-height:58px}
+}
+@media(max-height:740px) and (max-width:600px){
+  .navRefreshHint{font-size:.58rem}
+  .navCompassRefreshHint{display:none}
+  .windCompassCard{width:min(100%,40svh)}
+  .compassAngles{font-size:.62rem}
+  .navUtilityGrid button{min-height:48px}
+}

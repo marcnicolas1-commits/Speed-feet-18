@@ -152,16 +152,20 @@
     <span class="navRunningStatus"><i class="gpsMiniDot searching" id="navGPSDot"></i>Navigation en cours</span>
   </div>
   <div class="navTopMetrics">
-    <article class="navSpeedHero"><small>VITESSE GPS</small><strong id="navSpeed">0.0 <em>nd</em></strong></article>
+    <article class="navSpeedHero navRefreshCard" id="navSpeedRefresh" role="button" tabindex="0" aria-label="Actualiser la vitesse GPS"><small>VITESSE GPS</small><strong id="navSpeed">0.0 <em>nd</em></strong><span class="navRefreshHint">↻ Toucher pour actualiser</span></article>
     <article><small>VITESSE CIBLE</small><strong id="navTargetSpeed">— nd</strong><i><b id="targetProgress"></b></i></article>
     <article><small>% POLAIRE</small><strong id="navPolar">— %</strong><i><b id="polarProgress"></b></i></article>
   </div>
-  <article class="windCompassCard">
+  <article class="windCompassCard navRefreshCard" id="navWindRefresh" role="button" tabindex="0" aria-label="Actualiser les informations de vent">
     <div class="compassScale"><span class="zone upwind"></span><span class="zone reachLeft"></span><span class="zone reachRight"></span><span class="zone downwindLeft"></span><span class="zone downwindRight"></span></div>
+    <div class="compassAngles" aria-hidden="true">
+      <span class="a0">0°</span><span class="a30r">30°</span><span class="a60r">60°</span><span class="a90r">90°</span><span class="a120r">120°</span><span class="a150r">150°</span>
+      <span class="a150l">150°</span><span class="a120l">120°</span><span class="a90l">90°</span><span class="a60l">60°</span><span class="a30l">30°</span>
+    </div>
     <div class="windReadout"><strong id="navWindAngle">—°</strong><span id="navTack">VENT NON RENSEIGNÉ</span></div>
     <div class="boatCompass">⛵</div>
     <div class="windArrow" id="navWindArrow">➤</div>
-    <div class="headingReadout"><strong id="navHeading">---°</strong><small>CAP GPS</small></div>
+    <div class="headingReadout"><strong id="navHeading">---°</strong><small>CAP GPS</small></div><span class="navCompassRefreshHint">↻ Toucher pour actualiser le vent</span>
   </article>
   <section class="navManeuverGrid">
     <button class="tack" id="btnQuickTack" type="button"><span>↻</span><strong>VIREMENT</strong></button>
