@@ -8,7 +8,8 @@
         preparation: "speedfeet_preparation",
         currentNavigation: "speedfeet_current_navigation",
         history: "speedfeet_history",
-        nextNavigationNotes: "speedfeet_next_navigation_notes"
+        nextNavigationNotes: "speedfeet_next_navigation_notes",
+        checklistItems: "speedfeet_checklist_items"
     };
 
     const DEFAULT_SETTINGS = {
@@ -489,14 +490,8 @@
                     .trim() ||
                 "",
 
-            checklist: {
-                drainPlug: Boolean(getElement("checkDrainPlug")?.checked),
-                rig: Boolean(getElement("checkRig")?.checked),
-                sails: Boolean(getElement("checkSails")?.checked),
-                safety: Boolean(getElement("checkSafety")?.checked),
-                battery: Boolean(getElement("checkBattery")?.checked),
-                weather: Boolean(getElement("checkWeather")?.checked)
-            },
+            checklistItems: readEditableChecklist(),
+            objective: getElement("navigationObjective")?.value || "Entraînement",
 
             nextNavigationNotes:
                 getElement("nextNavigationNotes")
@@ -542,7 +537,8 @@
                     state.settings
                         .defaultCrew,
                 navigationNotes: "",
-                checklist: {},
+                checklistItems: loadChecklistModel(),
+                objective: "Entraînement",
                 nextNavigationNotes: state.nextNavigationNotes || ""
             };
 
@@ -604,18 +600,11 @@
             data.navigationNotes
         );
 
-        const checklist = data.checklist || {};
-        [
-            ["checkDrainPlug", "drainPlug"],
-            ["checkRig", "rig"],
-            ["checkSails", "sails"],
-            ["checkSafety", "safety"],
-            ["checkBattery", "battery"],
-            ["checkWeather", "weather"]
-        ].forEach(([id, key]) => {
-            const element = getElement(id);
-            if (element) element.checked = Boolean(checklist[key]);
-        });
+        renderEditableChecklist(data.checklistItems);
+        setInputValue("navigationObjective", data.objective || "Entraînement");
+        updateObjectiveButtons();
+        updatePrepareMeta();
+        updateNotesCounter();
 
         setInputValue(
             "nextNavigationNotes",
@@ -674,6 +663,91 @@
 
         element.value =
             value ?? "";
+    }
+
+    const DEFAULT_CHECKLIST_ITEMS = [
+        "SpeedPuck allumé", "Tablette chargée", "Eau", "Gilet", "Spi embarqué", "Caméra", "Vérification des haubans", "Bouchon de nable"
+    ];
+
+    function loadChecklistModel() {
+        const saved = loadJSON(STORAGE_KEYS.checklistItems, null);
+        if (Array.isArray(saved) && saved.length) return saved;
+        return DEFAULT_CHECKLIST_ITEMS.map((label, index) => ({ id: `check-${Date.now()}-${index}`, label, checked: false }));
+    }
+
+    function readEditableChecklist() {
+        return Array.from(document.querySelectorAll("#editableChecklist .editableChecklistRow")).map((row) => ({
+            id: row.dataset.id,
+            label: row.querySelector(".checklistLabel")?.textContent.trim() || "Élément",
+            checked: Boolean(row.querySelector('input[type="checkbox"]')?.checked)
+        }));
+    }
+
+    function saveChecklistModel() {
+        const items = readEditableChecklist();
+        saveJSON(STORAGE_KEYS.checklistItems, items.map(item => ({ ...item, checked: false })));
+        savePreparationDraft();
+    }
+
+    function renderEditableChecklist(items) {
+        const host = getElement("editableChecklist");
+        if (!host) return;
+        const base = Array.isArray(items) && items.length ? items : loadChecklistModel();
+        host.innerHTML = base.map((item, index) => `<div class="editableChecklistRow" data-id="${escapeHTML(item.id || `item-${Date.now()}-${index}`)}">
+            <button class="dragHandle" type="button" aria-label="Déplacer">⠿</button>
+            <input type="checkbox" ${item.checked ? "checked" : ""} aria-label="Cocher">
+            <span class="checklistLabel">${escapeHTML(item.label || "Élément")}</span>
+            <button class="editChecklistItem" type="button" aria-label="Modifier">✎</button>
+            <button class="deleteChecklistItem" type="button" aria-label="Supprimer">⌫</button>
+        </div>`).join("");
+    }
+
+    function addChecklistItem() {
+        const label = prompt("Nouvel élément de checklist :");
+        if (!label?.trim()) return;
+        const items = readEditableChecklist();
+        items.push({ id: `item-${Date.now()}`, label: label.trim(), checked: false });
+        renderEditableChecklist(items);
+        saveChecklistModel();
+    }
+
+    function handleChecklistClick(event) {
+        const row = event.target.closest(".editableChecklistRow");
+        if (!row) return;
+        if (event.target.closest(".editChecklistItem")) {
+            const current = row.querySelector(".checklistLabel")?.textContent || "";
+            const label = prompt("Modifier l’élément :", current);
+            if (label?.trim()) { row.querySelector(".checklistLabel").textContent = label.trim(); saveChecklistModel(); }
+        }
+        if (event.target.closest(".deleteChecklistItem")) {
+            if (confirm("Supprimer cet élément de la checklist ?")) { row.remove(); saveChecklistModel(); }
+        }
+    }
+
+    function resetChecklist() {
+        renderEditableChecklist(DEFAULT_CHECKLIST_ITEMS.map((label, index) => ({ id: `default-${index}`, label, checked: false })));
+        saveChecklistModel();
+    }
+
+    function checkAllChecklist() {
+        document.querySelectorAll('#editableChecklist input[type="checkbox"]').forEach(input => input.checked = true);
+        savePreparationDraft();
+    }
+
+    function updatePrepareMeta() {
+        const now = new Date();
+        setText("prepareBoatName", state.settings.boatName || "Speed Feet 18");
+        setText("prepareDate", now.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }));
+        setText("prepareTime", now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }));
+    }
+
+    function updateObjectiveButtons() {
+        const current = getElement("navigationObjective")?.value || "Entraînement";
+        document.querySelectorAll("#objectiveChoices button").forEach(button => button.classList.toggle("selected", button.dataset.objective === current));
+    }
+
+    function updateNotesCounter() {
+        setText("navigationNotesCount", String(getElement("navigationNotes")?.value.length || 0));
     }
 
     function validatePreparation(data) {
@@ -1278,7 +1352,25 @@
             ? Math.round(navigation.currentHeading).toString().padStart(3, "0") + "°"
             : "---°");
         setText("navTargetSpeed", Number.isFinite(target) ? target.toFixed(1) + " nd" : "— nd");
-        setText("navPolar", Number.isFinite(target) && target > 0 ? Math.round(speed / target * 100) + " %" : "— %");
+        const polarPercent = Number.isFinite(target) && target > 0 ? Math.round(speed / target * 100) : null;
+        setText("navPolar", polarPercent !== null ? polarPercent + " %" : "— %");
+        const targetBar = getElement("targetProgress");
+        const polarBar = getElement("polarProgress");
+        if (targetBar) targetBar.style.width = `${Math.min(100, polarPercent || 0)}%`;
+        if (polarBar) polarBar.style.width = `${Math.min(100, polarPercent || 0)}%`;
+        const elapsed = Math.max(0, now.getTime() - new Date(navigation.startedAt).getTime());
+        const h = Math.floor(elapsed / 3600000), m = Math.floor(elapsed % 3600000 / 60000), s = Math.floor(elapsed % 60000 / 1000);
+        setText("navElapsed", [h,m,s].map(v => String(v).padStart(2,"0")).join(":"));
+        const lastWind = navigation.windRecords?.slice(-1)[0];
+        if (Number.isFinite(lastWind?.direction) && Number.isFinite(navigation.currentHeading)) {
+            let angle = ((lastWind.direction - navigation.currentHeading + 540) % 360) - 180;
+            const side = angle >= 0 ? "TRIBORD" : "BÂBORD";
+            setText("navWindAngle", Math.round(Math.abs(angle)) + "°");
+            setText("navTack", side);
+            const arrow = getElement("navWindArrow"); if (arrow) arrow.style.transform = `rotate(${angle - 90}deg)`;
+        } else {
+            setText("navWindAngle", "—°"); setText("navTack", "VENT NON RENSEIGNÉ");
+        }
     }
 
     function setText(id, value) {
@@ -3319,6 +3411,17 @@ bindClick(
                 )
         );
 
+        bindClick("btnCancelPreparation", () => showPage("homePage"));
+        bindClick("btnAddChecklistItem", addChecklistItem);
+        bindClick("btnResetChecklist", resetChecklist);
+        bindClick("btnCheckAll", checkAllChecklist);
+        getElement("editableChecklist")?.addEventListener("click", handleChecklistClick);
+        getElement("editableChecklist")?.addEventListener("change", savePreparationDraft);
+        getElement("navigationNotes")?.addEventListener("input", () => { updateNotesCounter(); savePreparationDraft(); });
+        document.querySelectorAll("#objectiveChoices button").forEach(button => button.addEventListener("click", () => {
+            setInputValue("navigationObjective", button.dataset.objective || "Entraînement"); updateObjectiveButtons(); savePreparationDraft();
+        }));
+
         bindClick(
             "btnStartPreparedNavigation",
             startPreparedNavigation
@@ -3343,6 +3446,8 @@ bindClick(
             "btnMarker",
             addMarker
         );
+        bindClick("btnSpiDown", () => { addMarker(); showToast("Spi affalé enregistré"); });
+        bindClick("btnSpiUp", () => { addMarker(); showToast("Spi envoyé enregistré"); });
 
         bindClick("btnQuickTack", () => saveTypedMarker("tack"));
         bindClick("btnQuickGybe", () => saveTypedMarker("gybe"));

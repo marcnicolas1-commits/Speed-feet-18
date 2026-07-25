@@ -72,117 +72,72 @@
 <!-- ====================================================== -->
 <!-- PREPARATION -->
 <!-- ====================================================== -->
-<section class="page" id="preparePage">
-<header class="pageHeader"><div class="pageHeaderTop"><button class="pageBackButton" id="btnBackHome">← Accueil</button><h1>Préparer une navigation</h1></div>
-
-<p class="subtitle">
-
-                Vérifiez les conditions avant le départ.
-
-            </p>
+<section class="page prepareV3Page" id="preparePage">
+<header class="pageHeader prepareV3Header">
+  <div class="pageHeaderTop"><button class="pageBackButton" id="btnBackHome">← Accueil</button><h1>Préparer la navigation</h1><span class="prepareHelp">?</span></div>
 </header>
-<!-- CHECKLIST AVANT SORTIE -->
-<section class="card preparationChecklistCard">
-<h2>Checklist avant sortie</h2>
-<div class="checklistGrid">
-<label class="checklistItem"><input id="checkDrainPlug" type="checkbox"/> <span>Bouchon et coque contrôlés</span></label>
-<label class="checklistItem"><input id="checkRig" type="checkbox"/> <span>Gréement et haubans contrôlés</span></label>
-<label class="checklistItem"><input id="checkSails" type="checkbox"/> <span>Voiles et bouts prêts</span></label>
-<label class="checklistItem"><input id="checkSafety" type="checkbox"/> <span>Équipement de sécurité à bord</span></label>
-<label class="checklistItem"><input id="checkBattery" type="checkbox"/> <span>Téléphone / tablette suffisamment chargés</span></label>
-<label class="checklistItem"><input id="checkWeather" type="checkbox"/> <span>Météo et zone de navigation vérifiées</span></label>
+<section class="prepareBoatStrip">
+  <div class="boatIdentity"><span class="boatGlyph">⛵</span><div><strong id="prepareBoatName">Speed Feet 18</strong><small>Bateau sélectionné</small></div></div>
+  <div class="prepareMeta"><span>▣</span><div><strong id="prepareDate">—</strong><small>Date</small></div></div>
+  <div class="prepareMeta"><span>◷</span><div><strong id="prepareTime">—</strong><small>Heure</small></div></div>
+</section>
+
+<div class="prepareV3Grid">
+<section class="preparePanel checklistPanel">
+  <div class="prepareSectionHeading"><span class="stepBadge">1</span><h2>Check-list avant sortie</h2><div class="headingActions"><button id="btnCheckAll" type="button">✓ Tout cocher</button><button id="btnResetChecklist" type="button">↻ Réinitialiser</button></div></div>
+  <div class="editableChecklist" id="editableChecklist"></div>
+  <button class="addChecklistButton" id="btnAddChecklistItem" type="button">＋ Ajouter un élément</button>
+</section>
+
+<section class="preparePanel weatherPanel">
+  <div class="prepareSectionHeading"><span class="stepBadge">2</span><h2>Conditions météo</h2><small id="weatherUpdatedAt">Saisie manuelle</small></div>
+  <div class="weatherMetricGrid">
+    <label class="weatherMetric"><span>🌬</span><small>Vent</small><input id="windAverage" inputmode="decimal" placeholder="12" type="number"><b>nd</b></label>
+    <label class="weatherMetric"><span>🌬</span><small>Rafales</small><input id="windGust" inputmode="decimal" placeholder="18" type="number"><b>nd</b></label>
+    <label class="weatherMetric"><span>🧭</span><small>Direction</small><input id="windDirection" inputmode="numeric" placeholder="245" type="number"><b>°</b></label>
+    <label class="weatherMetric"><span>🌊</span><small>État de la mer</small><select id="seaState"><option value="">Choisir</option><option>Plate</option><option>Ridée</option><option>Peu agitée</option><option>Agitée</option><option>Très agitée</option></select></label>
+  </div>
+  <div class="weatherActions">
+    <a href="https://www.windguru.cz/53" target="_blank" rel="noopener noreferrer">↗ Prévisions météo</a>
+    <label class="weatherUpload">📷 Importer une capture<input accept="image/*" id="weatherImage" type="file"></label>
+  </div>
+  <label class="fieldLabel">Notes météo<textarea id="weatherNotes" placeholder="Courant, visibilité, vagues, marée…" rows="2"></textarea></label>
+</section>
+
+<section class="preparePanel objectivePanel">
+  <div class="prepareSectionHeading"><span class="stepBadge">3</span><h2>Objectif de la sortie</h2></div>
+  <div class="objectiveChoices" id="objectiveChoices">
+    <button class="selected" data-objective="Entraînement" type="button">⛵ Entraînement</button>
+    <button data-objective="Régate" type="button">🏁 Régate</button>
+    <button data-objective="Balade" type="button">⛵ Balade</button>
+    <button data-objective="Personnalisé" type="button">✎ Personnalisé</button>
+  </div>
+  <input id="navigationObjective" type="hidden" value="Entraînement">
+</section>
+
+<section class="preparePanel notesPanel">
+  <div class="prepareSectionHeading"><span class="stepBadge">4</span><h2>Notes avant départ</h2><small>optionnel</small></div>
+  <textarea id="navigationNotes" maxlength="250" placeholder="Ajoutez vos notes…" rows="2"></textarea>
+  <div class="notesCounter"><span id="navigationNotesCount">0</span> / 250</div>
+</section>
+
+<section class="preparePanel configurationPanel">
+  <div class="prepareSectionHeading"><span class="stepBadge">5</span><h2>Configuration</h2></div>
+  <div class="configurationGrid">
+    <label>Grand-voile<select id="mainSail"></select></label>
+    <label>Foc<select id="jib"></select></label>
+    <label>Spi<select id="spinnaker"></select></label>
+    <label>Équipage<input id="crew" max="10" min="1" type="number"></label>
+  </div>
+</section>
+
+<section class="preparePanel remindersPanel">
+  <div class="prepareSectionHeading"><span class="stepBadge">6</span><h2>À penser pour la prochaine navigation</h2></div>
+  <textarea id="nextNavigationNotes" placeholder="Ex. reprendre la tension des haubans…" rows="2"></textarea>
+  <button class="secondaryButton compactButton" id="btnClearNextNavigationNotes" type="button">Effacer les remarques</button>
+</section>
 </div>
-</section>
-<section class="card nextNavigationPrepCard">
-<h2>À penser pour la prochaine navigation</h2>
-<p class="smallText">Les remarques restent visibles sur l’accueil jusqu’à ce que tu les effaces.</p>
-<textarea id="nextNavigationNotes" placeholder="Ex. reprendre la tension des haubans, vérifier l’avaleur de spi…" rows="4"></textarea>
-<button class="secondaryButton compactButton" id="btnClearNextNavigationNotes" type="button">Effacer les remarques</button>
-</section>
-<!-- CONDITIONS MÉTÉO -->
-<section class="card">
-<h2>🌤 Conditions météo</h2>
-<label for="weatherImage">
-                Capture météo
-            </label>
-<input accept="image/*" id="weatherImage" type="file"/>
-<label for="windAverage">
-                Vent moyen (nds)
-            </label>
-<input id="windAverage" inputmode="decimal" placeholder="12" type="number"/>
-<label for="windGust">
-                Rafales (nds)
-            </label>
-<input id="windGust" inputmode="decimal" placeholder="18" type="number"/>
-<label for="windDirection">
-                Direction (°)
-            </label>
-<input id="windDirection" inputmode="numeric" placeholder="240" type="number"/>
-<label for="seaState">
-                État de la mer
-            </label>
-<select id="seaState">
-<option value="">Choisir...</option>
-<option>Plate</option>
-<option>Ridée</option>
-<option>Peu agitée</option>
-<option>Agitée</option>
-<option>Très agitée</option>
-</select>
-<label for="weatherNotes">
-                Notes météo
-            </label>
-<textarea id="weatherNotes" placeholder="Courant, visibilité, remarques..." rows="3"></textarea>
-</section>
-<!-- CONFIGURATION -->
-<section class="card">
-<h2>⛵ Configuration</h2>
-<p class="smallText">
-
-                Les valeurs ci-dessous sont chargées automatiquement
-                depuis les paramètres du bateau.
-
-            </p>
-<label for="mainSail">
-
-                Grand-voile
-
-            </label>
-<select id="mainSail"></select>
-<label for="jib">
-
-                Foc
-
-            </label>
-<select id="jib"></select>
-<label for="spinnaker">
-
-                Spi
-
-            </label>
-<select id="spinnaker"></select>
-<label for="crew">
-
-                Équipage
-
-            </label>
-<input id="crew" max="10" min="1" type="number"/>
-<label for="navigationNotes">
-
-                Observations
-
-            </label>
-<textarea id="navigationNotes" placeholder="Essais prévus, matériel particulier..." rows="3"></textarea>
-</section>
-<!-- ACTIONS -->
-<div class="buttonBar">
-
-<button class="primaryButton fullWidthAction" id="btnStartPreparedNavigation">
-
-                ▶ Démarrer la navigation
-
-            </button>
-</div>
+<div class="prepareActions"><button class="secondaryButton" id="btnCancelPreparation" type="button">✕ Annuler</button><button class="primaryButton" id="btnStartPreparedNavigation" type="button">▶ Démarrer la navigation</button></div>
 </section>
 <!-- ====================================================== -->
 <!-- NAVIGATION -->
@@ -190,68 +145,34 @@
 <!-- ====================================================== -->
 <!-- NAVIGATION -->
 <!-- ====================================================== -->
-<section class="page" id="navigationPage">
-<header class="pageHeader">
-<h1>Navigation</h1>
-<p class="subtitle navigationStatusLine">
-                Navigation en cours
-                <span aria-label="GPS en recherche" class="gpsMiniDot searching" id="navGPSDot" title="GPS en recherche"></span>
-</p>
-</header>
-<section class="navigationDashboard navigationDashboardLive">
-<div class="dataCard primaryDataCard speedHeroCard">
-<span class="dataTitle">Vitesse GPS</span>
-<span id="navSpeed">0.0 nd</span>
-</div>
-<div class="dataCard">
-<span class="dataTitle">Cap GPS</span>
-<span id="navHeading">---°</span>
-</div>
-<div class="dataCard">
-<span class="dataTitle">Polaire</span>
-<span id="navPolar">— %</span>
-</div>
-<div class="dataCard">
-<span class="dataTitle">Vitesse cible</span>
-<span id="navTargetSpeed">— nd</span>
-</div>
-<div class="dataCard clockDataCard">
-<span class="dataTitle">Heure</span>
-<span id="navClock">--:--</span>
-</div>
+<section class="page navigationV3Page" id="navigationPage">
+<section class="navInstrumentShell">
+  <div class="navTopMetrics">
+    <article class="navSpeedHero"><small>VITESSE GPS</small><strong id="navSpeed">0.0 <em>nd</em></strong></article>
+    <article><small>VITESSE CIBLE</small><strong id="navTargetSpeed">— nd</strong><i><b id="targetProgress"></b></i></article>
+    <article><small>% POLAIRE</small><strong id="navPolar">— %</strong><i><b id="polarProgress"></b></i></article>
+  </div>
+  <article class="windCompassCard">
+    <div class="compassScale"><span class="zone upwind"></span><span class="zone reachLeft"></span><span class="zone reachRight"></span><span class="zone downwindLeft"></span><span class="zone downwindRight"></span></div>
+    <div class="windReadout"><strong id="navWindAngle">—°</strong><span id="navTack">VENT NON RENSEIGNÉ</span></div>
+    <div class="boatCompass">⛵</div>
+    <div class="windArrow" id="navWindArrow">➤</div>
+    <div class="headingReadout"><strong id="navHeading">---°</strong><small>CAP GPS</small></div>
+  </article>
+  <article class="navTimer"><span>◷</span><strong id="navClock">--:--</strong><small id="navElapsed">00:00:00</small><span class="gpsMiniDot searching" id="navGPSDot"></span></article>
+  <section class="navManeuverGrid">
+    <button class="tack" id="btnQuickTack" type="button"><span>↻</span><strong>VIREMENT</strong></button>
+    <button class="gybe" id="btnQuickGybe" type="button"><span>↺</span><strong>EMPANNAGE</strong></button>
+    <button class="spiDown" id="btnSpiDown" type="button"><span>⛵</span><strong>AFFALER SPI</strong></button>
+    <button class="spiUp" id="btnSpiUp" type="button"><span>⛵</span><strong>ENVOYER SPI</strong></button>
+  </section>
+  <section class="navUtilityGrid">
+    <button id="btnWind" type="button"><span>🌬</span><strong>PRISE DE VENT</strong></button>
+    <button id="btnTrim" type="button"><span>☷</span><strong>RÉGLAGES</strong></button>
+    <button id="btnMarker" type="button"><span>●</span><strong>MARQUEUR</strong></button>
+  </section>
+  <button class="navStopButton" id="btnStopNavigation" type="button">■ Terminer la navigation</button>
 </section>
-<section aria-label="Enregistrer une manœuvre" class="maneuverQuickActions">
-<button class="maneuverButton tackButton" id="btnQuickTack" type="button">
-<span class="maneuverButtonLabel">Virement</span>
-<span class="maneuverButtonHint">Enregistrer maintenant</span>
-</button>
-<button class="maneuverButton gybeButton" id="btnQuickGybe" type="button">
-<span class="maneuverButtonLabel">Empannage</span>
-<span class="maneuverButtonHint">Enregistrer maintenant</span>
-</button>
-</section>
-<div class="navigationToolbar">
-<button class="actionButton" id="btnWind">
-
-                🌬 Vent
-
-            </button>
-<button class="actionButton" id="btnTrim">
-
-                ⛵ Réglages
-
-            </button>
-<button class="actionButton" id="btnMarker">
-
-                📍 Marqueur
-
-            </button>
-<button class="dangerButton" id="btnStopNavigation">
-
-                ■ Arrêter
-
-            </button>
-</div>
 </section>
 <!-- ====================================================== -->
 <!-- POPUP VENT -->
