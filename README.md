@@ -1,4 +1,4 @@
-# SpeedFeet Analyzer V2.9.0
+# SpeedFeet Analyzer V2.10.0
 
 ## Nouveautés
 - Relecture synchronisée de la trace GPS sur carte satellite.

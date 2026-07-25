@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "2.9.0";
+    const APP_VERSION = "2.10.0";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -2050,10 +2050,17 @@
         return (Math.atan2(sin, cos) * 180 / Math.PI + 360) % 360;
     }
 
-    function maneuverAnalysis(navigation, marker) {
+    function getManeuverMaturity(count) {
+        if (count < 10) return { key: "learning", label: "Apprentissage", detail: `${count} observation${count > 1 ? "s" : ""}`, confidence: "faible", progress: Math.min(100, count * 10) };
+        if (count < 30) return { key: "first", label: "Premières références", detail: `${count} observations`, confidence: "modérée", progress: Math.round((count / 30) * 100) };
+        if (count < 100) return { key: "reliable", label: "Références fiables", detail: `${count} observations`, confidence: "élevée", progress: Math.round((count / 100) * 100) };
+        return { key: "solid", label: "Références très solides", detail: `${count} observations`, confidence: "très élevée", progress: 100 };
+    }
+
+    function rawManeuverAnalysis(navigation, marker) {
         const track = navigation?.track || [];
         const center = nearestTrackIndex(track, marker.timestamp);
-        if (center < 0) return { marker, center, durationSeconds: null, entrySpeed: null, exitSpeed: null, minimumSpeed: null, speedLoss: null };
+        if (center < 0) return { marker, center, durationSeconds: null, entrySpeed: null, exitSpeed: null, minimumSpeed: null, speedLoss: null, rawScore: null };
         const centerTime = pointTimeMs(track[center], center);
         const before = track.filter(point => {
             const t = pointTimeMs(point, 0);
@@ -2101,13 +2108,52 @@
         }
         const exitRatio = Number.isFinite(entrySpeed) && entrySpeed > 0 && Number.isFinite(exitSpeed) ? exitSpeed / entrySpeed : null;
         const lossRatio = Number.isFinite(entrySpeed) && entrySpeed > 0 && Number.isFinite(speedLoss) ? speedLoss / entrySpeed : null;
-        let score = 50;
-        if (Number.isFinite(exitRatio)) score += Math.max(-20, Math.min(20, (exitRatio - 0.75) * 80));
-        if (Number.isFinite(lossRatio)) score += Math.max(-25, Math.min(20, (0.45 - lossRatio) * 70));
-        if (Number.isFinite(durationSeconds)) score += Math.max(-15, Math.min(15, (18 - durationSeconds) * 1.5));
-        if (Number.isFinite(recoverySeconds)) score += Math.max(-15, Math.min(15, (18 - recoverySeconds) * 1.2));
-        score = Math.round(Math.max(0, Math.min(100, score)));
-        return { marker, center, durationSeconds, entrySpeed, exitSpeed, minimumSpeed, speedLoss, headingBefore, headingAfter, recoverySeconds, score };
+        let rawScore = 50;
+        if (Number.isFinite(exitRatio)) rawScore += Math.max(-20, Math.min(20, (exitRatio - 0.75) * 80));
+        if (Number.isFinite(lossRatio)) rawScore += Math.max(-25, Math.min(20, (0.45 - lossRatio) * 70));
+        if (Number.isFinite(durationSeconds)) rawScore += Math.max(-15, Math.min(15, (18 - durationSeconds) * 1.5));
+        if (Number.isFinite(recoverySeconds)) rawScore += Math.max(-15, Math.min(15, (18 - recoverySeconds) * 1.2));
+        rawScore = Math.round(Math.max(0, Math.min(100, rawScore)));
+        return { marker, center, durationSeconds, entrySpeed, exitSpeed, minimumSpeed, speedLoss, headingBefore, headingAfter, recoverySeconds, rawScore };
+    }
+
+    function getManeuverReference(type, excludedNavigation, excludedMarker) {
+        const analyses = [];
+        state.history.filter(item => item && item.status === "completed").forEach(navigation => {
+            (navigation.markers || []).filter(marker => marker.type === type).forEach(marker => {
+                if (navigation === excludedNavigation && marker === excludedMarker) return;
+                const analysis = rawManeuverAnalysis(navigation, marker);
+                if (Number.isFinite(analysis.rawScore)) analyses.push(analysis);
+            });
+        });
+        const scores = analyses.map(item => item.rawScore).filter(Number.isFinite).sort((a, b) => a - b);
+        return { analyses, scores, count: scores.length, maturity: getManeuverMaturity(scores.length) };
+    }
+
+    function percentileScore(value, sortedValues) {
+        if (!Number.isFinite(value) || !sortedValues.length) return null;
+        const below = sortedValues.filter(item => item < value).length;
+        const equal = sortedValues.filter(item => item === value).length;
+        const percentile = (below + equal * .5) / sortedValues.length;
+        return Math.round(45 + percentile * 55);
+    }
+
+    function maneuverAnalysis(navigation, marker) {
+        const analysis = rawManeuverAnalysis(navigation, marker);
+        const reference = getManeuverReference(marker.type, navigation, marker);
+        const personalScore = percentileScore(analysis.rawScore, reference.scores);
+        let personalWeight = 0;
+        if (reference.count >= 100) personalWeight = .8;
+        else if (reference.count >= 30) personalWeight = .6;
+        else if (reference.count >= 10) personalWeight = .3;
+        const score = Number.isFinite(personalScore)
+            ? Math.round(analysis.rawScore * (1 - personalWeight) + personalScore * personalWeight)
+            : analysis.rawScore;
+        const historicalAverage = reference.scores.length ? mean(reference.scores) : null;
+        const comparison = Number.isFinite(historicalAverage) && Number.isFinite(analysis.rawScore)
+            ? Math.round(analysis.rawScore - historicalAverage)
+            : null;
+        return { ...analysis, score, personalScore, referenceCount: reference.count, maturity: reference.maturity, comparison };
     }
 
     function getNavigationManeuverAnalyses(navigation) {
@@ -2133,15 +2179,20 @@
             : (Number.isFinite(averageScore) ? averageScore : regularityScore);
         const best = analyses.filter(item => Number.isFinite(item.score)).sort((a,b) => b.score - a.score)[0] || null;
         const recommendations = [];
+        const tackCount = state.history.reduce((sum, item) => sum + (item.markers || []).filter(marker => marker.type === 'tack').length, 0);
+        const gybeCount = state.history.reduce((sum, item) => sum + (item.markers || []).filter(marker => marker.type === 'gybe').length, 0);
+        const tackMaturity = getManeuverMaturity(tackCount);
+        const gybeMaturity = getManeuverMaturity(gybeCount);
         if (!analyses.length) recommendations.push('Enregistre des virements et empannages pour obtenir une analyse détaillée.');
-        if (Number.isFinite(averageScore) && averageScore >= 85) recommendations.push('Manœuvres très régulières : conserve ce rythme et ces repères.');
-        if (Number.isFinite(averageScore) && averageScore < 60) recommendations.push('La priorité est de réduire la perte de vitesse et de relancer plus tôt après la rotation.');
+        if (tackCount < 10 && gybeCount < 10) recommendations.push(`SpeedFeet apprend encore : ${tackCount} virement${tackCount > 1 ? 's' : ''} et ${gybeCount} empannage${gybeCount > 1 ? 's' : ''} enregistrés.`);
+        if (Number.isFinite(averageScore) && averageScore >= 85 && Math.max(tackCount, gybeCount) >= 10) recommendations.push('Manœuvres très régulières par rapport à tes premières références personnelles.');
+        if (Number.isFinite(averageScore) && averageScore < 60 && Math.max(tackCount, gybeCount) >= 10) recommendations.push('La priorité est de réduire la perte de vitesse et de relancer plus tôt après la rotation.');
         const avgRecovery = mean(analyses.map(item => item.recoverySeconds));
         if (Number.isFinite(avgRecovery) && avgRecovery > 20) recommendations.push(`Relance moyenne de ${Math.round(avgRecovery)} s : cherche à reprendre 95 % de la vitesse d’entrée plus rapidement.`);
         const avgLoss = mean(analyses.map(item => item.speedLoss));
         if (Number.isFinite(avgLoss) && avgLoss > 1.2) recommendations.push(`Perte moyenne de ${avgLoss.toFixed(1)} nd : travaille une rotation plus fluide et une remise en puissance progressive.`);
         if (!recommendations.length) recommendations.push('Continue à enregistrer des manœuvres pour affiner les comparaisons.');
-        return { analyses, averageScore, regularityScore, navigationScore, best, recommendations };
+        return { analyses, averageScore, regularityScore, navigationScore, best, recommendations, tackCount, gybeCount, tackMaturity, gybeMaturity };
     }
 
     function createPerformanceSummaryHTML(navigation) {
@@ -2152,6 +2203,10 @@
                 <span>Manœuvres <b>${summary.analyses.length}</b></span>
                 <span>Moyenne <b>${summary.averageScore ?? '—'}${Number.isFinite(summary.averageScore) ? '/100' : ''}</b></span>
                 <span>Régularité <b>${summary.regularityScore ?? '—'}${Number.isFinite(summary.regularityScore) ? '/100' : ''}</b></span>
+            </div>
+            <div class="learningStatusGrid">
+                <div class="learningStatus ${summary.tackMaturity.key}"><strong>Virements</strong><span>${summary.tackMaturity.label}</span><small>${summary.tackCount} observation${summary.tackCount > 1 ? 's' : ''} · confiance ${summary.tackMaturity.confidence}</small><i><b style="width:${summary.tackMaturity.progress}%"></b></i></div>
+                <div class="learningStatus ${summary.gybeMaturity.key}"><strong>Empannages</strong><span>${summary.gybeMaturity.label}</span><small>${summary.gybeCount} observation${summary.gybeCount > 1 ? 's' : ''} · confiance ${summary.gybeMaturity.confidence}</small><i><b style="width:${summary.gybeMaturity.progress}%"></b></i></div>
             </div>
             <div class="performanceAdvice"><strong>Conseils</strong>${summary.recommendations.map(text => `<p>${escapeHTML(text)}</p>`).join('')}</div>
         </div>`;
@@ -2257,7 +2312,7 @@
         const maneuvers = (navigation.markers || []).filter(marker => ['tack','gybe'].includes(marker.type));
         container.innerHTML = maneuvers.map((marker, index) => {
             const a = maneuverAnalysis(navigation, marker);
-            return `<article class="maneuverReplayCard" data-marker-index="${index}" data-track-index="${a.center}"><button type="button" class="maneuverReplayJump"><strong>${escapeHTML(MARKER_LABELS[marker.type])}</strong><span>${escapeHTML(formatDateTime(marker.timestamp))}</span><em class="maneuverScore">${a.score}/100</em></button><div class="maneuverMetrics"><span>Durée <b>${a.durationSeconds ?? '—'} s</b></span><span>Entrée <b>${a.entrySpeed?.toFixed(1) ?? '—'} nd</b></span><span>Mini <b>${a.minimumSpeed?.toFixed(1) ?? '—'} nd</b></span><span>Sortie <b>${a.exitSpeed?.toFixed(1) ?? '—'} nd</b></span><span>Perte <b>${a.speedLoss?.toFixed(1) ?? '—'} nd</b></span><span>Relance <b>${a.recoverySeconds ?? '—'} s</b></span></div><label>Note<textarea rows="2" class="maneuverNote" placeholder="Conditions, qualité, réglage…">${escapeHTML(marker.note || '')}</textarea></label><button type="button" class="secondaryButton compactButton saveManeuverNote">Enregistrer la note</button></article>`;
+            return `<article class="maneuverReplayCard" data-marker-index="${index}" data-track-index="${a.center}"><button type="button" class="maneuverReplayJump"><strong>${escapeHTML(MARKER_LABELS[marker.type])}</strong><span>${escapeHTML(formatDateTime(marker.timestamp))}</span><em class="maneuverScore">${a.score}/100</em></button><div class="maneuverLearningLine"><span>${escapeHTML(a.maturity.label)}</span><small>${a.referenceCount} référence${a.referenceCount > 1 ? 's' : ''}${Number.isFinite(a.comparison) ? ` · ${a.comparison >= 0 ? '+' : ''}${a.comparison} pt vs moyenne` : ''}</small></div><div class="maneuverMetrics"><span>Durée <b>${a.durationSeconds ?? '—'} s</b></span><span>Entrée <b>${a.entrySpeed?.toFixed(1) ?? '—'} nd</b></span><span>Mini <b>${a.minimumSpeed?.toFixed(1) ?? '—'} nd</b></span><span>Sortie <b>${a.exitSpeed?.toFixed(1) ?? '—'} nd</b></span><span>Perte <b>${a.speedLoss?.toFixed(1) ?? '—'} nd</b></span><span>Relance <b>${a.recoverySeconds ?? '—'} s</b></span></div><label>Note<textarea rows="2" class="maneuverNote" placeholder="Conditions, qualité, réglage…">${escapeHTML(marker.note || '')}</textarea></label><button type="button" class="secondaryButton compactButton saveManeuverNote">Enregistrer la note</button></article>`;
         }).join('') || '<p>Aucun virement ou empannage enregistré.</p>';
         container.querySelectorAll('.maneuverReplayCard').forEach(card => {
             const markerIndex = Number(card.dataset.markerIndex);

@@ -2165,3 +2165,19 @@ body {
 @media (max-width: 520px) {
     .performanceMiniStats { grid-template-columns: 1fr; }
 }
+
+/* V2.10 — apprentissage personnel des manœuvres */
+.learningStatusGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.learningStatus { display:grid; gap:5px; padding:13px; border-radius:15px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); }
+.learningStatus > span { font-weight:800; }
+.learningStatus small { color:var(--mutedText,#aab3c2); line-height:1.35; }
+.learningStatus i { display:block; height:5px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.09); }
+.learningStatus i b { display:block; height:100%; border-radius:inherit; background:currentColor; }
+.learningStatus.learning { color:#fdb022; }
+.learningStatus.first { color:#2e90fa; }
+.learningStatus.reliable { color:#12b76a; }
+.learningStatus.solid { color:#9b8afb; }
+.maneuverLearningLine { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:-2px 0 10px; padding:8px 10px; border-radius:12px; background:rgba(46,144,250,.08); }
+.maneuverLearningLine span { font-weight:800; font-size:.82rem; }
+.maneuverLearningLine small { color:var(--mutedText,#aab3c2); text-align:right; }
+@media (max-width:520px){ .learningStatusGrid{grid-template-columns:1fr;} .maneuverLearningLine{align-items:flex-start;flex-direction:column;} .maneuverLearningLine small{text-align:left;} }
