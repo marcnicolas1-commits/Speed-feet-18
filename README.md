@@ -1,4 +1,4 @@
-# SpeedFeet V3.0.6.2
+# SpeedFeet V3.1.0
 
 Correctifs regroupés à partir de la V3.0.6.1.
 
