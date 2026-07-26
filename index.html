@@ -4,13 +4,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>SpeedFeet V3</title>
+<title>SpeedFeet V3.1.5</title>
 <meta content="#07111f" name="theme-color"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
-<link href="styles.css?v=30062" rel="stylesheet"/>
+<link href="styles.css?v=3150" rel="stylesheet"/>
 </head>
 <body>
 <div class="v3AppShell" id="app">
@@ -141,7 +141,7 @@
     <article><small>% POLAIRE</small><strong id="navPolar">— %</strong><i><b id="polarProgress"></b></i></article>
   </div>
   <article class="windCompassCard navRefreshCard" id="navWindRefresh" role="button" tabindex="0" aria-label="Actualiser les informations de vent">
-    <div class="compassScale"><span class="zone upwind"></span><span class="zone reachLeft"></span><span class="zone reachRight"></span><span class="zone downwindLeft"></span><span class="zone downwindRight"></span></div>
+    <div class="compassScale" id="navCompassScale" aria-hidden="true"></div>
     <div class="compassAngles" aria-hidden="true">
       <span class="a0">0°</span><span class="a30r">30°</span><span class="a60r">60°</span><span class="a90r">90°</span><span class="a120r">120°</span><span class="a150r">150°</span>
       <span class="a150l">150°</span><span class="a120l">120°</span><span class="a90l">90°</span><span class="a60l">60°</span><span class="a30l">30°</span>
@@ -168,6 +168,7 @@
 <div class="modal navOptionsModal" id="navigationOptionsModal">
   <div class="modalContent navOptionsContent">
     <div class="modalHeader"><h2>Options de navigation</h2><button class="iconButton" id="btnCloseNavigationMenu" type="button" aria-label="Fermer">✕</button></div>
+    <button class="navMenuSettingsButton" id="btnBoatSettingsFromNavigation" type="button">⚙ Paramètres du bateau</button>
     <button class="navMenuStopButton" id="btnStopNavigation" type="button">■ Terminer la navigation</button>
   </div>
 </div>
@@ -448,14 +449,11 @@
 </section>
 
 <section class="card">
-<h2>Afficheur de vent</h2>
-<label for="windGreenStart">Début zone verte (°)</label>
-<input id="windGreenStart" type="number" min="0" max="180" step="1" value="35"/>
-<label for="windGreenEnd">Fin zone verte (°)</label>
-<input id="windGreenEnd" type="number" min="0" max="180" step="1" value="170"/>
+<div class="windZonesHeader"><div><h2>Afficheur de vent</h2><p class="smallText">Chaque zone, sa couleur et ses angles pilotent directement le cadran.</p></div><button class="compactButton" id="btnAddWindZone" type="button">+ Zone</button></div>
+<div class="windZonesEditor" id="windZonesEditor"></div>
 <label for="gpsWindThreshold">Seuil GPS minimum (nds)</label>
 <input id="gpsWindThreshold" type="number" min="0.1" max="2" step="0.1" value="0.3"/>
-<p class="smallText">Ces réglages pilotent le cadran de vent.</p>
+<p class="smallText">Les modifications du cadran sont enregistrées et appliquées instantanément, y compris pendant une navigation.</p>
 </section>
 <section class="card">
 <h2>Contact de sécurité</h2>
@@ -487,7 +485,7 @@
                 Version :
                 <strong id="appVersion">
 
-                    2.7.0
+                    3.1.5
 </strong>
 </p>
 </section>
@@ -531,11 +529,11 @@
 </div>
 </div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=30062"></script>
+<script src="app.js?v=3150"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=3004')
+    navigator.serviceWorker.register('./sw.js?v=3150')
       .catch(error => console.error('Service Worker non enregistré :', error));
   });
 }

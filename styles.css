@@ -2460,7 +2460,7 @@ body{padding-bottom:env(safe-area-inset-bottom)}
   container-type:inline-size;
 }
 .compassScale{
-  --wind-zone-gradient:conic-gradient(from 0deg,#f33441 0deg 35deg,#18b54c 35deg 170deg,#1688ff 170deg 190deg,#18b54c 190deg 325deg,#f33441 325deg 360deg);
+  --wind-zone-gradient:conic-gradient(from 0deg,#26394b 0deg 360deg);
   position:absolute;
   inset:5.5%;
   border:0;
@@ -2515,3 +2515,9 @@ body{padding-bottom:env(safe-area-inset-bottom)}
   .navManeuverGrid{margin-top:0}
   .navUtilityGrid{margin-top:0}
 }
+
+/* SpeedFeet V3.1.5 — menu navigation simplifié */
+.navOptionsContent{display:grid;gap:10px}
+.navMenuSettingsButton,.navMenuStopButton{width:100%;min-height:54px;border-radius:14px;font-weight:850;font-size:1rem}
+.navMenuSettingsButton{border:1px solid #31536e;background:#0b2035;color:#dcecff}
+.navMenuStopButton{border:1px solid #7c3038;background:#35151b;color:#ff929a}

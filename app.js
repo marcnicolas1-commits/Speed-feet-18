@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.1.0";
+    const APP_VERSION = "3.1.5";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -1828,6 +1828,7 @@
             const rows = [...editor.querySelectorAll(".windZoneRow")];
             if (rows.length <= 1) { showToast("Il faut conserver au moins une zone."); return; }
             button.closest(".windZoneRow")?.remove();
+            applyWindSettingsFromForm();
         }));
     }
 
@@ -1850,9 +1851,7 @@
         current.push({ start, end: Math.min(180, start + 10), color: "#f5a623", label: `Zone ${current.length + 1}` });
         state.settings.windZones = current;
         renderWindZonesEditor();
-        setInputValue("windGreenStart", state.settings.windZones?.[1]?.start ?? 35);
-        setInputValue("windGreenEnd", state.settings.windZones?.[1]?.end ?? 170);
-        setInputValue("gpsWindThreshold", state.settings.gpsWindThreshold ?? 0.3);
+        setInputValue("gpsWindThreshold", state.settings.gpsWindThreshold ?? DEFAULT_SETTINGS.gpsWindThreshold);
     }
 
     function loadSettingsForm() {
@@ -1889,9 +1888,7 @@
         setInputValue("safetyContactPhone", state.settings.safetyContactPhone || "");
         setInputValue("closeHauledAngle", getCloseHauledAngle());
         renderWindZonesEditor();
-        setInputValue("windGreenStart", state.settings.windZones?.[1]?.start ?? 35);
-        setInputValue("windGreenEnd", state.settings.windZones?.[1]?.end ?? 170);
-        setInputValue("gpsWindThreshold", state.settings.gpsWindThreshold ?? 0.3);
+        setInputValue("gpsWindThreshold", state.settings.gpsWindThreshold ?? DEFAULT_SETTINGS.gpsWindThreshold);
 
         setText(
             "appVersion",
@@ -1899,6 +1896,18 @@
         );
 
         renderPolarImportStatus();
+    }
+
+    function applyWindSettingsFromForm() {
+        const editor = getElement("windZonesEditor");
+        if (!editor) return;
+        state.settings = {
+            ...state.settings,
+            windZones: readWindZonesEditor(),
+            gpsWindThreshold: clamp(toNumberOrNull(getElement("gpsWindThreshold")?.value) || DEFAULT_SETTINGS.gpsWindThreshold, 0.1, 2)
+        };
+        saveJSON(STORAGE_KEYS.settings, state.settings);
+        applyWindGaugeZones();
     }
 
     function saveSettings() {
@@ -1946,8 +1955,8 @@
             safetyContactName: getElement("safetyContactName")?.value.trim() || "",
             safetyContactPhone: getElement("safetyContactPhone")?.value.trim() || "",
             closeHauledAngle: clamp(toNumberOrNull(getElement("closeHauledAngle")?.value) || 37.5, 20, 60),
-            gpsWindThreshold: clamp(toNumberOrNull(getElement("gpsWindThreshold")?.value)||0.3,0.1,2),
-            windZones: [{start:0,end:clamp(toNumberOrNull(getElement("windGreenStart")?.value)||35,0,180),color:"#f33441",label:"Zone rouge"},{start:clamp(toNumberOrNull(getElement("windGreenStart")?.value)||35,0,180),end:clamp(toNumberOrNull(getElement("windGreenEnd")?.value)||170,0,180),color:"#18b54c",label:"Zone verte"},{start:clamp(toNumberOrNull(getElement("windGreenEnd")?.value)||170,0,180),end:180,color:"#1688ff",label:"Zone bleue"}]
+            gpsWindThreshold: clamp(toNumberOrNull(getElement("gpsWindThreshold")?.value) || DEFAULT_SETTINGS.gpsWindThreshold, 0.1, 2),
+            windZones: readWindZonesEditor()
         };
 
         saveJSON(
@@ -3612,7 +3621,10 @@ bindClick(
             "btnSaveSettings",
             saveSettings
         );
-        bindClick("btnAddWindZone", addWindZoneEditorRow);
+        bindClick("btnAddWindZone", () => { addWindZoneEditorRow(); applyWindSettingsFromForm(); });
+        getElement("windZonesEditor")?.addEventListener("input", applyWindSettingsFromForm);
+        getElement("windZonesEditor")?.addEventListener("change", applyWindSettingsFromForm);
+        getElement("gpsWindThreshold")?.addEventListener("input", applyWindSettingsFromForm);
 
         bindClick(
             "btnWind",
@@ -3666,6 +3678,10 @@ bindClick(
 
         bindClick("btnNavigationMenu", () => openModal("navigationOptionsModal"));
         bindClick("btnCloseNavigationMenu", closeAllModals);
+        bindClick("btnBoatSettingsFromNavigation", () => {
+            closeAllModals();
+            showPage("settingsPage");
+        });
         bindClick(
             "btnStopNavigation",
             () => { closeAllModals(); askToStopNavigation(); }
