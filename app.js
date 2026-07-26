@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.2.3";
+    const APP_VERSION = "3.2.4";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -1924,11 +1924,18 @@
         return Math.abs(((first - second + 540) % 360) - 180);
     }
 
+    const TRIM_WIND_BINS = [
+        { start: 0, end: 5, key: "0-5", label: "0–5 nds" },
+        { start: 5, end: 10, key: "5-10", label: "5–10 nds" },
+        { start: 10, end: 15, key: "10-15", label: "10–15 nds" },
+        { start: 15, end: 20, key: "15-20", label: "15–20 nds" },
+        { start: 20, end: Infinity, key: "20+", label: "20+ nds" }
+    ];
+
     function getWindBin(speed) {
         const value = Number(speed);
         if (!Number.isFinite(value) || value < 0) return null;
-        const start = Math.floor(value / 5) * 5;
-        return { start, end: start + 5, key: `${start}-${start + 5}`, label: `${start}–${start + 5} nds` };
+        return TRIM_WIND_BINS.find(bin => value >= bin.start && value < bin.end) || TRIM_WIND_BINS[TRIM_WIND_BINS.length - 1];
     }
 
     function latestWindBefore(navigation, timestampMs) {
@@ -3112,10 +3119,32 @@
         </article>`;
     }
 
+    function createLearnedTrimMatrixHTML() {
+        const samples = getAllTrimLearningSamples();
+        const recommendationsByBin = Object.fromEntries(
+            TRIM_WIND_BINS.map(bin => [bin.key, summarizeTrimRecommendations(samples, bin.key)])
+        );
+        const rows = TRIM_RECOMMENDATION_FIELDS.map(field => {
+            const cells = TRIM_WIND_BINS.map(bin => {
+                const recommendation = recommendationsByBin[bin.key]?.[field.key];
+                if (!recommendation) {
+                    return `<td class="trimLearningEmpty"><strong>—</strong><small>Données insuffisantes</small></td>`;
+                }
+                const symbol = recommendation.confidence === "validated" ? "🟢" : "🟡";
+                return `<td class="trimLearningCell ${recommendation.confidence}"><strong>${escapeHTML(recommendation.value)}</strong><small>${symbol} ${escapeHTML(recommendation.confidenceLabel)} · ${recommendation.count} obs.</small></td>`;
+            }).join("");
+            return `<tr><th scope="row">${escapeHTML(field.label)}</th>${cells}</tr>`;
+        }).join("");
+        return `<div class="tableScroll learnedTrimTableScroll"><table class="learnedTrimMatrix"><thead><tr><th scope="col">Réglage</th>${TRIM_WIND_BINS.map(bin => `<th scope="col">${escapeHTML(bin.label)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>`;
+    }
+
     function renderLearningDashboard() {
         const container = getElement("learningOverview");
-        if (!container) return;
-        container.innerHTML = createLearningCardHTML("tack", "Virements") + createLearningCardHTML("gybe", "Empannages");
+        if (container) {
+            container.innerHTML = createLearningCardHTML("tack", "Virements") + createLearningCardHTML("gybe", "Empannages");
+        }
+        const trimContainer = getElement("learnedTrimSettingsTable");
+        if (trimContainer) trimContainer.innerHTML = createLearnedTrimMatrixHTML();
     }
 
     function renderHomeLearningSummary() {

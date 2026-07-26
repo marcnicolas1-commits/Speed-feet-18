@@ -1,4 +1,4 @@
-# SpeedFeet V3.2.3
+# SpeedFeet V3.2.4
 
 Évolutions :
 - Retour fiable au cadran après enregistrement des paramètres pendant une navigation.
@@ -42,3 +42,12 @@
 - Seuil de 3 observations pour une tendance et 5 pour une valeur validée.
 - Explication détaillée dans l’analyse après navigation.
 - Aucune recommandation affichée lorsque les données ou l’allure ne sont pas adaptées.
+
+
+## V3.2.4
+- Ajout dans l’onglet Apprentissage d’un tableau « Réglages appris au près ».
+- Colonnes fixes par force de vent : 0–5, 5–10, 10–15, 15–20 et 20+ nds.
+- Lignes correspondant à tous les réglages enregistrés du bateau.
+- Chaque case affiche la valeur conseillée et son niveau de confiance.
+- Même moteur de calcul que les recommandations visibles pendant la navigation.
+- Tableau utilisable avant la sortie comme base de préparation du bateau.

@@ -2575,3 +2575,24 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 .trimRecommendationTable th,
 .trimRecommendationTable td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid rgba(255,255,255,.08); }
 .trimRecommendationTable th { color: #9ecbff; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+
+
+/* V3.2.4 — tableau des réglages appris */
+.learnedTrimSettingsCard { margin-bottom: 16px; }
+.learnedTrimSettingsCard h2 { margin-bottom: 6px; }
+.learnedTrimTableScroll { margin-top: 14px; border: 1px solid rgba(255,255,255,.09); border-radius: 15px; }
+.learnedTrimMatrix { width: 100%; min-width: 790px; border-collapse: separate; border-spacing: 0; }
+.learnedTrimMatrix th, .learnedTrimMatrix td { padding: 12px 13px; text-align: center; vertical-align: middle; border-right: 1px solid rgba(255,255,255,.07); border-bottom: 1px solid rgba(255,255,255,.07); }
+.learnedTrimMatrix thead th { color: #9ecbff; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; background: #0c2035; white-space: nowrap; }
+.learnedTrimMatrix th:first-child { position: sticky; left: 0; z-index: 2; text-align: left; min-width: 165px; background: #0c2035; }
+.learnedTrimMatrix tbody th { color: #f5f8fc; font-size: .9rem; }
+.learnedTrimMatrix tr:last-child th, .learnedTrimMatrix tr:last-child td { border-bottom: 0; }
+.learnedTrimMatrix th:last-child, .learnedTrimMatrix td:last-child { border-right: 0; }
+.trimLearningCell strong, .trimLearningEmpty strong { display: block; font-size: 1.08rem; line-height: 1.15; }
+.trimLearningCell small, .trimLearningEmpty small { display: block; margin-top: 5px; font-size: .72rem; white-space: nowrap; }
+.trimLearningCell.validated small { color: #6ce9a6; }
+.trimLearningCell.trend small { color: #fdb022; }
+.trimLearningEmpty { color: rgba(226,232,240,.48); }
+.trimLearningEmpty small { color: rgba(226,232,240,.48); }
+.learnedTrimLegend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; color: var(--v3-muted,#aebfd1); font-size: .78rem; }
+@media (max-width: 600px) { .learnedTrimSettingsCard { padding-left: 14px; padding-right: 14px; } }
