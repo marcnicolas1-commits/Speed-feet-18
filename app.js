@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.1.8";
+    const APP_VERSION = "3.2.0";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -1563,6 +1563,7 @@
             return;
         }
 
+        const achievementsBefore = new Set(getUnlockedAchievements().unlocked.map(item => item.id));
         stopNavigationRuntime();
 
         state.currentNavigation.status =
@@ -1606,6 +1607,11 @@
 
         closeAllModals();
         showPage("historyPage");
+        const newlyUnlocked = getUnlockedAchievements().unlocked.filter(item => !achievementsBefore.has(item.id));
+        window.setTimeout(() => {
+            openNavigationDetails(completedNavigation.id);
+            if (newlyUnlocked.length) window.setTimeout(() => showNewAchievements(newlyUnlocked), 350);
+        }, 80);
 
         if (shouldPrepareSafetyMessage) {
             prepareSafetyMessage(completedNavigation);
@@ -2083,18 +2089,172 @@
         ];
     }
 
-    function getUnlockedAchievements() {
-        const totalDistance = state.history.reduce((sum, item) => sum + (Number(item.distanceNm) || 0), 0);
-        const maximumSpeed = state.history.reduce((max, item) => Math.max(max, Number(item.maxSpeedKn) || 0), 0);
-        const maneuverCount = state.history.reduce((sum, item) => sum + (item.markers || []).filter(marker => ["tack", "gybe"].includes(marker.type)).length, 0);
-        const definitions = [
-            { id: "first-navigation", title: "Première trace", description: "Terminer une première navigation.", unlocked: state.history.length >= 1 },
-            { id: "five-navigations", title: "Habitué du bord", description: "Terminer cinq navigations.", unlocked: state.history.length >= 5 },
-            { id: "ten-miles", title: "Dix milles", description: "Cumuler 10 NM de navigation.", unlocked: totalDistance >= 10 },
-            { id: "fast-eight", title: "Au-dessus de huit", description: "Dépasser 8 nd de vitesse GPS.", unlocked: maximumSpeed >= 8 },
-            { id: "maneuverer", title: "Manœuvrier", description: "Enregistrer 20 virements ou empannages.", unlocked: maneuverCount >= 20 }
+    let activeAchievementFilter = "all";
+
+    function getAchievementMetrics() {
+        const completed = state.history.filter(item => item && item.status === "completed");
+        const totalDistance = completed.reduce((sum, item) => sum + (Number(item.distanceNm) || 0), 0);
+        const totalMinutes = completed.reduce((sum, item) => sum + navigationDurationMinutes(item), 0);
+        const maximumSpeed = completed.reduce((max, item) => Math.max(max, Number(item.maxSpeedKn) || 0), 0);
+        const allMarkers = completed.flatMap(item => item.markers || []);
+        const tackCount = allMarkers.filter(marker => marker.type === "tack").length;
+        const gybeCount = allMarkers.filter(marker => marker.type === "gybe").length;
+        const maneuverCount = tackCount + gybeCount;
+        const trimCount = completed.reduce((sum, item) => sum + (item.trimRecords || []).length, 0);
+        const windCount = completed.reduce((sum, item) => sum + (item.windRecords || []).length, 0);
+        const noteCount = completed.filter(item => Boolean(item.review?.notes || item.preparation?.navigationNotes)).length;
+        const ratingCount = completed.filter(item => Number.isFinite(Number(item.review?.rating))).length;
+        const nextNoteCount = completed.filter(item => Boolean(item.review?.nextNavigationNotes)).length;
+        const uniqueDays = new Set(completed.map(item => String(item.startedAt || "").slice(0,10)).filter(Boolean)).size;
+        const completeChecklistCount = completed.filter(item => {
+            const list = item.preparation?.checklist || [];
+            return list.length > 0 && list.every(entry => entry && entry.checked);
+        }).length;
+        const fullDataCount = completed.filter(item => (item.track || []).length >= 20 && (item.windRecords || []).length && (item.trimRecords || []).length && (item.markers || []).some(m => m.type === "tack") && (item.markers || []).some(m => m.type === "gybe")).length;
+        const returnToStartCount = completed.filter(item => {
+            const track = item.track || [];
+            if (track.length < 2) return false;
+            const first = track[0], last = track[track.length - 1];
+            return calculateDistanceNm(first.latitude, first.longitude, last.latitude, last.longitude) <= 0.054; // 100 m
+        }).length;
+        const longSingleMinutes = completed.reduce((max,item)=>Math.max(max,navigationDurationMinutes(item)),0);
+        const maxManeuversSingle = completed.reduce((max,item)=>Math.max(max,(item.markers||[]).filter(m=>["tack","gybe"].includes(m.type)).length),0);
+        const maxTacksSingle = completed.reduce((max,item)=>Math.max(max,(item.markers||[]).filter(m=>m.type==="tack").length),0);
+        const maxGybesSingle = completed.reduce((max,item)=>Math.max(max,(item.markers||[]).filter(m=>m.type==="gybe").length),0);
+        const exact18Maneuvers = completed.some(item => (item.markers || []).filter(m => ["tack","gybe"].includes(m.type)).length === 18);
+        const exact18Distance = completed.some(item => Math.abs((Number(item.distanceNm)||0)-18) <= .05);
+        const fiveTrimSingle = completed.some(item => (item.trimRecords || []).length >= 5);
+        const tenMarkersSingle = completed.some(item => (item.markers || []).length >= 10);
+        const bothManeuversSingle = completed.some(item => (item.markers||[]).some(m=>m.type==="tack") && (item.markers||[]).some(m=>m.type==="gybe"));
+        const ratedFive = completed.some(item => Number(item.review?.rating) === 5);
+        return { completed, navigationCount: completed.length, totalDistance, totalMinutes, maximumSpeed, tackCount, gybeCount, maneuverCount, trimCount, windCount, noteCount, ratingCount, nextNoteCount, uniqueDays, completeChecklistCount, fullDataCount, returnToStartCount, longSingleMinutes, maxManeuversSingle, maxTacksSingle, maxGybesSingle, exact18Maneuvers, exact18Distance, fiveTrimSingle, tenMarkersSingle, bothManeuversSingle, ratedFive };
+    }
+
+    function getAchievementDefinitions(metrics = getAchievementMetrics()) {
+        const A = (id,title,description,category,points,test,secret=false,phrase="") => ({ id,title,description,category,points,unlocked:Boolean(test),secret,phrase });
+        const n=metrics.navigationCount, d=metrics.totalDistance, h=metrics.totalMinutes/60;
+        return [
+            A("nav-1","Première trace","Terminer une première navigation.","Découverte",10,n>=1,false,"Le carnet de bord est ouvert."),
+            A("nav-2","On remet ça","Terminer 2 navigations.","Découverte",10,n>=2),
+            A("nav-3","Le début d’une habitude","Terminer 3 navigations.","Découverte",10,n>=3),
+            A("nav-5","Habitué du bord","Terminer 5 navigations.","Progression",15,n>=5),
+            A("nav-10","Dix sorties au compteur","Terminer 10 navigations.","Progression",20,n>=10),
+            A("nav-15","Régulier","Terminer 15 navigations.","Progression",20,n>=15),
+            A("nav-20","Vingt fois dehors","Terminer 20 navigations.","Progression",25,n>=20),
+            A("nav-25","Quart de centaine","Terminer 25 navigations.","Progression",25,n>=25),
+            A("nav-30","Une vraie saison","Terminer 30 navigations.","Progression",30,n>=30),
+            A("nav-40","Pilier du ponton","Terminer 40 navigations.","Progression",35,n>=40),
+            A("nav-50","Cinquante sorties","Terminer 50 navigations.","Progression",40,n>=50),
+            A("nav-60","Deux saisons bien remplies","Terminer 60 navigations.","Progression",50,n>=60),
+
+            A("dist-5","Premiers milles","Cumuler 5 NM.","Progression",10,d>=5),
+            A("dist-10","Dix milles","Cumuler 10 NM.","Progression",10,d>=10),
+            A("dist-25","Le tour s’allonge","Cumuler 25 NM.","Progression",15,d>=25),
+            A("dist-50","Cinquante milles","Cumuler 50 NM.","Progression",15,d>=50),
+            A("dist-100","Cap des cent","Cumuler 100 NM.","Progression",20,d>=100),
+            A("dist-150","150 au loch","Cumuler 150 NM.","Progression",20,d>=150),
+            A("dist-250","Quart de mille","Cumuler 250 NM.","Progression",25,d>=250),
+            A("dist-400","Grand tour","Cumuler 400 NM.","Progression",30,d>=400),
+            A("dist-600","Six cents milles","Cumuler 600 NM.","Progression",35,d>=600),
+            A("dist-800","Deux ans au large","Cumuler 800 NM.","Progression",45,d>=800),
+
+            A("hours-2","Deux heures de mer","Cumuler 2 h de navigation.","Progression",10,h>=2),
+            A("hours-5","La demi-journée cumulée","Cumuler 5 h de navigation.","Progression",10,h>=5),
+            A("hours-10","Dix heures à la barre","Cumuler 10 h de navigation.","Progression",15,h>=10),
+            A("hours-20","Vingt heures dehors","Cumuler 20 h de navigation.","Progression",20,h>=20),
+            A("hours-40","Semaine nautique","Cumuler 40 h de navigation.","Progression",25,h>=40),
+            A("hours-60","Soixante heures","Cumuler 60 h de navigation.","Progression",30,h>=60),
+            A("hours-80","Quatre-vingts heures","Cumuler 80 h de navigation.","Progression",35,h>=80),
+            A("hours-100","Cent heures au compteur","Cumuler 100 h de navigation.","Progression",45,h>=100),
+
+            A("single-30","Petite sortie propre","Naviguer au moins 30 min sur une sortie.","Découverte",10,metrics.longSingleMinutes>=30),
+            A("single-60","Une heure tout rond","Naviguer au moins 1 h sur une sortie.","Progression",10,metrics.longSingleMinutes>=60),
+            A("single-120","La vraie session","Naviguer au moins 2 h sur une sortie.","Progression",15,metrics.longSingleMinutes>=120),
+            A("single-180","Trois heures à bord","Naviguer au moins 3 h sur une sortie.","Progression",20,metrics.longSingleMinutes>=180),
+            A("single-240","Grande sortie","Naviguer au moins 4 h sur une sortie.","Progression",25,metrics.longSingleMinutes>=240),
+
+            A("tack-1","Ça vire !","Enregistrer un premier virement.","Manœuvres",10,metrics.tackCount>=1),
+            A("tack-10","Dix virements","Cumuler 10 virements.","Manœuvres",10,metrics.tackCount>=10),
+            A("tack-25","Bord sur bord","Cumuler 25 virements.","Manœuvres",15,metrics.tackCount>=25),
+            A("tack-50","Manœuvrier","Cumuler 50 virements.","Manœuvres",20,metrics.tackCount>=50),
+            A("tack-100","Cent virements","Cumuler 100 virements.","Manœuvres",25,metrics.tackCount>=100),
+            A("tack-200","Virement automatique","Cumuler 200 virements.","Manœuvres",35,metrics.tackCount>=200),
+            A("tack-400","Le roi du près","Cumuler 400 virements.","Manœuvres",45,metrics.tackCount>=400),
+            A("gybe-1","Et maintenant l’empannage","Enregistrer un premier empannage.","Manœuvres",10,metrics.gybeCount>=1),
+            A("gybe-10","Dix empannages","Cumuler 10 empannages.","Manœuvres",10,metrics.gybeCount>=10),
+            A("gybe-25","Sous spi, ça tourne","Cumuler 25 empannages.","Manœuvres",15,metrics.gybeCount>=25),
+            A("gybe-50","Cinquante empannages","Cumuler 50 empannages.","Manœuvres",20,metrics.gybeCount>=50),
+            A("gybe-100","Cent empannages","Cumuler 100 empannages.","Manœuvres",25,metrics.gybeCount>=100),
+            A("gybe-200","Le roi du portant","Cumuler 200 empannages.","Manœuvres",35,metrics.gybeCount>=200),
+            A("maneuver-100","La machine à manœuvres","Cumuler 100 virements et empannages.","Manœuvres",25,metrics.maneuverCount>=100),
+            A("maneuver-300","Trois cents rotations","Cumuler 300 manœuvres.","Manœuvres",40,metrics.maneuverCount>=300),
+            A("single-maneuver-10","Machine à laver","Enregistrer 10 manœuvres sur une sortie.","Fun",15,metrics.maxManeuversSingle>=10,false,"Ça tourne, mais proprement."),
+            A("single-tack-10","Près intensif","Enregistrer 10 virements sur une sortie.","Manœuvres",15,metrics.maxTacksSingle>=10),
+            A("single-gybe-8","Portant intensif","Enregistrer 8 empannages sur une sortie.","Manœuvres",15,metrics.maxGybesSingle>=8),
+
+            A("wind-1","Le vent est noté","Enregistrer un premier relevé de vent.","Application",10,metrics.windCount>=1),
+            A("wind-10","Petit météorologue","Cumuler 10 relevés de vent.","Application",15,metrics.windCount>=10),
+            A("wind-30","Observateur régulier","Cumuler 30 relevés de vent.","Application",20,metrics.windCount>=30),
+            A("trim-1","Premier réglage","Enregistrer un changement de réglage.","Application",10,metrics.trimCount>=1),
+            A("trim-10","Régleur","Cumuler 10 changements de réglage.","Application",15,metrics.trimCount>=10),
+            A("trim-30","Metteur au point","Cumuler 30 changements de réglage.","Application",25,metrics.trimCount>=30),
+            A("notes-1","Mémoire du bord","Ajouter une note après une sortie.","Application",10,metrics.noteCount>=1),
+            A("notes-10","Carnet bien tenu","Ajouter des notes à 10 sorties.","Application",20,metrics.noteCount>=10),
+            A("ratings-10","Le ressenti compte","Noter 10 navigations.","Application",20,metrics.ratingCount>=10),
+            A("next-5","Toujours un coup d’avance","Ajouter une idée pour la prochaine sortie 5 fois.","Application",15,metrics.nextNoteCount>=5),
+            A("check-5","Tout est vérifié","Terminer complètement 5 checklists.","Application",15,metrics.completeChecklistCount>=5),
+            A("check-20","Maniaque, mais prêt","Terminer complètement 20 checklists.","Fun",25,metrics.completeChecklistCount>=20,false,"Même la checklist a été vérifiée."),
+            A("days-7","Sept jours différents","Utiliser SpeedFeet sur 7 jours de navigation différents.","Application",15,metrics.uniqueDays>=7),
+            A("days-15","Présent au rendez-vous","Naviguer sur 15 jours différents.","Application",20,metrics.uniqueDays>=15),
+            A("days-30","La régularité paie","Naviguer sur 30 jours différents.","Application",30,metrics.uniqueDays>=30),
+            A("full-data","Sortie complète","Enregistrer GPS, vent, réglages, virement et empannage dans une sortie.","Application",25,metrics.fullDataCount>=1),
+            A("full-data-5","Laboratoire flottant","Réaliser 5 sorties complètes.","Application",40,metrics.fullDataCount>=5),
+
+            A("return-start","Le facteur","Terminer une navigation à moins de 100 m du départ.","Fun",15,metrics.returnToStartCount>=1,false,"Le courrier est arrivé au bon ponton."),
+            A("return-start-10","Toujours à la bonne adresse","Revenir près du départ 10 fois.","Fun",30,metrics.returnToStartCount>=10),
+            A("both-maneuvers","Menu complet","Enregistrer au moins un virement et un empannage sur la même sortie.","Fun",15,metrics.bothManeuversSingle),
+            A("five-trims","Tournevis imaginaire","Enregistrer 5 changements de réglage sur une sortie.","Fun",15,metrics.fiveTrimSingle,false,"On ne touche plus à rien… jusqu’au prochain réglage."),
+            A("ten-markers","Tout est important","Poser 10 marqueurs sur une sortie.","Fun",15,metrics.tenMarkersSingle),
+            A("rating-five","Sortie cinq étoiles","Attribuer la note maximale à une navigation.","Fun",10,metrics.ratedFive),
+            A("speed-5","Ça glisse","Dépasser 5 nd GPS.","Découverte",10,metrics.maximumSpeed>=5),
+            A("speed-7","Bien lancé","Dépasser 7 nd GPS.","Progression",15,metrics.maximumSpeed>=7),
+            A("speed-9","Le bateau se réveille","Dépasser 9 nd GPS.","Progression",20,metrics.maximumSpeed>=9),
+            A("secret-18-maneuvers","Le nombre du bateau","Enregistrer exactement 18 manœuvres sur une sortie.","Fun",30,metrics.exact18Maneuvers,true,"Le SF18 approuve."),
+            A("secret-18-distance","Dix-huit tout rond","Terminer une sortie à 18,00 NM ± 0,05.","Fun",35,metrics.exact18Distance,true,"Précision de navigateur."),
+            A("secret-all-tools","Tableau de bord complet","Débloquer une sortie complète et revenir près du départ.","Fun",40,metrics.fullDataCount>=1 && metrics.returnToStartCount>=1,true,"Toutes les cases sont cochées."),
         ];
-        return { unlocked: definitions.filter(item => item.unlocked), total: definitions.length };
+    }
+
+    function getAchievementLevel(points) {
+        const levels = [
+            { name:"Moussaillon", min:0 }, { name:"Équipier", min:100 }, { name:"Barreur", min:250 },
+            { name:"Régatier", min:500 }, { name:"Skipper", min:800 }, { name:"Skipper confirmé", min:1200 },
+            { name:"Maître SpeedFeet", min:1700 }
+        ];
+        let current=levels[0], next=null;
+        for (let i=0;i<levels.length;i++) if (points>=levels[i].min) { current=levels[i]; next=levels[i+1]||null; }
+        return { current,next,levels };
+    }
+
+    function getUnlockedAchievements() {
+        const definitions = getAchievementDefinitions();
+        const unlocked = definitions.filter(item => item.unlocked);
+        const points = unlocked.reduce((sum,item)=>sum+item.points,0);
+        return { unlocked, definitions, total: definitions.length, points, level:getAchievementLevel(points) };
+    }
+
+    function showNewAchievements(items) {
+        if (!items?.length) return;
+        let modal=getElement("newAchievementsModal");
+        if (!modal) {
+            modal=document.createElement("div"); modal.id="newAchievementsModal"; modal.className="modal";
+            modal.innerHTML='<div class="modalContent achievementUnlockModal"><h2>🏆 Nouveau succès</h2><div id="newAchievementsList"></div><button type="button" class="primaryButton" id="btnCloseNewAchievements">Continuer</button></div>';
+            document.body.appendChild(modal);
+            getElement("btnCloseNewAchievements")?.addEventListener("click", closeAllModals);
+        }
+        const list=getElement("newAchievementsList");
+        if (list) list.innerHTML=items.map(item=>`<article class="achievementUnlockItem"><strong>${escapeHTML(item.title)}</strong><span>+${item.points} points</span><p>${escapeHTML(item.phrase || item.description)}</p></article>`).join("");
+        openModal("newAchievementsModal");
     }
 
     function renderHomeStats() {
@@ -2135,10 +2295,23 @@
         if (!container) return;
         const achievements = getUnlockedAchievements();
         const percentage = achievements.total ? Math.round(achievements.unlocked.length / achievements.total * 100) : 0;
-        setText("achievementProgressText", `${achievements.unlocked.length} succès découvert${achievements.unlocked.length > 1 ? "s" : ""} · ${percentage} %`);
-        const bar = getElement("achievementProgressBar");
-        if (bar) bar.style.width = `${percentage}%`;
-        container.innerHTML = achievements.unlocked.length ? achievements.unlocked.map(item => `<article class="achievementCard"><span class="achievementBadge">🎖</span><div><strong>${item.title}</strong><p>${item.description}</p></div></article>`).join("") : `<div class="emptyCard">Aucun succès découvert pour le moment.</div>`;
+        setText("achievementProgressText", `${achievements.unlocked.length} succès découvert${achievements.unlocked.length > 1 ? "s" : ""} sur ${achievements.total} · ${percentage} %`);
+        setText("achievementPointsText", `${achievements.points} point${achievements.points > 1 ? "s" : ""}`);
+        setText("achievementLevelText", achievements.level.current.name);
+        setText("achievementNextLevelText", achievements.level.next ? `Prochain niveau : ${achievements.level.next.name} à ${achievements.level.next.min} points` : "Niveau maximal atteint");
+        const bar = getElement("achievementProgressBar"); if (bar) bar.style.width = `${percentage}%`;
+        const visible=achievements.definitions.filter(item => {
+            if (item.secret && !item.unlocked) return false;
+            return activeAchievementFilter === "all" || item.category === activeAchievementFilter;
+        });
+        container.innerHTML = visible.map(item => `<article class="achievementCard ${item.unlocked ? "unlocked" : "locked"}">
+            <span class="achievementBadge">${item.unlocked ? "🏆" : "🔒"}</span>
+            <div><div class="achievementTitleRow"><strong>${escapeHTML(item.title)}</strong><em>+${item.points}</em></div><p>${escapeHTML(item.description)}</p><small>${escapeHTML(item.category)}${item.unlocked && item.phrase ? ` · ${escapeHTML(item.phrase)}` : ""}</small></div>
+        </article>`).join("") || `<div class="emptyCard">Aucun succès dans cette catégorie.</div>`;
+        document.querySelectorAll("#achievementFilters [data-achievement-filter]").forEach(button => {
+            button.classList.toggle("selected", button.dataset.achievementFilter === activeAchievementFilter);
+            button.onclick=()=>{ activeAchievementFilter=button.dataset.achievementFilter || "all"; renderAchievements(); };
+        });
     }
 
     function prepareSafetyMessage(navigation) {
@@ -2639,6 +2812,30 @@
             : "Aucune observation exploitable";
     }
 
+    function createPostNavigationOverviewHTML(navigation) {
+        const duration=navigationDurationMinutes(navigation);
+        const track=(navigation.track||[]);
+        const speeds=track.map(p=>Number(p.speedKn)).filter(Number.isFinite);
+        const averageSpeed=speeds.length ? mean(speeds) : null;
+        const tackCount=(navigation.markers||[]).filter(m=>m.type==="tack").length;
+        const gybeCount=(navigation.markers||[]).filter(m=>m.type==="gybe").length;
+        const summary=getNavigationPerformanceSummary(navigation);
+        const headline=[];
+        headline.push(`Sortie de ${duration} min et ${Number(navigation.distanceNm||0).toFixed(1)} NM.`);
+        if (Number.isFinite(averageSpeed)) headline.push(`Vitesse moyenne GPS ${averageSpeed.toFixed(1)} nd, maximum ${Number(navigation.maxSpeedKn||0).toFixed(1)} nd.`);
+        if (tackCount+gybeCount) headline.push(`${tackCount} virement${tackCount>1?'s':''} et ${gybeCount} empannage${gybeCount>1?'s':''} enregistrés.`);
+        else headline.push("Aucune manœuvre marquée : l’analyse reste générale.");
+        return `<div class="postNavigationSummaryText"><p>${escapeHTML(headline.join(" "))}</p></div>
+        <div class="postNavigationKpis">
+          <div><span>Vitesse moyenne</span><strong>${Number.isFinite(averageSpeed)?averageSpeed.toFixed(1):'—'} nd</strong></div>
+          <div><span>Vitesse maximale</span><strong>${Number(navigation.maxSpeedKn||0).toFixed(1)} nd</strong></div>
+          <div><span>Virements</span><strong>${tackCount}</strong></div>
+          <div><span>Empannages</span><strong>${gybeCount}</strong></div>
+          <div><span>Score navigation</span><strong>${summary.navigationScore ?? '—'}${Number.isFinite(summary.navigationScore)?'/100':''}</strong></div>
+          <div><span>Points GPS</span><strong>${track.length}</strong></div>
+        </div>`;
+    }
+
     function createPerformanceSummaryHTML(navigation) {
         const summary = getNavigationPerformanceSummary(navigation);
         return `<div class="performanceSummary">
@@ -2875,6 +3072,11 @@
                     </strong>
                 </div>
             </div>
+
+            <section class="historyDetailSection postNavigationOverview">
+                <h3>Bilan de la navigation</h3>
+                ${createPostNavigationOverviewHTML(navigation)}
+            </section>
 
             <section class="historyDetailSection">
                 <h3>Configuration</h3>
