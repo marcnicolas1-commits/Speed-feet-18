@@ -4,13 +4,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>SpeedFeet V3.1.5</title>
+<title>SpeedFeet V3.1.8</title>
 <meta content="#07111f" name="theme-color"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
-<link href="styles.css?v=3150" rel="stylesheet"/>
+<link href="styles.css?v=3180" rel="stylesheet"/>
 </head>
 <body>
 <div class="v3AppShell" id="app">
@@ -20,14 +20,20 @@
 <section class="page active v3DashboardPage" id="homePage">
 <header class="speedfeetBrandHeader">
   <div class="speedfeetWordmark"><span>SPEEDFEET</span><b> ANALYZER</b></div>
-  <small>V3.0.5</small>
+  <small>V3.1.8</small>
 </header>
 <section class="readyHero">
   <div class="readyLine"><span></span><strong>PRÊT À NAVIGUER</strong><span></span></div>
   <div class="readyBoat">⛵</div>
 </section>
+<section class="activeNavigationHome" id="activeNavigationHome" hidden>
+  <div><span class="activeNavigationDot"></span><strong>NAVIGATION EN COURS</strong></div>
+  <button class="resumeNavigationHero" id="btnResumeNavigation" type="button">
+    <span>▶</span><strong>RETOUR À LA NAVIGATION</strong><span>›</span>
+  </button>
+</section>
 <button class="newNavigationHero" id="btnStartNavigation" type="button">
-  <span class="heroSail">⛵</span><strong>NOUVELLE NAVIGATION</strong><span class="heroArrow">›</span>
+  <span class="heroSail">⛵</span><strong id="startNavigationLabel">NOUVELLE NAVIGATION</strong><span class="heroArrow">›</span>
 </button>
 <section class="dashboardTwinGrid">
   <article class="dashboardPanel lastNavigationPanel">
@@ -485,7 +491,7 @@
                 Version :
                 <strong id="appVersion">
 
-                    3.1.5
+                    3.1.8
 </strong>
 </p>
 </section>
@@ -498,6 +504,18 @@
 
 </div>
 </section>
+
+<!-- NAVIGATION DÉJÀ EN COURS -->
+<div class="modal" id="activeNavigationChoiceModal">
+  <div class="modalContent activeNavigationChoiceContent">
+    <h2>Navigation déjà en cours</h2>
+    <p>Une navigation est actuellement enregistrée. Tu peux la reprendre ou l’abandonner pour en préparer une nouvelle.</p>
+    <button class="primaryButton" id="btnResumeFromChoice" type="button">▶ Reprendre la navigation</button>
+    <button class="dangerChoiceButton" id="btnAbandonAndPrepare" type="button">Abandonner et préparer une nouvelle</button>
+    <button class="secondaryButton" id="btnCancelActiveNavigationChoice" type="button">Annuler</button>
+  </div>
+</div>
+
 <!-- ====================================================== -->
 <!-- FENÊTRE DE CONFIRMATION -->
 <!-- ====================================================== -->
@@ -529,11 +547,11 @@
 </div>
 </div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=3150"></script>
+<script src="app.js?v=3180"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=3150')
+    navigator.serviceWorker.register('./sw.js?v=3180')
       .catch(error => console.error('Service Worker non enregistré :', error));
   });
 }

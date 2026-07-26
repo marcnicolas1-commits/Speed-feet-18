@@ -2516,8 +2516,18 @@ body{padding-bottom:env(safe-area-inset-bottom)}
   .navUtilityGrid{margin-top:0}
 }
 
-/* SpeedFeet V3.1.5 — menu navigation simplifié */
+/* SpeedFeet V3.1.6 — menu navigation simplifié */
 .navOptionsContent{display:grid;gap:10px}
 .navMenuSettingsButton,.navMenuStopButton{width:100%;min-height:54px;border-radius:14px;font-weight:850;font-size:1rem}
 .navMenuSettingsButton{border:1px solid #31536e;background:#0b2035;color:#dcecff}
 .navMenuStopButton{border:1px solid #7c3038;background:#35151b;color:#ff929a}
+
+
+/* SpeedFeet V3.1.8 — reprise sécurisée d’une navigation */
+.activeNavigationHome{margin:0 0 14px;padding:14px;border:1px solid #226c4b;border-radius:18px;background:linear-gradient(180deg,#0b2c22,#081d18);box-shadow:0 10px 28px rgba(0,0,0,.24)}
+.activeNavigationHome>div{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:10px;color:#7ff2b2;font-size:.82rem;letter-spacing:.08em}
+.activeNavigationDot{width:10px;height:10px;border-radius:50%;background:#2ee77d;box-shadow:0 0 0 5px rgba(46,231,125,.12)}
+.resumeNavigationHero{width:100%;min-height:66px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:0 18px;border:1px solid #31b96f;border-radius:15px;background:linear-gradient(135deg,#0a8f50,#075f3b);color:white;font-size:1rem;font-weight:900;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.resumeNavigationHero strong{text-align:left}.resumeNavigationHero span:last-child{font-size:1.8rem}
+.activeNavigationChoiceContent{display:grid;gap:12px}.activeNavigationChoiceContent p{margin:0 0 4px;color:#b9c9d8;line-height:1.45}
+.dangerChoiceButton{width:100%;min-height:50px;border:1px solid #8a3943;border-radius:13px;background:#3a171d;color:#ff9ca5;font-weight:850}

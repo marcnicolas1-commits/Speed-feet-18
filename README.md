@@ -1,9 +1,9 @@
-# SpeedFeet V3.1.5
-
-Version de travail.
+# SpeedFeet V3.1.8
 
 Évolutions :
-- Numéro de version mis à jour.
-- Base préparée pour les réglages dynamiques du cadran.
-- Base préparée pour le menu navigation simplifié.
-- Préparation de l'intégration des analyses de manœuvres.
+- Retour fiable au cadran après enregistrement des paramètres pendant une navigation.
+- Le suivi GPS n’est pas redémarré inutilement lors du retour des paramètres.
+- Bouton « Retour à la navigation » sur l’accueil lorsqu’une navigation est active.
+- Protection avant de préparer une nouvelle navigation : reprendre, abandonner ou annuler.
+- Navigation active conservée dans le stockage local jusqu’à sa fin ou son abandon explicite.
+- Version et cache PWA mis à jour en 3.1.8.

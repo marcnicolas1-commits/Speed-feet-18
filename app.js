@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.1.5";
+    const APP_VERSION = "3.1.8";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -109,6 +109,31 @@
     };
 
     const GPS_HEADING_MIN_SPEED_KN = 0.3;
+
+    function hasActiveNavigation() {
+        return Boolean(
+            state.currentNavigation &&
+            state.currentNavigation.status !== "completed" &&
+            state.currentNavigation.status !== "abandoned"
+        );
+    }
+
+    function getSettingsReturnPage() {
+        // Tant qu’une navigation existe, les paramètres restent un écran
+        // temporaire et le retour doit toujours afficher le cadran.
+        return hasActiveNavigation() ? "navigationPage" : "homePage";
+    }
+
+    function leaveSettingsPage() {
+        const returnPage = getSettingsReturnPage();
+        showPage(returnPage);
+
+        if (returnPage === "navigationPage") {
+            // Le suivi GPS continue pendant l’affichage des paramètres :
+            // on ne redémarre pas le watcher, on rafraîchit seulement l’écran.
+            updateNavigationDashboard();
+        }
+    }
 
     function getWindZones() {
         const source = Array.isArray(state.settings?.windZones) && state.settings.windZones.length
@@ -386,6 +411,7 @@
         });
 
         if (pageId === "homePage") {
+            renderHomeNavigationState();
             renderRecentNavigations();
             renderNextNavigationNotes();
             renderHomeStats();
@@ -686,6 +712,50 @@
     function editNextNavigationNotes() {
         showPage("preparePage");
         window.setTimeout(() => getElement("nextNavigationNotes")?.focus(), 50);
+    }
+
+
+    function renderHomeNavigationState() {
+        const activePanel = getElement("activeNavigationHome");
+        const startLabel = getElement("startNavigationLabel");
+        const active = hasActiveNavigation();
+
+        if (activePanel) activePanel.hidden = !active;
+        if (startLabel) {
+            startLabel.textContent = active
+                ? "PRÉPARER UNE NAVIGATION"
+                : "NOUVELLE NAVIGATION";
+        }
+    }
+
+    function resumeCurrentNavigation() {
+        if (!hasActiveNavigation()) {
+            renderHomeNavigationState();
+            showToast("Aucune navigation en cours");
+            return;
+        }
+        showPage("navigationPage");
+        if (state.timerId === null || state.gpsWatchId === null) {
+            startNavigationRuntime();
+        }
+        updateNavigationDashboard();
+    }
+
+    function requestNewPreparation() {
+        if (hasActiveNavigation()) {
+            openModal("activeNavigationChoiceModal");
+            return;
+        }
+        beginNewPreparation();
+    }
+
+    function abandonCurrentNavigationAndPrepare() {
+        closeAllModals();
+        stopNavigationRuntime();
+        state.currentNavigation = null;
+        localStorage.removeItem(STORAGE_KEYS.currentNavigation);
+        renderHomeNavigationState();
+        beginNewPreparation();
     }
 
     function showToast(message) {
@@ -1895,6 +1965,14 @@
             APP_VERSION
         );
 
+        const settingsBackButton = getElement("btnSettingsHome");
+        if (settingsBackButton) {
+            settingsBackButton.textContent =
+                getSettingsReturnPage() === "navigationPage"
+                    ? "← Navigation"
+                    : "← Accueil";
+        }
+
         renderPolarImportStatus();
     }
 
@@ -1968,7 +2046,7 @@
             "Paramètres enregistrés."
         );
 
-        showPage("homePage");
+        leaveSettingsPage();
     }
 
     function navigationDurationMinutes(navigation) {
@@ -3550,8 +3628,12 @@
     function bindButtons() {
 bindClick(
             "btnStartNavigation",
-            beginNewPreparation
+            requestNewPreparation
         );
+        bindClick("btnResumeNavigation", resumeCurrentNavigation);
+        bindClick("btnResumeFromChoice", () => { closeAllModals(); resumeCurrentNavigation(); });
+        bindClick("btnAbandonAndPrepare", abandonCurrentNavigationAndPrepare);
+        bindClick("btnCancelActiveNavigationChoice", closeAllModals);
 
         bindClick(
             "btnHistory",
@@ -3573,10 +3655,9 @@ bindClick(
 
         bindClick(
             "btnSettings",
-            () =>
-                showPage(
-                    "settingsPage"
-                )
+            () => {
+                showPage("settingsPage");
+            }
         );
 
         bindClick(
@@ -3597,10 +3678,7 @@ bindClick(
 
         bindClick(
             "btnSettingsHome",
-            () =>
-                showPage(
-                    "homePage"
-                )
+            leaveSettingsPage
         );
 
         bindClick("btnCancelPreparation", () => showPage("homePage"));
@@ -3791,6 +3869,7 @@ document
         });
         bindClick("btnCancelMarker", closeAllModals);
 
+        renderHomeNavigationState();
         renderRecentNavigations();
         renderNextNavigationNotes();
         renderHomeStats();
