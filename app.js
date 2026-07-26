@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.2.0";
+    const APP_VERSION = "3.2.2";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -9,7 +9,8 @@
         currentNavigation: "speedfeet_current_navigation",
         history: "speedfeet_history",
         nextNavigationNotes: "speedfeet_next_navigation_notes",
-        checklistItems: "speedfeet_checklist_items"
+        checklistItems: "speedfeet_checklist_items",
+        boatTasks: "speedfeet_boat_tasks"
     };
 
     const DEFAULT_SETTINGS = {
@@ -94,6 +95,11 @@
         nextNavigationNotes: loadJSON(
             STORAGE_KEYS.nextNavigationNotes,
             ""
+        ),
+
+        boatTasks: loadJSON(
+            STORAGE_KEYS.boatTasks,
+            []
         ),
 
         currentPage: "homePage",
@@ -414,6 +420,7 @@
             renderHomeNavigationState();
             renderRecentNavigations();
             renderNextNavigationNotes();
+            renderBoatTasksHome();
             renderHomeStats();
             renderHomeLearningSummary();
         }
@@ -424,6 +431,10 @@
 
         if (pageId === "historyPage") {
             renderHistory();
+        }
+
+        if (pageId === "boatTasksPage") {
+            renderBoatTasksPage();
         }
 
         if (pageId === "settingsPage") {
@@ -714,6 +725,117 @@
         window.setTimeout(() => getElement("nextNavigationNotes")?.focus(), 50);
     }
 
+
+    function normalizeBoatTasks(value) {
+        if (!Array.isArray(value)) return [];
+        return value.map((item, index) => ({
+            id: String(item?.id || `task-${Date.now()}-${index}`),
+            text: String(item?.text || "").trim(),
+            completed: Boolean(item?.completed),
+            createdAt: item?.createdAt || new Date().toISOString()
+        })).filter(item => item.text);
+    }
+
+    function saveBoatTasks() {
+        state.boatTasks = normalizeBoatTasks(state.boatTasks);
+        saveJSON(STORAGE_KEYS.boatTasks, state.boatTasks);
+        renderBoatTasksHome();
+        if (state.currentPage === "boatTasksPage") renderBoatTasksPage();
+    }
+
+    function addBoatTask(text, options = {}) {
+        const cleanText = String(text || "").trim();
+        if (!cleanText) return false;
+        const duplicate = state.boatTasks.some(item => item.text.toLocaleLowerCase("fr-FR") === cleanText.toLocaleLowerCase("fr-FR"));
+        if (duplicate) {
+            if (!options.silent) showToast("Cette tâche existe déjà");
+            return false;
+        }
+        state.boatTasks.push({
+            id: `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            text: cleanText,
+            completed: false,
+            createdAt: new Date().toISOString()
+        });
+        saveBoatTasks();
+        if (!options.silent) showToast("Tâche ajoutée");
+        return true;
+    }
+
+    function toggleBoatTask(taskId, completed) {
+        const task = state.boatTasks.find(item => item.id === taskId);
+        if (!task) return;
+        task.completed = Boolean(completed);
+        saveBoatTasks();
+    }
+
+    function removeBoatTask(taskId) {
+        const task = state.boatTasks.find(item => item.id === taskId);
+        if (!task) return;
+        showConfirmation(
+            "Supprimer cette tâche ?",
+            task.text,
+            () => {
+                state.boatTasks = state.boatTasks.filter(item => item.id !== taskId);
+                saveBoatTasks();
+                showToast("Tâche supprimée");
+            }
+        );
+    }
+
+    function boatTaskRowHTML(task, compact = false) {
+        return `
+            <label class="boatTaskRow${task.completed ? " completed" : ""}${compact ? " compact" : ""}">
+                <input type="checkbox" data-boat-task-toggle="${escapeHTML(task.id)}" ${task.completed ? "checked" : ""}/>
+                <span>${escapeHTML(task.text)}</span>
+                ${compact ? "" : `<button class="boatTaskDelete" data-boat-task-delete="${escapeHTML(task.id)}" type="button" aria-label="Supprimer la tâche">Supprimer</button>`}
+            </label>
+        `;
+    }
+
+    function renderBoatTasksHome() {
+        const list = getElement("homeBoatTasksList");
+        if (!list) return;
+        state.boatTasks = normalizeBoatTasks(state.boatTasks);
+        setText("homeBoatTaskCount", `(${state.boatTasks.length})`);
+        const recent = state.boatTasks.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 3);
+        list.innerHTML = recent.length
+            ? recent.map(task => boatTaskRowHTML(task, true)).join("")
+            : `<div class="emptyCard">Aucune tâche pour le moment.</div>`;
+    }
+
+    function renderBoatTasksPage() {
+        const list = getElement("boatTasksFullList");
+        if (!list) return;
+        state.boatTasks = normalizeBoatTasks(state.boatTasks);
+        const sorted = state.boatTasks.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        list.innerHTML = sorted.length
+            ? sorted.map(task => boatTaskRowHTML(task)).join("")
+            : `<div class="emptyCard"><strong>Aucune tâche pour le moment.</strong><p>Ajoute ici les contrôles, réparations ou essais à prévoir.</p></div>`;
+    }
+
+    function handleBoatTaskListClick(event) {
+        const deleteButton = event.target.closest("[data-boat-task-delete]");
+        if (deleteButton) {
+            event.preventDefault();
+            removeBoatTask(deleteButton.dataset.boatTaskDelete);
+        }
+    }
+
+    function handleBoatTaskListChange(event) {
+        const checkbox = event.target.closest("[data-boat-task-toggle]");
+        if (!checkbox) return;
+        toggleBoatTask(checkbox.dataset.boatTaskToggle, checkbox.checked);
+    }
+
+    function submitBoatTask() {
+        const input = getElement("boatTaskInput");
+        if (!input) return;
+        if (addBoatTask(input.value)) {
+            input.value = "";
+            input.focus();
+        }
+    }
 
     function renderHomeNavigationState() {
         const activePanel = getElement("activeNavigationHome");
@@ -1578,7 +1700,10 @@
             nextNavigationNotes: getElement("finishNextNotes")?.value.trim() || ""
         };
 
-        saveNextNavigationNotes(state.currentNavigation.review.nextNavigationNotes);
+        if (state.currentNavigation.review.nextNavigationNotes) {
+            addBoatTask(state.currentNavigation.review.nextNavigationNotes, { silent: true });
+        }
+        saveNextNavigationNotes("");
         const shouldPrepareSafetyMessage = Boolean(getElement("finishSendSafety")?.checked);
         const completedNavigation = cloneValue(state.currentNavigation);
 
@@ -3753,7 +3878,8 @@
                 settings: cloneValue(state.settings),
                 preparation: cloneValue(state.preparation),
                 currentNavigation: cloneValue(state.currentNavigation),
-                history: cloneValue(state.history)
+                history: cloneValue(state.history),
+                boatTasks: cloneValue(state.boatTasks)
             }
         };
     }
@@ -3796,9 +3922,11 @@
         const importedPreparation = data.preparation ?? null;
         const importedCurrentNavigation = data.currentNavigation ?? null;
         const importedHistory = data.history;
+        const importedBoatTasks = normalizeBoatTasks(data.boatTasks || []);
 
         if (!saveJSON(STORAGE_KEYS.settings, importedSettings)) return;
         if (!saveJSON(STORAGE_KEYS.history, importedHistory)) return;
+        if (!saveJSON(STORAGE_KEYS.boatTasks, importedBoatTasks)) return;
 
         if (importedPreparation === null) localStorage.removeItem(STORAGE_KEYS.preparation);
         else if (!saveJSON(STORAGE_KEYS.preparation, importedPreparation)) return;
@@ -3853,6 +3981,15 @@ bindClick(
 
         bindClick("btnRecords", () => showPage("recordsPage"));
         bindClick("btnAchievements", () => showPage("achievementsPage"));
+        bindClick("btnBoatTasks", () => showPage("boatTasksPage"));
+        bindClick("btnBoatTasksHome", () => showPage("homePage"));
+        bindClick("btnAddBoatTask", submitBoatTask);
+        getElement("boatTaskInput")?.addEventListener("keydown", event => {
+            if (event.key === "Enter") { event.preventDefault(); submitBoatTask(); }
+        });
+        getElement("homeBoatTasksList")?.addEventListener("change", handleBoatTaskListChange);
+        getElement("boatTasksFullList")?.addEventListener("change", handleBoatTaskListChange);
+        getElement("boatTasksFullList")?.addEventListener("click", handleBoatTaskListClick);
         bindClick("btnLearning", () => showPage("learningPage"));
         bindClick("btnHistoryQuick", () => showPage("historyPage"));
         bindClick("btnRecordsSummary", () => showPage("recordsPage"));
@@ -4079,7 +4216,12 @@ document
 
         renderHomeNavigationState();
         renderRecentNavigations();
+        if (state.nextNavigationNotes) {
+            addBoatTask(state.nextNavigationNotes, { silent: true });
+            saveNextNavigationNotes("");
+        }
         renderNextNavigationNotes();
+        renderBoatTasksHome();
         renderHomeStats();
 
         displayMapMessage(

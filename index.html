@@ -4,13 +4,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>SpeedFeet V3.2.1</title>
+<title>SpeedFeet V3.2.2</title>
 <meta content="#07111f" name="theme-color"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
-<link href="styles.css?v=3210" rel="stylesheet"/>
+<link href="styles.css?v=3220" rel="stylesheet"/>
 </head>
 <body>
 <div class="v3AppShell" id="app">
@@ -20,12 +20,8 @@
 <section class="page active v3DashboardPage" id="homePage">
 <header class="speedfeetBrandHeader">
   <div class="speedfeetWordmark"><span>SPEEDFEET</span><b> ANALYZER</b></div>
-  <small>V3.2.1</small>
+  <small>V3.2.2</small>
 </header>
-<section class="readyHero">
-  <div class="readyLine"><span></span><strong>PRÊT À NAVIGUER</strong><span></span></div>
-  <div class="readyBoat">⛵</div>
-</section>
 <section class="activeNavigationHome" id="activeNavigationHome" hidden>
   <div><span class="activeNavigationDot"></span><strong>NAVIGATION EN COURS</strong></div>
   <button class="resumeNavigationHero" id="btnResumeNavigation" type="button">
@@ -35,6 +31,14 @@
 <button class="newNavigationHero" id="btnStartNavigation" type="button">
   <span class="heroSail">⛵</span><strong id="startNavigationLabel">NOUVELLE NAVIGATION</strong><span class="heroArrow">›</span>
 </button>
+<section class="dashboardPanel boatTasksHomePanel" id="boatTasksHomePanel">
+  <button class="boatTasksHomeHeader" id="btnBoatTasks" type="button">
+    <span>🔧</span><strong>À FAIRE SUR LE BATEAU <b id="homeBoatTaskCount">(0)</b></strong><span class="boatTasksArrow">›</span>
+  </button>
+  <div class="boatTasksHomeList" id="homeBoatTasksList">
+    <div class="emptyCard">Aucune tâche pour le moment.</div>
+  </div>
+</section>
 <section class="dashboardTwinGrid">
   <article class="dashboardPanel lastNavigationPanel">
     <h2>DERNIÈRE NAVIGATION</h2>
@@ -65,10 +69,6 @@
   <button class="dashboardQuickButton" id="btnSettings" type="button"><span>⚙</span>RÉGLAGES</button>
 </section>
 
-<section class="homeSection nextNavigationHomeSection" hidden id="nextNavigationHomeSection">
-  <div class="sectionTitleRow"><h2>À penser pour la prochaine navigation</h2><button class="textButton" id="btnEditNextNavigationNotes" type="button">Modifier</button></div>
-  <div class="nextNavigationNoteCard" id="nextNavigationHomeNotes"></div>
-</section>
 <span id="homeAchievementSummary" hidden>0 découvert</span>
 </section>
 <!-- ====================================================== -->
@@ -352,6 +352,25 @@
 </div>
 </div>
 <!-- ====================================================== -->
+<!-- À FAIRE SUR LE BATEAU -->
+<!-- ====================================================== -->
+<section class="page boatTasksPage" id="boatTasksPage">
+<header class="pageHeader">
+  <div class="pageHeaderTop"><button class="pageBackButton" id="btnBoatTasksHome">← Accueil</button><h1>À faire sur le bateau</h1></div>
+  <p class="subtitle">Les tâches restent visibles, même cochées, jusqu’à leur suppression manuelle.</p>
+</header>
+<section class="boatTasksAddCard">
+  <label for="boatTaskInput">Nouvelle tâche</label>
+  <div class="boatTaskAddRow">
+    <input id="boatTaskInput" maxlength="180" placeholder="Ex. Contrôler la tension des haubans" type="text"/>
+    <button class="primaryButton" id="btnAddBoatTask" type="button">Ajouter</button>
+  </div>
+</section>
+<section class="boatTasksFullList" id="boatTasksFullList">
+  <div class="emptyCard">Aucune tâche pour le moment.</div>
+</section>
+</section>
+<!-- ====================================================== -->
 <!-- HISTORIQUE -->
 <!-- ====================================================== -->
 <section class="page" id="historyPage">
@@ -558,11 +577,11 @@
 </div>
 </div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=3210"></script>
+<script src="app.js?v=3220"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=3210')
+    navigator.serviceWorker.register('./sw.js?v=3220')
       .catch(error => console.error('Service Worker non enregistré :', error));
   });
 }
