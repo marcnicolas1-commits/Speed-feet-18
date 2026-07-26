@@ -10,7 +10,7 @@
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
-<link href="styles.css?v=30061" rel="stylesheet"/>
+<link href="styles.css?v=30062" rel="stylesheet"/>
 </head>
 <body>
 <div class="v3AppShell" id="app">
@@ -80,7 +80,7 @@
 
 <div class="prepareV3Grid">
 <section class="preparePanel checklistPanel">
-  <div class="prepareSectionHeading"><span class="stepBadge">1</span><h2>Check-list avant sortie</h2><div class="headingActions"><button id="btnCheckAll" type="button">✓ Tout cocher</button><button id="btnResetChecklist" type="button">↻ Réinitialiser</button></div></div>
+  <div class="prepareSectionHeading"><span class="stepBadge">1</span><h2>Check-list avant sortie</h2></div>
   <div class="editableChecklist" id="editableChecklist"></div>
   <button class="addChecklistButton" id="btnAddChecklistItem" type="button">＋ Ajouter un élément</button>
 </section>
@@ -90,7 +90,7 @@
   <div class="weatherMetricGrid">
     <label class="weatherMetric"><span>🌬</span><small>Vent</small><input id="windAverage" inputmode="decimal" placeholder="12" type="number"><b>nd</b></label>
     <label class="weatherMetric"><span>🌬</span><small>Rafales</small><input id="windGust" inputmode="decimal" placeholder="18" type="number"><b>nd</b></label>
-    <label class="weatherMetric"><span>🧭</span><small>Direction</small><input id="windDirection" inputmode="numeric" placeholder="245" type="number"><b>°</b></label>
+    <label class="weatherMetric weatherDirectionMetric"><span>🧭</span><small>Direction</small><select id="windDirection" aria-label="Direction prévue du vent"><option value="">Choisir</option><option value="0">N — 0°</option><option value="22.5">NNE — 22,5°</option><option value="45">NE — 45°</option><option value="67.5">ENE — 67,5°</option><option value="90">E — 90°</option><option value="112.5">ESE — 112,5°</option><option value="135">SE — 135°</option><option value="157.5">SSE — 157,5°</option><option value="180">S — 180°</option><option value="202.5">SSO — 202,5°</option><option value="225">SO — 225°</option><option value="247.5">OSO — 247,5°</option><option value="270">O — 270°</option><option value="292.5">ONO — 292,5°</option><option value="315">NO — 315°</option><option value="337.5">NNO — 337,5°</option></select></label>
     <label class="weatherMetric"><span>🌊</span><small>État de la mer</small><select id="seaState"><option value="">Choisir</option><option>Plate</option><option>Ridée</option><option>Peu agitée</option><option>Agitée</option><option>Très agitée</option></select></label>
   </div>
   <div class="weatherActions">
@@ -520,7 +520,7 @@
 </div>
 </div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=30061"></script>
+<script src="app.js?v=30062"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.0.6.1";
+    const APP_VERSION = "3.0.6.2";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -593,9 +593,13 @@
             data.windGust
         );
 
+        const preparedDirection = Number.isFinite(Number(data.windDirection))
+            ? (Math.round((((Number(data.windDirection) % 360) + 360) % 360) / 22.5) * 22.5) % 360
+            : "";
+
         setInputValue(
             "windDirection",
-            data.windDirection
+            preparedDirection
         );
 
         setInputValue(
@@ -714,6 +718,17 @@
         const saved = loadJSON(STORAGE_KEYS.checklistItems, null);
         if (Array.isArray(saved) && saved.length) return saved;
         return DEFAULT_CHECKLIST_ITEMS.map((label, index) => ({ id: `check-${Date.now()}-${index}`, label, checked: false }));
+    }
+
+    function beginNewPreparation() {
+        const checklistItems = loadChecklistModel().map(item => ({ ...item, checked: false }));
+        state.preparation = {
+            ...(state.preparation || {}),
+            checklistItems,
+            updatedAt: new Date().toISOString()
+        };
+        saveJSON(STORAGE_KEYS.preparation, state.preparation);
+        showPage("preparePage");
     }
 
     function readEditableChecklist() {
@@ -1762,6 +1777,16 @@
         closeAllModals();
     }
 
+    const COMPASS_DIRECTIONS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO"];
+
+    function formatCompassDirection(value) {
+        const angle = Number(value);
+        if (!Number.isFinite(angle)) return "—";
+        const normalized = ((angle % 360) + 360) % 360;
+        const label = COMPASS_DIRECTIONS[Math.round(normalized / 22.5) % 16];
+        return `${label} (${normalized.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}°)`;
+    }
+
     const MARKER_LABELS = {
         "tack": "Virement",
         "gybe": "Empannage",
@@ -2779,7 +2804,7 @@
                     · Rafales :
                     ${preparation.windGust ?? "—"} nd
                     · Direction :
-                    ${preparation.windDirection ?? "—"}°
+                    ${formatCompassDirection(preparation.windDirection)}
                 </p>
                 <p>
                     État de mer :
@@ -3508,10 +3533,7 @@
     function bindButtons() {
 bindClick(
             "btnStartNavigation",
-            () =>
-                showPage(
-                    "preparePage"
-                )
+            beginNewPreparation
         );
 
         bindClick(
@@ -3566,8 +3588,6 @@ bindClick(
 
         bindClick("btnCancelPreparation", () => showPage("homePage"));
         bindClick("btnAddChecklistItem", addChecklistItem);
-        bindClick("btnResetChecklist", resetChecklist);
-        bindClick("btnCheckAll", checkAllChecklist);
         getElement("editableChecklist")?.addEventListener("click", handleChecklistClick);
         getElement("editableChecklist")?.addEventListener("change", savePreparationDraft);
         getElement("navigationNotes")?.addEventListener("input", () => { updateNotesCounter(); savePreparationDraft(); });
@@ -3606,8 +3626,8 @@ bindClick(
             "btnMarker",
             addMarker
         );
-        bindClick("btnSpiDown", () => { addMarker(); showToast("Spi affalé enregistré"); });
-        bindClick("btnSpiUp", () => { addMarker(); showToast("Spi envoyé enregistré"); });
+        bindClick("btnSpiDown", () => saveTypedMarker("spi-drop"));
+        bindClick("btnSpiUp", () => saveTypedMarker("spi-hoist"));
 
         bindClick("btnQuickTack", () => saveTypedMarker("tack"));
         bindClick("btnQuickGybe", () => saveTypedMarker("gybe"));

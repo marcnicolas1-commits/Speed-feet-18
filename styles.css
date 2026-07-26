@@ -2498,3 +2498,20 @@ body{padding-bottom:env(safe-area-inset-bottom)}
   .navCompassRefreshHint{display:none}
   .windReadout{top:16.5%}
 }
+
+/* SpeedFeet V3.0.6.2 — correctifs préparation et finition iPhone 15 Pro Max */
+.weatherDirectionMetric select{grid-column:2/4;grid-row:2;width:100%;font-weight:750}
+@media (max-width:500px) and (min-height:800px){
+  .navigationV3Page{padding:4px 10px 8px!important}
+  .navInstrumentShell{gap:4px}
+  .navTopMetrics{gap:5px;margin-bottom:0}
+  .windCompassCard{
+    --gauge-size:100%;
+    width:100%;
+    max-width:none;
+    margin-top:0;
+    aspect-ratio:1/1;
+  }
+  .navManeuverGrid{margin-top:0}
+  .navUtilityGrid{margin-top:0}
+}

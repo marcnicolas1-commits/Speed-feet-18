@@ -1,18 +1,11 @@
-# SpeedFeet V3.0.4
+# SpeedFeet V3.0.6.2
 
-- Cadran de vent inspiré d’un instrument analogique à aiguille.
-- Aiguille blanche indiquant l’angle estimé du vent par rapport au bateau.
-- Calibrage de l’axe du vent au près depuis le cadran, avec choix bâbord/tribord.
-- Cap bon au près configurable, valeur par défaut 37,5°.
-- La prise de vent reste dédiée à la force et aux conditions de vent.
+Correctifs regroupés à partir de la V3.0.6.1.
 
-
-## V3.0.5
-- Accueil simplifié : suppression de la rangée Météo / Records / Apprentissage en doublon.
-- Préparation : checklist sans poignée ni réorganisation.
-- Lien Prévisions météo corrigé vers Windguru Moulin Blanc (spot 48447).
-- Suppression des blocs Configuration et À penser pour la prochaine navigation de la préparation.
-- Cache PWA mis à jour.
-
-
-Correctif 3.0.6.1 : restauration de tous les boutons de navigation et d’enregistrement. Les actions Virement, Empannage, Envoi, Affalé, Prise de vent, Réglage, Marqueur et le menu restent utilisables quelle que soit la vitesse GPS. Le seuil de 0,3 nd ne concerne que le calcul du cap et le calibrage du cadran de vent.
+- Suppression des commandes « Tout cocher » et « Réinitialiser » de la checklist.
+- Chaque nouvelle préparation repart avec toutes les cases décochées, tout en conservant la liste personnalisée.
+- Correction des boutons « Envoyer spi » et « Affaler spi » : ils enregistrent directement l’événement sans ouvrir le menu Marqueur.
+- Les boutons de navigation restent utilisables quelle que soit la vitesse GPS ; le seuil de 0,3 nd ne concerne que le cap et le cadran de vent.
+- Direction météo remplacée par une rose des vents à 16 secteurs, convertie automatiquement en angle pour les calculs.
+- Écran Navigation resserré et cadran agrandi pour l’iPhone 15 Pro Max, sans déformation du cercle.
+- Cache PWA et numéro de version mis à jour.
