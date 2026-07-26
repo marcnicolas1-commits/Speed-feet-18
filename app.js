@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.0.5";
+    const APP_VERSION = "3.0.6";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -20,7 +20,12 @@
         defaultCrew: 1,
         safetyContactName: "",
         safetyContactPhone: "",
-        closeHauledAngle: 37.5
+        closeHauledAngle: 37.5,
+        windZones: [
+            { start: 0, end: 35, color: "#f33441", label: "Zone rouge" },
+            { start: 35, end: 170, color: "#18b54c", label: "Zone verte" },
+            { start: 170, end: 180, color: "#1688ff", label: "Zone bleue" }
+        ]
     };
 
     const SELECT_OPTIONS = {
@@ -101,6 +106,41 @@
         replayNavigationId: null,
         toastTimerId: null
     };
+
+    const GPS_HEADING_MIN_SPEED_KN = 0.3;
+
+    function getWindZones() {
+        const source = Array.isArray(state.settings?.windZones) && state.settings.windZones.length
+            ? state.settings.windZones
+            : DEFAULT_SETTINGS.windZones;
+        const cleaned = source.map((zone, index) => ({
+            start: clamp(Number(zone.start), 0, 180),
+            end: clamp(Number(zone.end), 0, 180),
+            color: /^#[0-9a-f]{6}$/i.test(String(zone.color || "")) ? zone.color : DEFAULT_SETTINGS.windZones[index % DEFAULT_SETTINGS.windZones.length].color,
+            label: String(zone.label || `Zone ${index + 1}`)
+        })).filter(zone => Number.isFinite(zone.start) && Number.isFinite(zone.end) && zone.end > zone.start)
+          .sort((a, b) => a.start - b.start);
+        return cleaned.length ? cleaned : cloneValue(DEFAULT_SETTINGS.windZones);
+    }
+
+    function windZonesGradient() {
+        const zones = getWindZones();
+        const stops = [];
+        const colorAt = angle => {
+            const zone = zones.find(item => angle >= item.start && angle <= item.end);
+            return zone?.color || "#26394b";
+        };
+        zones.forEach(zone => stops.push(`${zone.color} ${zone.start}deg ${zone.end}deg`));
+        for (const zone of [...zones].reverse()) {
+            stops.push(`${zone.color} ${360 - zone.end}deg ${360 - zone.start}deg`);
+        }
+        return `conic-gradient(from 0deg, ${stops.join(", ")})`;
+    }
+
+    function applyWindGaugeZones() {
+        const scale = getElement("navCompassScale");
+        if (scale) scale.style.setProperty("--wind-zone-gradient", windZonesGradient());
+    }
 
     function getElement(id) {
         return document.getElementById(id);
@@ -1054,7 +1094,8 @@
                 );
         }
 
-        if (point.heading === null && previousPoint) {
+        const headingCanUpdate = Number(point.speedKn) >= GPS_HEADING_MIN_SPEED_KN;
+        if (headingCanUpdate && point.heading === null && previousPoint) {
             const moved = calculateDistanceNm(
                 previousPoint.latitude,
                 previousPoint.longitude,
@@ -1071,8 +1112,10 @@
             }
         }
 
-        if (point.heading !== null) {
+        if (headingCanUpdate && point.heading !== null) {
             state.currentNavigation.currentHeading = point.heading;
+        } else if (!headingCanUpdate) {
+            point.heading = null;
         }
         state.currentNavigation.gpsStatus = "active";
 
@@ -1349,6 +1392,7 @@
 
         updateGPSIndicator(navigation.gpsStatus);
         const speed = Number(navigation.currentSpeedKn || 0);
+        applyWindGaugeZones();
         const target = getPolarTargetSpeed(navigation);
         setText("navSpeed", speed.toFixed(1) + " nd");
         setText("navHeading", Number.isFinite(navigation.currentHeading)
@@ -1375,14 +1419,14 @@
             setText("navWindAngle", Math.round(Math.abs(angle)) + "°");
             setText("navTack", side);
             if (needle) {
-                needle.style.transform = `rotate(${angle - 90}deg)`;
+                needle.style.transform = `translate(-50%, -100%) rotate(${angle}deg)`;
                 needle.classList.add("active");
             }
         } else {
             setText("navWindAngle", "—°");
             setText("navTack", "VENT NON CALIBRÉ");
             if (needle) {
-                needle.style.transform = "rotate(-90deg)";
+                needle.style.transform = "translate(-50%, -100%) rotate(0deg)";
                 needle.classList.remove("active");
             }
         }
@@ -1498,6 +1542,10 @@
     function openWindAxisModal() {
         const navigation = state.currentNavigation;
         if (!navigation) return;
+        if (Number(navigation.currentSpeedKn || 0) < GPS_HEADING_MIN_SPEED_KN) {
+            showToast("Le bateau doit avancer à au moins 0,3 nd pour calibrer le vent.");
+            return;
+        }
         if (!Number.isFinite(Number(navigation.currentHeading))) {
             showToast("Attends que le GPS fournisse un cap avant de calibrer le vent.");
             return;
@@ -1511,7 +1559,11 @@
 
     function saveWindAxisCalibration() {
         const navigation = state.currentNavigation;
-        if (!navigation || !Number.isFinite(Number(navigation.currentHeading))) {
+        if (!navigation || Number(navigation.currentSpeedKn || 0) < GPS_HEADING_MIN_SPEED_KN) {
+            showToast("Le bateau doit avancer à au moins 0,3 nd pour calibrer le vent.");
+            return;
+        }
+        if (!Number.isFinite(Number(navigation.currentHeading))) {
             showToast("Cap GPS indisponible : calibrage impossible.");
             return;
         }
@@ -1736,6 +1788,44 @@
         showToast(`${MARKER_LABELS[type]} enregistré`);
     }
 
+    function renderWindZonesEditor() {
+        const editor = getElement("windZonesEditor");
+        if (!editor) return;
+        editor.innerHTML = getWindZones().map((zone, index) => `
+            <div class="windZoneRow" data-zone-index="${index}">
+                <input class="windZoneColor" type="color" value="${escapeHTML(zone.color)}" aria-label="Couleur de la zone ${index + 1}">
+                <label><span>Début</span><input class="windZoneStart" type="number" min="0" max="180" step="1" value="${zone.start}"><b>°</b></label>
+                <label><span>Fin</span><input class="windZoneEnd" type="number" min="0" max="180" step="1" value="${zone.end}"><b>°</b></label>
+                <button class="deleteWindZone" type="button" aria-label="Supprimer cette zone">✕</button>
+            </div>`).join("");
+        editor.querySelectorAll(".deleteWindZone").forEach(button => button.addEventListener("click", () => {
+            const rows = [...editor.querySelectorAll(".windZoneRow")];
+            if (rows.length <= 1) { showToast("Il faut conserver au moins une zone."); return; }
+            button.closest(".windZoneRow")?.remove();
+        }));
+    }
+
+    function readWindZonesEditor() {
+        const rows = [...document.querySelectorAll("#windZonesEditor .windZoneRow")];
+        const zones = rows.map((row, index) => ({
+            start: clamp(Number(row.querySelector(".windZoneStart")?.value), 0, 180),
+            end: clamp(Number(row.querySelector(".windZoneEnd")?.value), 0, 180),
+            color: row.querySelector(".windZoneColor")?.value || DEFAULT_SETTINGS.windZones[index % 3].color,
+            label: `Zone ${index + 1}`
+        })).filter(zone => Number.isFinite(zone.start) && Number.isFinite(zone.end) && zone.end > zone.start)
+          .sort((a, b) => a.start - b.start);
+        return zones.length ? zones : cloneValue(DEFAULT_SETTINGS.windZones);
+    }
+
+    function addWindZoneEditorRow() {
+        const current = readWindZonesEditor();
+        const lastEnd = current.length ? current[current.length - 1].end : 0;
+        const start = Math.min(179, lastEnd);
+        current.push({ start, end: Math.min(180, start + 10), color: "#f5a623", label: `Zone ${current.length + 1}` });
+        state.settings.windZones = current;
+        renderWindZonesEditor();
+    }
+
     function loadSettingsForm() {
         setInputValue(
             "boatName",
@@ -1769,6 +1859,7 @@
         setInputValue("safetyContactName", state.settings.safetyContactName || "");
         setInputValue("safetyContactPhone", state.settings.safetyContactPhone || "");
         setInputValue("closeHauledAngle", getCloseHauledAngle());
+        renderWindZonesEditor();
 
         setText(
             "appVersion",
@@ -1822,7 +1913,8 @@
 
             safetyContactName: getElement("safetyContactName")?.value.trim() || "",
             safetyContactPhone: getElement("safetyContactPhone")?.value.trim() || "",
-            closeHauledAngle: clamp(toNumberOrNull(getElement("closeHauledAngle")?.value) || 37.5, 20, 60)
+            closeHauledAngle: clamp(toNumberOrNull(getElement("closeHauledAngle")?.value) || 37.5, 20, 60),
+            windZones: readWindZonesEditor()
         };
 
         saveJSON(
@@ -3492,6 +3584,7 @@ bindClick(
             "btnSaveSettings",
             saveSettings
         );
+        addClickListener("btnAddWindZone", addWindZoneEditorRow);
 
         bindClick(
             "btnWind",

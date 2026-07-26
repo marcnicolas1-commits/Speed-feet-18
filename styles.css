@@ -2446,3 +2446,55 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 .editableChecklistRow{grid-template-columns:32px 1fr 40px 40px;padding-left:16px}
 .dragHandle{display:none!important}
 @media(max-width:560px){.editableChecklistRow{grid-template-columns:32px 1fr 36px 36px;padding-left:12px}}
+
+
+/* SpeedFeet V3.0.6 — cadran Garmin, zones réglables et affichage responsive */
+.windCompassCard{
+  --gauge-size:min(100%,clamp(286px,43svh,390px));
+  width:var(--gauge-size);
+  aspect-ratio:1;
+  min-height:0;
+  border-radius:22px;
+  overflow:hidden;
+  background:radial-gradient(circle at 50% 47%,#102c48 0 35%,#081a2c 69%,#061421 100%);
+  container-type:inline-size;
+}
+.compassScale{
+  --wind-zone-gradient:conic-gradient(from 0deg,#f33441 0deg 35deg,#18b54c 35deg 170deg,#1688ff 170deg 190deg,#18b54c 190deg 325deg,#f33441 325deg 360deg);
+  position:absolute;
+  inset:5.5%;
+  border:0;
+  border-radius:50%;
+  background:var(--wind-zone-gradient);
+  opacity:1;
+  z-index:1;
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 14px),#000 calc(100% - 13px));
+          mask:radial-gradient(farthest-side,transparent calc(100% - 14px),#000 calc(100% - 13px));
+}
+.compassTicks{position:absolute;inset:8.7%;border-radius:50%;z-index:2;pointer-events:none;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.82) 0 .7deg,transparent .7deg 5deg);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 8px),#000 calc(100% - 7px));mask:radial-gradient(farthest-side,transparent calc(100% - 8px),#000 calc(100% - 7px));opacity:.8}
+.compassAngles{font-size:clamp(.64rem,3.5cqi,.92rem);z-index:5}
+.compassAngles .a0{top:4.2%}.compassAngles .a30r{left:73%;top:10.8%}.compassAngles .a60r{left:89.5%;top:27.7%}.compassAngles .a90r{left:95.5%;top:50%}.compassAngles .a120r{left:89.5%;top:72.3%}.compassAngles .a150r{left:73%;top:89.2%}.compassAngles .a180{left:50%;top:95.8%}
+.compassAngles .a150l{left:27%;top:89.2%}.compassAngles .a120l{left:10.5%;top:72.3%}.compassAngles .a90l{left:4.5%;top:50%}.compassAngles .a60l{left:10.5%;top:27.7%}.compassAngles .a30l{left:27%;top:10.8%}
+.windReadout{top:18%;left:18%;right:18%;z-index:8;pointer-events:none}
+.windReadout strong{display:block;font-size:clamp(2.65rem,16cqi,4.2rem);line-height:.92;letter-spacing:-.04em;white-space:nowrap}
+.windReadout span{margin-top:5px;font-size:clamp(.67rem,3.4cqi,.9rem);white-space:nowrap}
+.boatCompass{display:none!important}
+.windNeedle{position:absolute;left:50%;top:50%;width:0;height:42%;transform-origin:50% 100%;transform:translate(-50%,-100%) rotate(0deg);z-index:7;opacity:.35;transition:transform .35s ease;filter:drop-shadow(0 3px 5px #000b)}
+.windNeedle i{position:absolute;left:50%;bottom:0;width:clamp(7px,2.3cqi,10px);height:100%;transform:translateX(-50%);background:linear-gradient(90deg,#aeb8c2,#fff 48%,#d5dce3);clip-path:polygon(50% 0,100% 12%,70% 100%,30% 100%,0 12%)}
+.needleHub{width:clamp(24px,8cqi,34px);height:clamp(24px,8cqi,34px)}
+.headingReadout{bottom:12.5%;z-index:8;pointer-events:none}.headingReadout strong{font-size:clamp(2.3rem,13cqi,3.7rem)}.headingReadout small{font-size:clamp(.6rem,2.8cqi,.76rem)}
+.navCompassRefreshHint{bottom:3.8%;font-size:clamp(.55rem,2.5cqi,.68rem)}
+.windZonesSettings{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.windZonesHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.windZonesHeader h3{margin:0 0 3px}.compactButton{width:auto!important;min-height:40px;padding:8px 12px!important;white-space:nowrap}
+.windZonesEditor{display:grid;gap:8px;margin-top:12px}.windZoneRow{display:grid;grid-template-columns:48px 1fr 1fr 42px;gap:8px;align-items:end;padding:10px;border:1px solid #234562;border-radius:13px;background:#07192a}.windZoneColor{width:48px!important;height:43px!important;padding:3px!important;border-radius:10px!important}.windZoneRow label{display:grid;grid-template-columns:1fr auto;gap:2px 4px;margin:0}.windZoneRow label span{grid-column:1/-1;color:#9fb2c6;font-size:.72rem}.windZoneRow label input{min-width:0;margin:0!important;padding:9px!important}.windZoneRow label b{align-self:center;color:#9fb2c6}.deleteWindZone{height:43px;border:1px solid #74313a;border-radius:10px;background:#35151b;color:#ff929a;font-weight:900}
+@media(max-width:560px){
+  .windCompassCard{--gauge-size:min(100%,clamp(286px,41svh,360px))}
+  .compassScale{-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 12px),#000 calc(100% - 11px));mask:radial-gradient(farthest-side,transparent calc(100% - 12px),#000 calc(100% - 11px))}
+  .windReadout{top:17.5%}.headingReadout{bottom:13%}
+  .windZoneRow{grid-template-columns:42px 1fr 1fr 38px;padding:8px;gap:6px}.windZoneColor{width:42px!important}
+}
+@media(max-height:700px) and (max-width:600px){
+  .windCompassCard{--gauge-size:min(100%,38svh)}
+  .navCompassRefreshHint{display:none}
+  .windReadout{top:16.5%}
+}

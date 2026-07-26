@@ -7,7 +7,7 @@
 - La prise de vent reste dédiée à la force et aux conditions de vent.
 
 
-## V3.0.5
+## V3.0.6
 - Accueil simplifié : suppression de la rangée Météo / Records / Apprentissage en doublon.
 - Préparation : checklist sans poignée ni réorganisation.
 - Lien Prévisions météo corrigé vers Windguru Moulin Blanc (spot 48447).
