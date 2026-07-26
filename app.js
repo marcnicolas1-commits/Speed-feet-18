@@ -21,6 +21,7 @@
         safetyContactName: "",
         safetyContactPhone: "",
         closeHauledAngle: 37.5,
+        gpsWindThreshold: 0.3,
         windZones: [
             { start: 0, end: 35, color: "#f33441", label: "Zone rouge" },
             { start: 35, end: 170, color: "#18b54c", label: "Zone verte" },
@@ -1849,6 +1850,9 @@
         current.push({ start, end: Math.min(180, start + 10), color: "#f5a623", label: `Zone ${current.length + 1}` });
         state.settings.windZones = current;
         renderWindZonesEditor();
+        setInputValue("windGreenStart", state.settings.windZones?.[1]?.start ?? 35);
+        setInputValue("windGreenEnd", state.settings.windZones?.[1]?.end ?? 170);
+        setInputValue("gpsWindThreshold", state.settings.gpsWindThreshold ?? 0.3);
     }
 
     function loadSettingsForm() {
@@ -1885,6 +1889,9 @@
         setInputValue("safetyContactPhone", state.settings.safetyContactPhone || "");
         setInputValue("closeHauledAngle", getCloseHauledAngle());
         renderWindZonesEditor();
+        setInputValue("windGreenStart", state.settings.windZones?.[1]?.start ?? 35);
+        setInputValue("windGreenEnd", state.settings.windZones?.[1]?.end ?? 170);
+        setInputValue("gpsWindThreshold", state.settings.gpsWindThreshold ?? 0.3);
 
         setText(
             "appVersion",
@@ -1939,7 +1946,8 @@
             safetyContactName: getElement("safetyContactName")?.value.trim() || "",
             safetyContactPhone: getElement("safetyContactPhone")?.value.trim() || "",
             closeHauledAngle: clamp(toNumberOrNull(getElement("closeHauledAngle")?.value) || 37.5, 20, 60),
-            windZones: readWindZonesEditor()
+            gpsWindThreshold: clamp(toNumberOrNull(getElement("gpsWindThreshold")?.value)||0.3,0.1,2),
+            windZones: [{start:0,end:clamp(toNumberOrNull(getElement("windGreenStart")?.value)||35,0,180),color:"#f33441",label:"Zone rouge"},{start:clamp(toNumberOrNull(getElement("windGreenStart")?.value)||35,0,180),end:clamp(toNumberOrNull(getElement("windGreenEnd")?.value)||170,0,180),color:"#18b54c",label:"Zone verte"},{start:clamp(toNumberOrNull(getElement("windGreenEnd")?.value)||170,0,180),end:180,color:"#1688ff",label:"Zone bleue"}]
         };
 
         saveJSON(
