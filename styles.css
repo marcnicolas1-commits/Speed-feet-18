@@ -2550,3 +2550,28 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 .boatTasksFullList{border:1px solid rgba(255,255,255,.12);border-radius:18px;background:rgba(255,255,255,.035);overflow:hidden}.boatTasksFullList .emptyCard{margin:16px}
 .boatTaskDelete{border:1px solid rgba(255,100,100,.35);border-radius:10px;background:rgba(255,70,70,.08);color:#ffaaaa;padding:9px 12px;font-weight:750}
 @media(max-width:600px){.boatTaskAddRow{grid-template-columns:1fr}.boatTaskAddRow .primaryButton{width:100%}.boatTaskRow{grid-template-columns:26px minmax(0,1fr)}.boatTaskDelete{grid-column:2;justify-self:start}.boatTasksHomeHeader{padding:15px 16px}.boatTasksHomeHeader strong{font-size:16px}}
+
+
+/* V3.2.3 — recommandations de réglages au près */
+.trimRecommendation {
+    margin: -6px 0 14px;
+    min-height: 22px;
+    font-size: .9rem;
+    font-weight: 800;
+    letter-spacing: .01em;
+}
+.trimRecommendation.validated { color: #6ce9a6; }
+.trimRecommendation.trend { color: #fdb022; }
+.trimRecommendation.unavailable { color: rgba(226, 232, 240, .62); font-weight: 650; }
+.trimLearnedAnalysis {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(255,255,255,.1);
+}
+.trimLearnedBlock { margin-top: 16px; }
+.trimLearnedBlock h4 { margin: 0 0 10px; }
+.tableScroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.trimRecommendationTable { width: 100%; border-collapse: collapse; min-width: 680px; }
+.trimRecommendationTable th,
+.trimRecommendationTable td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid rgba(255,255,255,.08); }
+.trimRecommendationTable th { color: #9ecbff; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }

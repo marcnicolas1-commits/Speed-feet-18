@@ -1,4 +1,4 @@
-# SpeedFeet V3.2.2
+# SpeedFeet V3.2.3
 
 Évolutions :
 - Retour fiable au cadran après enregistrement des paramètres pendant une navigation.
@@ -33,3 +33,12 @@
 - Ajout et suppression manuelle des tâches avec confirmation.
 - Les remarques « À penser pour la prochaine navigation » sont ajoutées automatiquement à la liste après une navigation.
 - Les tâches sont incluses dans les sauvegardes SpeedFeet.
+
+
+## V3.2.3
+- Analyse des réglages au près par tranches de vent de 5 nds.
+- Conservation stricte des valeurs existantes inscrites sur le bateau.
+- Recommandation visible sous chaque réglage pendant la navigation.
+- Seuil de 3 observations pour une tendance et 5 pour une valeur validée.
+- Explication détaillée dans l’analyse après navigation.
+- Aucune recommandation affichée lorsque les données ou l’allure ne sont pas adaptées.

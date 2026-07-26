@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.2.2";
+    const APP_VERSION = "3.2.3";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -1907,6 +1907,191 @@
         );
     }
 
+
+    const TRIM_RECOMMENDATION_FIELDS = [
+        { key: "travelerMain", label: "Chariot de GV", elementId: "trimRecommendationTravelerMain" },
+        { key: "travelerJib", label: "Chariot de foc", elementId: "trimRecommendationTravelerJib" },
+        { key: "rotation", label: "Rotation du mât", elementId: "trimRecommendationRotation" },
+        { key: "cunningham", label: "Cunningham", elementId: "trimRecommendationCunningham" },
+        { key: "outhaul", label: "Bordure", elementId: "trimRecommendationOuthaul" },
+        { key: "sheet", label: "Écoute de grand-voile", elementId: "trimRecommendationSheet" }
+    ];
+
+    function normalizeAngleDifference(a, b) {
+        const first = Number(a);
+        const second = Number(b);
+        if (!Number.isFinite(first) || !Number.isFinite(second)) return null;
+        return Math.abs(((first - second + 540) % 360) - 180);
+    }
+
+    function getWindBin(speed) {
+        const value = Number(speed);
+        if (!Number.isFinite(value) || value < 0) return null;
+        const start = Math.floor(value / 5) * 5;
+        return { start, end: start + 5, key: `${start}-${start + 5}`, label: `${start}–${start + 5} nds` };
+    }
+
+    function latestWindBefore(navigation, timestampMs) {
+        const records = Array.isArray(navigation?.windRecords) ? navigation.windRecords : [];
+        let selected = null;
+        for (const record of records) {
+            const time = new Date(record.timestamp).getTime();
+            if (Number.isFinite(time) && time <= timestampMs && (!selected || time > selected.time)) {
+                selected = { record, time };
+            }
+        }
+        if (selected) return selected.record;
+        const preparedSpeed = Number(navigation?.preparation?.windAverage);
+        const preparedDirection = Number(navigation?.preparation?.windDirection);
+        if (Number.isFinite(preparedSpeed)) {
+            return { speed: preparedSpeed, direction: Number.isFinite(preparedDirection) ? preparedDirection : null, source: "prévision" };
+        }
+        return null;
+    }
+
+    function trackPointsInWindow(track, startMs, endMs) {
+        return (Array.isArray(track) ? track : []).filter(point => {
+            const time = new Date(point.timestamp).getTime();
+            return time >= startMs && time <= endMs && Number.isFinite(Number(point.speedKn));
+        });
+    }
+
+    function circularAverageDegrees(values) {
+        const usable = values.map(Number).filter(Number.isFinite);
+        if (!usable.length) return null;
+        const x = usable.reduce((sum, angle) => sum + Math.cos(angle * Math.PI / 180), 0);
+        const y = usable.reduce((sum, angle) => sum + Math.sin(angle * Math.PI / 180), 0);
+        return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    }
+
+    function buildTrimLearningSamples(navigation) {
+        const records = Array.isArray(navigation?.trimRecords) ? navigation.trimRecords : [];
+        const track = Array.isArray(navigation?.track) ? navigation.track : [];
+        const endNavigationMs = new Date(navigation?.endedAt || navigation?.startedAt || 0).getTime();
+        const samples = [];
+        records.forEach((record, index) => {
+            const recordMs = new Date(record.timestamp).getTime();
+            if (!Number.isFinite(recordMs)) return;
+            const nextMs = records[index + 1] ? new Date(records[index + 1].timestamp).getTime() : endNavigationMs;
+            const startMs = recordMs + 120000;
+            const endMs = Math.min(Number.isFinite(nextMs) ? nextMs : startMs + 600000, startMs + 600000);
+            if (endMs - startMs < 60000) return;
+            const points = trackPointsInWindow(track, startMs, endMs);
+            if (points.length < 8) return;
+            const speedValues = points.map(point => Number(point.speedKn)).filter(value => Number.isFinite(value) && value >= 0.5);
+            if (speedValues.length < 8) return;
+            const averageSpeed = speedValues.reduce((sum, value) => sum + value, 0) / speedValues.length;
+            const averageHeading = circularAverageDegrees(points.map(point => point.heading));
+            const midpoint = startMs + (endMs - startMs) / 2;
+            const wind = latestWindBefore(navigation, midpoint);
+            const windSpeed = Number(wind?.speed);
+            const windDirection = Number(wind?.direction);
+            const bin = getWindBin(windSpeed);
+            if (!bin) return;
+            const angle = normalizeAngleDifference(averageHeading, windDirection);
+            const closeHauledLimit = getCloseHauledAngle() + 15;
+            if (!Number.isFinite(angle) || angle > closeHauledLimit) return;
+            samples.push({ navigationId: navigation.id, record, averageSpeed, windSpeed, windDirection, bin, angle, durationSeconds: Math.round((endMs - startMs) / 1000) });
+        });
+        return samples;
+    }
+
+    function getAllTrimLearningSamples() {
+        return (Array.isArray(state.history) ? state.history : [])
+            .filter(navigation => navigation?.status === "completed")
+            .flatMap(buildTrimLearningSamples);
+    }
+
+    function summarizeTrimRecommendations(samples, windBinKey) {
+        const relevant = samples.filter(sample => sample.bin.key === windBinKey);
+        const result = {};
+        TRIM_RECOMMENDATION_FIELDS.forEach(field => {
+            const groups = new Map();
+            relevant.forEach(sample => {
+                const value = String(sample.record?.[field.key] ?? "").trim();
+                if (!value) return;
+                if (!groups.has(value)) groups.set(value, []);
+                groups.get(value).push(sample.averageSpeed);
+            });
+            const candidates = [...groups.entries()].map(([value, speeds]) => ({
+                value,
+                count: speeds.length,
+                averageSpeed: speeds.reduce((sum, speed) => sum + speed, 0) / speeds.length
+            })).filter(candidate => candidate.count >= 3)
+              .sort((a, b) => b.averageSpeed - a.averageSpeed || b.count - a.count);
+            const best = candidates[0] || null;
+            result[field.key] = best ? {
+                ...best,
+                confidence: best.count >= 5 ? "validated" : "trend",
+                confidenceLabel: best.count >= 5 ? "Validé" : "Tendance",
+                alternatives: candidates.slice(1)
+            } : null;
+        });
+        return result;
+    }
+
+    function getCurrentTrimRecommendationContext() {
+        const navigation = state.currentNavigation;
+        if (!navigation) return null;
+        const latestWind = navigation.windRecords?.slice(-1)[0];
+        const windSpeed = Number(latestWind?.speed ?? navigation.preparation?.windAverage);
+        const windDirection = Number(latestWind?.direction ?? navigation.preparation?.windDirection ?? navigation.windAxisDirection);
+        const heading = Number(navigation.currentHeading);
+        const bin = getWindBin(windSpeed);
+        if (!bin) return { reason: "wind", bin: null };
+        const angle = normalizeAngleDifference(heading, windDirection);
+        if (!Number.isFinite(angle) || angle > getCloseHauledAngle() + 15) return { reason: "allure", bin, angle };
+        return { reason: null, bin, angle, windSpeed };
+    }
+
+    function renderTrimRecommendations() {
+        const context = getCurrentTrimRecommendationContext();
+        const samples = getAllTrimLearningSamples();
+        const recommendations = context?.bin ? summarizeTrimRecommendations(samples, context.bin.key) : {};
+        TRIM_RECOMMENDATION_FIELDS.forEach(field => {
+            const element = getElement(field.elementId);
+            if (!element) return;
+            if (!context || context.reason === "wind") {
+                element.className = "trimRecommendation unavailable";
+                element.textContent = "Aucune recommandation fiable";
+                return;
+            }
+            if (context.reason === "allure") {
+                element.className = "trimRecommendation unavailable";
+                element.textContent = "Recommandations disponibles au près";
+                return;
+            }
+            const recommendation = recommendations[field.key];
+            if (!recommendation) {
+                element.className = "trimRecommendation unavailable";
+                element.textContent = `Aucune recommandation fiable · ${context.bin.label}`;
+                return;
+            }
+            const dot = recommendation.confidence === "validated" ? "🟢" : "🟡";
+            element.className = `trimRecommendation ${recommendation.confidence}`;
+            element.textContent = `⭐ Recommandé : ${recommendation.value} ${dot}`;
+        });
+    }
+
+    function createLearnedTrimRecommendationsHTML(navigation) {
+        const allSamples = getAllTrimLearningSamples();
+        const navigationSamples = buildTrimLearningSamples(navigation);
+        const bins = [...new Map(navigationSamples.map(sample => [sample.bin.key, sample.bin])).values()];
+        if (!bins.length) return `<p>Aucune période stable au près avec vent exploitable pour cette sortie.</p>`;
+        return bins.map(bin => {
+            const recommendations = summarizeTrimRecommendations(allSamples, bin.key);
+            const rows = TRIM_RECOMMENDATION_FIELDS.map(field => {
+                const rec = recommendations[field.key];
+                if (!rec) return `<tr><td>${escapeHTML(field.label)}</td><td>—</td><td>Données insuffisantes</td><td>Moins de 3 observations comparables</td></tr>`;
+                const explanation = rec.alternatives.length
+                    ? `${rec.averageSpeed.toFixed(2)} nd de moyenne · meilleur résultat parmi ${rec.alternatives.length + 1} valeurs comparées`
+                    : `${rec.averageSpeed.toFixed(2)} nd de moyenne sur les périodes stables observées`;
+                return `<tr><td>${escapeHTML(field.label)}</td><td><strong>${escapeHTML(rec.value)}</strong></td><td>${escapeHTML(rec.confidenceLabel)} (${rec.count} observations)</td><td>${escapeHTML(explanation)}</td></tr>`;
+            }).join("");
+            return `<div class="trimLearnedBlock"><h4>Au près · vent ${escapeHTML(bin.label)}</h4><div class="tableScroll"><table class="trimRecommendationTable"><thead><tr><th>Réglage</th><th>Conseillé</th><th>Fiabilité</th><th>Pourquoi</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+        }).join("");
+    }
+
     function openTrimModal() {
         if (!state.currentNavigation) {
             return;
@@ -1949,6 +2134,7 @@
             );
         }
 
+        renderTrimRecommendations();
         openModal("trimModal");
     }
 
@@ -2680,8 +2866,7 @@
 
     function createTrimAnalysisHTML(navigation) {
         const analyses = analyzeTrimRecords(navigation).filter(item => item.changes.length);
-        if (!analyses.length) return `<p>Aucun changement de réglage comparable.</p>`;
-        return analyses.map(item => {
+        const changeAnalysis = analyses.length ? analyses.map(item => {
             let verdict = item.interrupted ? "Analyse annulée : nouveau réglage avant la fin de la stabilisation" : "Données insuffisantes";
             let cls = "";
             if (!item.interrupted && item.gain !== null) {
@@ -2695,7 +2880,8 @@
                 <p>Stabilisation : 2 min, puis comparaison sur 2 min.</p>
                 <p class="trimVerdict ${cls}">${verdict}${item.gain === null ? "" : ` (${item.gain >= 0 ? "+" : ""}${item.gain.toFixed(2)} nd)`}</p>
             </div>`;
-        }).join("");
+        }).join("") : `<p>Aucun changement de réglage comparable.</p>`;
+        return `${changeAnalysis}<div class="trimLearnedAnalysis"><h4>Recommandations apprises par plage de vent</h4><p class="smallText">Calculées uniquement au près, par tranches de 5 nds. Une tendance demande 3 observations comparables et une valeur validée en demande 5.</p>${createLearnedTrimRecommendationsHTML(navigation)}</div>`;
     }
 
 
