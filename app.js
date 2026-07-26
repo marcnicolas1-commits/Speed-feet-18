@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.0.4";
+    const APP_VERSION = "3.0.5";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -695,7 +695,6 @@
         if (!host) return;
         const base = Array.isArray(items) && items.length ? items : loadChecklistModel();
         host.innerHTML = base.map((item, index) => `<div class="editableChecklistRow" data-id="${escapeHTML(item.id || `item-${Date.now()}-${index}`)}">
-            <button class="dragHandle" type="button" aria-label="Déplacer">⠿</button>
             <input type="checkbox" ${item.checked ? "checked" : ""} aria-label="Cocher">
             <span class="checklistLabel">${escapeHTML(item.label || "Élément")}</span>
             <button class="editChecklistItem" type="button" aria-label="Modifier">✎</button>

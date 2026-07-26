@@ -10,7 +10,7 @@
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
-<link href="styles.css?v=3001" rel="stylesheet"/>
+<link href="styles.css?v=3005" rel="stylesheet"/>
 </head>
 <body>
 <div class="v3AppShell" id="app">
@@ -20,7 +20,7 @@
 <section class="page active v3DashboardPage" id="homePage">
 <header class="speedfeetBrandHeader">
   <div class="speedfeetWordmark"><span>SPEEDFEET</span><b> ANALYZER</b></div>
-  <small>V3.0.0</small>
+  <small>V3.0.5</small>
 </header>
 <section class="readyHero">
   <div class="readyLine"><span></span><strong>PRÊT À NAVIGUER</strong><span></span></div>
@@ -58,11 +58,7 @@
   <button class="dashboardQuickButton" id="btnLearning" type="button"><span>🧠</span>APPRENTISSAGE</button>
   <button class="dashboardQuickButton" id="btnSettings" type="button"><span>⚙</span>RÉGLAGES</button>
 </section>
-<section class="dashboardExtrasGrid">
-  <a class="dashboardPanel weatherCompact" href="https://www.windguru.cz/53" rel="noopener noreferrer" target="_blank"><span>🌬️</span><div><strong>MÉTÉO</strong><small>Moulin Blanc · Brest</small></div><b>↗</b></a>
-  <button class="dashboardPanel compactInfoButton" id="btnRecordsSummary" type="button"><span>🏆</span><div><strong>Records</strong><small id="homeRecordSummary">Aucun record</small></div></button>
-  <button class="dashboardPanel compactInfoButton" id="btnLearningSummary" type="button"><span>🧠</span><div><strong>Apprentissage</strong><small id="homeLearningSummary">Aucune observation</small></div></button>
-</section>
+
 <section class="homeSection nextNavigationHomeSection" hidden id="nextNavigationHomeSection">
   <div class="sectionTitleRow"><h2>À penser pour la prochaine navigation</h2><button class="textButton" id="btnEditNextNavigationNotes" type="button">Modifier</button></div>
   <div class="nextNavigationNoteCard" id="nextNavigationHomeNotes"></div>
@@ -98,7 +94,7 @@
     <label class="weatherMetric"><span>🌊</span><small>État de la mer</small><select id="seaState"><option value="">Choisir</option><option>Plate</option><option>Ridée</option><option>Peu agitée</option><option>Agitée</option><option>Très agitée</option></select></label>
   </div>
   <div class="weatherActions">
-    <a href="https://www.windguru.cz/53" target="_blank" rel="noopener noreferrer">↗ Prévisions météo</a>
+    <a href="https://www.windguru.cz/48447" target="_blank" rel="noopener noreferrer">↗ Prévisions météo</a>
     <label class="weatherUpload">📷 Importer une capture<input accept="image/*" id="weatherImage" type="file"></label>
   </div>
   <label class="fieldLabel">Notes météo<textarea id="weatherNotes" placeholder="Courant, visibilité, vagues, marée…" rows="2"></textarea></label>
@@ -121,21 +117,9 @@
   <div class="notesCounter"><span id="navigationNotesCount">0</span> / 250</div>
 </section>
 
-<section class="preparePanel configurationPanel">
-  <div class="prepareSectionHeading"><span class="stepBadge">5</span><h2>Configuration</h2></div>
-  <div class="configurationGrid">
-    <label>Grand-voile<select id="mainSail"></select></label>
-    <label>Foc<select id="jib"></select></label>
-    <label>Spi<select id="spinnaker"></select></label>
-    <label>Équipage<input id="crew" max="10" min="1" type="number"></label>
-  </div>
-</section>
 
-<section class="preparePanel remindersPanel">
-  <div class="prepareSectionHeading"><span class="stepBadge">6</span><h2>À penser pour la prochaine navigation</h2></div>
-  <textarea id="nextNavigationNotes" placeholder="Ex. reprendre la tension des haubans…" rows="2"></textarea>
-  <button class="secondaryButton compactButton" id="btnClearNextNavigationNotes" type="button">Effacer les remarques</button>
-</section>
+
+
 </div>
 <div class="prepareActions"><button class="secondaryButton" id="btnCancelPreparation" type="button">✕ Annuler</button><button class="primaryButton" id="btnStartPreparedNavigation" type="button">▶ Démarrer la navigation</button></div>
 </section>
@@ -536,7 +520,7 @@
 </div>
 </div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=3004"></script>
+<script src="app.js?v=3005"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

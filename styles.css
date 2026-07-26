@@ -2440,3 +2440,9 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 .windAxisTackChoices button{min-height:52px;border-radius:13px;border:1px solid #31536e;background:#0b2035;color:#dcecff;font-weight:800}
 .windAxisTackChoices button.selected{border-color:#1688ff;background:#123a60;box-shadow:0 0 0 2px #1688ff33 inset;color:#fff}
 @media(max-width:560px){.windNeedle{height:8px}.needleHub{width:28px;height:28px}.windReadout{top:14%}}
+
+
+/* SpeedFeet V3.0.5 — stabilisation accueil et préparation */
+.editableChecklistRow{grid-template-columns:32px 1fr 40px 40px;padding-left:16px}
+.dragHandle{display:none!important}
+@media(max-width:560px){.editableChecklistRow{grid-template-columns:32px 1fr 36px 36px;padding-left:12px}}
