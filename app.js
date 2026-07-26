@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.0.6";
+    const APP_VERSION = "3.0.6.1";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -3584,7 +3584,7 @@ bindClick(
             "btnSaveSettings",
             saveSettings
         );
-        addClickListener("btnAddWindZone", addWindZoneEditorRow);
+        bindClick("btnAddWindZone", addWindZoneEditorRow);
 
         bindClick(
             "btnWind",
