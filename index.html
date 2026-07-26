@@ -4,13 +4,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>SpeedFeet V3.2.0</title>
+<title>SpeedFeet V3.2.1</title>
 <meta content="#07111f" name="theme-color"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
-<link href="styles.css?v=3200" rel="stylesheet"/>
+<link href="styles.css?v=3210" rel="stylesheet"/>
 </head>
 <body>
 <div class="v3AppShell" id="app">
@@ -20,7 +20,7 @@
 <section class="page active v3DashboardPage" id="homePage">
 <header class="speedfeetBrandHeader">
   <div class="speedfeetWordmark"><span>SPEEDFEET</span><b> ANALYZER</b></div>
-  <small>V3.2.0</small>
+  <small>V3.2.1</small>
 </header>
 <section class="readyHero">
   <div class="readyLine"><span></span><strong>PRÊT À NAVIGUER</strong><span></span></div>
@@ -380,21 +380,19 @@
 </section>
 <section class="page" id="achievementsPage">
 <header class="pageHeader"><div class="pageHeaderTop"><button class="pageBackButton" id="btnAchievementsHome">← Accueil</button><h1>Succès</h1></div><p class="subtitle">Une collection réaliste, sûre et conçue pour être complétée en deux saisons régulières.</p></header>
-<section class="card achievementProgressCard">
-  <div class="achievementLevelRow"><div><small>NIVEAU DU NAVIGATEUR</small><strong id="achievementLevelText">Moussaillon</strong></div><span id="achievementPointsText">0 point</span></div>
-  <strong id="achievementProgressText">0 succès découvert</strong>
-  <div class="progressTrack"><span id="achievementProgressBar"></span></div>
-  <small id="achievementNextLevelText">Prochain niveau : Équipier</small>
+<section class="achievementSummaryCard">
+  <div class="achievementSummaryHeader">
+    <strong id="achievementProgressText">0 / 82 succès débloqués</strong>
+    <span id="achievementPercentageText">0 %</span>
+  </div>
+  <div class="achievementProgressTrack"><span id="achievementProgressBar"></span></div>
 </section>
-<nav class="achievementFilters" id="achievementFilters" aria-label="Filtrer les succès">
-  <button type="button" data-achievement-filter="all" class="selected">Tous</button>
-  <button type="button" data-achievement-filter="Découverte">Découverte</button>
-  <button type="button" data-achievement-filter="Progression">Progression</button>
-  <button type="button" data-achievement-filter="Manœuvres">Manœuvres</button>
-  <button type="button" data-achievement-filter="Application">Application</button>
-  <button type="button" data-achievement-filter="Fun">Fun</button>
-</nav>
-<section class="achievementsList" id="achievementsList"></section>
+<section class="achievementsList" id="achievementsList">
+  <div class="emptyCard">
+    <strong>Aucun succès débloqué pour le moment.</strong>
+    <p>Continue à naviguer pour découvrir ton premier succès.</p>
+  </div>
+</section>
 
 </section>
 <section class="page" id="learningPage">
@@ -560,11 +558,11 @@
 </div>
 </div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=3200"></script>
+<script src="app.js?v=3210"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=3200')
+    navigator.serviceWorker.register('./sw.js?v=3210')
       .catch(error => console.error('Service Worker non enregistré :', error));
   });
 }
