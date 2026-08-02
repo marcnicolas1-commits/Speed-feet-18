@@ -1,4 +1,4 @@
-# SpeedFeet V3.2.4
+# SpeedFeet V3.3.0
 
 Évolutions :
 - Retour fiable au cadran après enregistrement des paramètres pendant une navigation.
@@ -51,3 +51,12 @@
 - Chaque case affiche la valeur conseillée et son niveau de confiance.
 - Même moteur de calcul que les recommandations visibles pendant la navigation.
 - Tableau utilisable avant la sortie comme base de préparation du bateau.
+
+## V3.3.0
+- Vitesse GPS calculée sur environ 3 secondes avec lissage léger et conservation de la valeur brute iOS.
+- Cap calculé sur environ 5 secondes avec lissage angulaire.
+- Confirmation temporaire « GPS actualisé » après une actualisation manuelle.
+- Export d’une navigation individuelle depuis son débriefing.
+- Traces du débriefing et de la relecture colorées selon le pourcentage de polaire.
+- Analyse des virements et empannages basée sur la détection de la nouvelle route stabilisée.
+- Faux zéros et points GPS de mauvaise précision moins pénalisants dans les notes.

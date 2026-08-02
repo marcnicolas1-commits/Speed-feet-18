@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.2.4";
+    const APP_VERSION = "3.3.0";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -1217,135 +1217,112 @@
         }
     }
 
-    function handleGPSPosition(position) {
-        if (
-            !state.currentNavigation ||
-            state.currentNavigation
-                .status !== "running"
-        ) {
-            return;
+    function findTrackPointSecondsAgo(track, timestampMs, seconds) {
+        const target = timestampMs - seconds * 1000;
+        let candidate = null;
+        for (let i = track.length - 1; i >= 0; i--) {
+            const time = new Date(track[i].timestamp).getTime();
+            if (!Number.isFinite(time)) continue;
+            candidate = track[i];
+            if (time <= target) break;
         }
+        return candidate;
+    }
 
-        const coordinates =
-            position.coords;
+    function calculateSpeedFromPositions(previousPoint, point) {
+        if (!previousPoint || !point) return null;
+        const start = new Date(previousPoint.timestamp).getTime();
+        const end = new Date(point.timestamp).getTime();
+        const elapsedSeconds = (end - start) / 1000;
+        if (!Number.isFinite(elapsedSeconds) || elapsedSeconds < 2 || elapsedSeconds > 8) return null;
+        const distanceNm = calculateDistanceNm(previousPoint.latitude, previousPoint.longitude, point.latitude, point.longitude);
+        if (!Number.isFinite(distanceNm) || distanceNm < 0 || distanceNm > 0.08) return null;
+        return distanceNm / (elapsedSeconds / 3600);
+    }
+
+    function smoothLinear(previous, next, nextWeight = 0.65) {
+        if (!Number.isFinite(next)) return Number.isFinite(previous) ? previous : null;
+        if (!Number.isFinite(previous)) return next;
+        return previous * (1 - nextWeight) + next * nextWeight;
+    }
+
+    function smoothAngle(previous, next, nextWeight = 0.65) {
+        if (!Number.isFinite(next)) return Number.isFinite(previous) ? previous : null;
+        if (!Number.isFinite(previous)) return next;
+        let delta = ((next - previous + 540) % 360) - 180;
+        return (previous + delta * nextWeight + 360) % 360;
+    }
+
+    function handleGPSPosition(position) {
+        if (!state.currentNavigation || state.currentNavigation.status !== "running") return;
+
+        const coordinates = position.coords;
+        const timestamp = new Date(position.timestamp).toISOString();
+        const timestampMs = new Date(timestamp).getTime();
+        const track = state.currentNavigation.track;
+        const previousPoint = track[track.length - 1];
+        const rawSpeedKn = Number.isFinite(coordinates.speed) && coordinates.speed >= 0
+            ? coordinates.speed * 1.943844
+            : null;
+        const rawHeading = Number.isFinite(coordinates.heading) && coordinates.heading >= 0
+            ? coordinates.heading
+            : null;
 
         const point = {
-            latitude:
-                coordinates.latitude,
-
-            longitude:
-                coordinates.longitude,
-
-            accuracy:
-                coordinates.accuracy,
-
-            speedKn:
-                Number.isFinite(
-                    coordinates.speed
-                ) &&
-                coordinates.speed >= 0
-                    ? coordinates.speed *
-                      1.943844
-                    : null,
-
-            heading:
-                Number.isFinite(
-                    coordinates.heading
-                ) &&
-                coordinates.heading >= 0
-                    ? coordinates.heading
-                    : null,
-
-            timestamp:
-                new Date(
-                    position.timestamp
-                ).toISOString()
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude,
+            accuracy: coordinates.accuracy,
+            rawSpeedKn,
+            calculatedSpeedKn: null,
+            speedKn: null,
+            rawHeading,
+            heading: null,
+            timestamp
         };
 
-        const track =
-            state.currentNavigation.track;
+        const speedReference = findTrackPointSecondsAgo(track, timestampMs, 3);
+        const calculatedSpeed = calculateSpeedFromPositions(speedReference, point);
+        point.calculatedSpeedKn = calculatedSpeed;
 
-        const previousPoint =
-            track[track.length - 1];
+        // La vitesse principale vient du déplacement réel sur environ 3 secondes.
+        // La valeur iOS reste un secours lorsque la fenêtre calculée n'est pas encore disponible.
+        let selectedSpeed = Number.isFinite(calculatedSpeed) ? calculatedSpeed : rawSpeedKn;
+        if (Number.isFinite(selectedSpeed)) {
+            // Évite qu'un zéro isolé d'iOS remplace un déplacement visible sur la trace.
+            if (selectedSpeed === 0 && Number.isFinite(calculatedSpeed) && calculatedSpeed > 0.05) selectedSpeed = calculatedSpeed;
+            point.speedKn = Math.max(0, smoothLinear(state.currentNavigation.currentSpeedKn, selectedSpeed, 0.65));
+        }
 
         if (previousPoint) {
-            const segmentDistance =
-                calculateDistanceNm(
-                    previousPoint.latitude,
-                    previousPoint.longitude,
-                    point.latitude,
-                    point.longitude
-                );
-
-            if (
-                segmentDistance >= 0 &&
-                segmentDistance < 0.5
-            ) {
-                state.currentNavigation
-                    .distanceNm +=
-                    segmentDistance;
-            }
+            const segmentDistance = calculateDistanceNm(previousPoint.latitude, previousPoint.longitude, point.latitude, point.longitude);
+            if (segmentDistance >= 0 && segmentDistance < 0.5) state.currentNavigation.distanceNm += segmentDistance;
         }
 
-        if (point.speedKn !== null) {
-            state.currentNavigation
-                .currentSpeedKn =
-                point.speedKn;
-
-            state.currentNavigation
-                .maxSpeedKn =
-                Math.max(
-                    state.currentNavigation
-                        .maxSpeedKn,
-
-                    point.speedKn
-                );
+        if (Number.isFinite(point.speedKn)) {
+            state.currentNavigation.currentSpeedKn = point.speedKn;
+            state.currentNavigation.maxSpeedKn = Math.max(state.currentNavigation.maxSpeedKn, point.speedKn);
         }
 
-        const headingCanUpdate = Number(point.speedKn) >= GPS_HEADING_MIN_SPEED_KN;
-        if (headingCanUpdate && point.heading === null && previousPoint) {
-            const moved = calculateDistanceNm(
-                previousPoint.latitude,
-                previousPoint.longitude,
-                point.latitude,
-                point.longitude
+        // Le cap est calculé sur environ 5 secondes, puis légèrement lissé.
+        const headingReference = findTrackPointSecondsAgo(track, timestampMs, 5);
+        let calculatedHeading = null;
+        if (headingReference && Number(point.speedKn) >= GPS_HEADING_MIN_SPEED_KN) {
+            const moved = calculateDistanceNm(headingReference.latitude, headingReference.longitude, point.latitude, point.longitude);
+            if (moved >= 0.001) calculatedHeading = calculateBearing(
+                headingReference.latitude, headingReference.longitude, point.latitude, point.longitude
             );
-            if (moved >= 0.002) {
-                point.heading = calculateBearing(
-                    previousPoint.latitude,
-                    previousPoint.longitude,
-                    point.latitude,
-                    point.longitude
-                );
-            }
         }
-
-        if (headingCanUpdate && point.heading !== null) {
+        const selectedHeading = Number.isFinite(calculatedHeading) ? calculatedHeading : rawHeading;
+        if (Number(point.speedKn) >= GPS_HEADING_MIN_SPEED_KN && Number.isFinite(selectedHeading)) {
+            point.heading = smoothAngle(state.currentNavigation.currentHeading, selectedHeading, 0.65);
             state.currentNavigation.currentHeading = point.heading;
-        } else if (!headingCanUpdate) {
-            point.heading = null;
         }
+
         state.currentNavigation.gpsStatus = "active";
-
         track.push(point);
-
-        if (track.length % 3 === 0) {
-            saveJSON(
-                STORAGE_KEYS
-                    .currentNavigation,
-
-                state.currentNavigation
-            );
-        }
-
+        if (track.length % 3 === 0) saveJSON(STORAGE_KEYS.currentNavigation, state.currentNavigation);
         updateNavigationDashboard();
-
-        displayMapMessage(
-            "GPS actif — " +
-            point.latitude.toFixed(5) +
-            ", " +
-            point.longitude.toFixed(5)
-        );
+        displayMapMessage("GPS actif — " + point.latitude.toFixed(5) + ", " + point.longitude.toFixed(5));
     }
 
     function handleGPSError(error) {
@@ -2808,6 +2785,72 @@
             <p class="smallText">Fond satellite disponible avec une connexion Internet.</p>`;
     }
 
+    function windAtTimestamp(navigation, timestamp) {
+        const records = Array.isArray(navigation?.windRecords) ? navigation.windRecords : [];
+        const target = new Date(timestamp).getTime();
+        let best = null;
+        records.forEach(record => {
+            const time = new Date(record.timestamp).getTime();
+            if (Number.isFinite(time) && time <= target && (!best || time > best.time)) best = { record, time };
+        });
+        return best?.record || {
+            speed: navigation?.preparation?.windAverage,
+            direction: navigation?.preparation?.windDirection
+        };
+    }
+
+    function polarTargetForPoint(navigation, point) {
+        const polar = state.settings?.polarData;
+        const wind = windAtTimestamp(navigation, point.timestamp);
+        const windSpeed = Number(wind?.speed);
+        const windDirection = Number(wind?.direction);
+        const heading = Number(point?.heading);
+        if (!Array.isArray(polar) || !polar.length || ![windSpeed, windDirection, heading].every(Number.isFinite)) return null;
+        const twa = calculateSmallestAngle(heading, windDirection);
+        let best = null;
+        polar.forEach(row => {
+            const ws = Number(row.windSpeed ?? row.tws ?? row.wind);
+            const angle = Number(row.angle ?? row.twa);
+            const speed = Number(row.speed ?? row.boatSpeed ?? row.target);
+            if (![ws, angle, speed].every(Number.isFinite)) return;
+            const distance = Math.abs(ws - windSpeed) * 4 + Math.abs(angle - twa);
+            if (!best || distance < best.distance) best = { distance, speed };
+        });
+        return best?.speed ?? null;
+    }
+
+    function performanceColor(percent) {
+        if (!Number.isFinite(percent)) return "#42a5ff";
+        if (percent < 70) return "#f04438";
+        if (percent < 85) return "#f79009";
+        if (percent < 95) return "#fdb022";
+        if (percent <= 105) return "#12b76a";
+        return "#2e90fa";
+    }
+
+    function addPerformanceTrack(map, navigation, opacity = 0.95) {
+        const track = navigation?.track || [];
+        for (let i = 1; i < track.length; i++) {
+            const previous = track[i - 1];
+            const point = track[i];
+            const target = polarTargetForPoint(navigation, point);
+            const percent = Number.isFinite(target) && target > 0 && Number.isFinite(Number(point.speedKn))
+                ? Number(point.speedKn) / target * 100
+                : null;
+            L.polyline(
+                [[previous.latitude, previous.longitude], [point.latitude, point.longitude]],
+                { color: performanceColor(percent), weight: 5, opacity }
+            ).addTo(map);
+        }
+        const legend = L.control({ position: "bottomright" });
+        legend.onAdd = () => {
+            const div = L.DomUtil.create("div", "performanceMapLegend");
+            div.innerHTML = '<strong>% polaire</strong><span><i style="background:#f04438"></i>&lt;70</span><span><i style="background:#f79009"></i>70–85</span><span><i style="background:#fdb022"></i>85–95</span><span><i style="background:#12b76a"></i>95–105</span><span><i style="background:#2e90fa"></i>&gt;105</span>';
+            return div;
+        };
+        legend.addTo(map);
+    }
+
     function initializeHistorySatelliteMap(navigation) {
         const container = getElement("historySatelliteMap");
         const track = navigation?.track || [];
@@ -2825,7 +2868,7 @@
         ).addTo(map);
 
         const latlngs = track.map(point => [point.latitude, point.longitude]);
-        L.polyline(latlngs, { color: "#42a5ff", weight: 5, opacity: 0.95 }).addTo(map);
+        addPerformanceTrack(map, navigation, 0.95);
         L.circleMarker(latlngs[0], { radius: 7, color: "#fff", weight: 2, fillColor: "#32d583", fillOpacity: 1 })
             .addTo(map).bindPopup("Départ");
         L.circleMarker(latlngs[latlngs.length - 1], { radius: 7, color: "#fff", weight: 2, fillColor: "#f04438", fillOpacity: 1 })
@@ -2939,46 +2982,71 @@
     function rawManeuverAnalysis(navigation, marker) {
         const track = navigation?.track || [];
         const center = nearestTrackIndex(track, marker.timestamp);
-        if (center < 0) return { marker, center, durationSeconds: null, entrySpeed: null, exitSpeed: null, minimumSpeed: null, speedLoss: null, rawScore: null };
+        if (center < 0) return { marker, center, durationSeconds: null, entrySpeed: null, exitSpeed: null, minimumSpeed: null, speedLoss: null, rawScore: null, stabilized: false };
         const centerTime = pointTimeMs(track[center], center);
+        const usableSpeed = point => {
+            const value = Number(point?.speedKn);
+            if (!Number.isFinite(value)) return null;
+            if (value <= 0.05 && Number(point?.accuracy) > 10) return null;
+            return value;
+        };
         const before = track.filter(point => {
             const t = pointTimeMs(point, 0);
             return t >= centerTime - 20000 && t <= centerTime - 5000;
         });
+        const headingBefore = circularMean(before.map(point => Number(point.heading)));
+        const entrySpeed = mean(before.map(usableSpeed));
+
+        // Le clic est un repère. On cherche le début de rotation autour du clic,
+        // puis la première nouvelle route stable pendant au moins 5 secondes.
+        let startIndex = Math.max(0, center - 5);
+        if (Number.isFinite(headingBefore)) {
+            for (let i = Math.max(0, center - 15); i <= Math.min(track.length - 1, center + 8); i++) {
+                const heading = Number(track[i].heading);
+                if (Number.isFinite(heading) && calculateSmallestAngle(heading, headingBefore) >= 8) { startIndex = i; break; }
+            }
+        }
+
+        const searchEnd = Math.min(track.length - 1, center + 75);
+        let endIndex = -1;
+        let headingAfter = null;
+        for (let i = Math.max(center + 4, startIndex + 4); i <= searchEnd; i++) {
+            const sampleStartTime = pointTimeMs(track[i], i);
+            const sample = [];
+            for (let j = i; j <= searchEnd; j++) {
+                const dt = pointTimeMs(track[j], j) - sampleStartTime;
+                if (dt > 5000) break;
+                if (Number.isFinite(Number(track[j].heading))) sample.push(Number(track[j].heading));
+            }
+            if (sample.length < 4) continue;
+            const avgHeading = circularMean(sample);
+            const spread = Math.max(...sample.map(h => calculateSmallestAngle(h, avgHeading)));
+            const turn = Number.isFinite(headingBefore) ? calculateSmallestAngle(avgHeading, headingBefore) : 0;
+            if (spread <= 7 && turn >= 35) { endIndex = i + sample.length - 1; headingAfter = avgHeading; break; }
+        }
+        const stabilized = endIndex >= 0;
+        if (!stabilized) endIndex = Math.min(searchEnd, center + 60);
+
+        const maneuverWindow = track.slice(startIndex, endIndex + 1);
+        const validSpeeds = maneuverWindow.map(usableSpeed).filter(Number.isFinite);
+        const minimumSpeed = validSpeeds.length ? Math.min(...validSpeeds) : null;
+        const speedLoss = Number.isFinite(entrySpeed) && Number.isFinite(minimumSpeed) ? Math.max(0, entrySpeed - minimumSpeed) : null;
+        const startTime = pointTimeMs(track[startIndex], startIndex);
+        const endTime = pointTimeMs(track[endIndex], endIndex);
+        const durationSeconds = endTime >= startTime ? Math.max(1, Math.round((endTime - startTime) / 1000)) : null;
+
+        const exitEndTime = endTime + 10000;
         const after = track.filter(point => {
             const t = pointTimeMs(point, 0);
-            return t >= centerTime + 5000 && t <= centerTime + 25000;
+            return t >= endTime && t <= exitEndTime;
         });
-        const window = track.filter(point => Math.abs(pointTimeMs(point, 0) - centerTime) <= 45000);
-        const entrySpeed = mean(before.map(point => Number(point.speedKn)));
-        const exitSpeed = mean(after.map(point => Number(point.speedKn)));
-        const validSpeeds = window.map(point => Number(point.speedKn)).filter(Number.isFinite);
-        const minimumSpeed = validSpeeds.length ? Math.min(...validSpeeds) : null;
-        const speedLoss = Number.isFinite(entrySpeed) && Number.isFinite(minimumSpeed) ? entrySpeed - minimumSpeed : null;
-        const headingBefore = circularMean(before.map(point => Number(point.heading)));
-        const headingAfter = circularMean(after.map(point => Number(point.heading)));
-        let durationSeconds = null;
-        if (Number.isFinite(headingBefore) && Number.isFinite(headingAfter)) {
-            const totalTurn = calculateSmallestAngle(headingBefore, headingAfter);
-            const startThreshold = Math.max(8, totalTurn * .18);
-            let startIndex = center, endIndex = center;
-            for (let i = center; i >= 0; i--) {
-                const heading = Number(track[i].heading);
-                if (!Number.isFinite(heading) || calculateSmallestAngle(heading, headingBefore) <= startThreshold) { startIndex = i; break; }
-            }
-            for (let i = center; i < track.length; i++) {
-                const heading = Number(track[i].heading);
-                if (!Number.isFinite(heading) || calculateSmallestAngle(heading, headingAfter) <= startThreshold) { endIndex = i; break; }
-            }
-            const startTime = pointTimeMs(track[startIndex], startIndex);
-            const endTime = pointTimeMs(track[endIndex], endIndex);
-            if (endTime >= startTime) durationSeconds = Math.max(1, Math.round((endTime - startTime) / 1000));
-        }
+        const exitSpeed = mean(after.map(usableSpeed));
+
         const recoveryThreshold = Number.isFinite(entrySpeed) ? entrySpeed * 0.95 : null;
         let recoverySeconds = null;
         if (Number.isFinite(recoveryThreshold)) {
-            for (let i = center; i < track.length; i++) {
-                const speed = Number(track[i].speedKn);
+            for (let i = endIndex; i <= Math.min(track.length - 1, endIndex + 60); i++) {
+                const speed = usableSpeed(track[i]);
                 if (Number.isFinite(speed) && speed >= recoveryThreshold) {
                     recoverySeconds = Math.max(0, Math.round((pointTimeMs(track[i], i) - centerTime) / 1000));
                     break;
@@ -2990,10 +3058,11 @@
         let rawScore = 50;
         if (Number.isFinite(exitRatio)) rawScore += Math.max(-20, Math.min(20, (exitRatio - 0.75) * 80));
         if (Number.isFinite(lossRatio)) rawScore += Math.max(-25, Math.min(20, (0.45 - lossRatio) * 70));
-        if (Number.isFinite(durationSeconds)) rawScore += Math.max(-15, Math.min(15, (18 - durationSeconds) * 1.5));
-        if (Number.isFinite(recoverySeconds)) rawScore += Math.max(-15, Math.min(15, (18 - recoverySeconds) * 1.2));
+        if (Number.isFinite(durationSeconds)) rawScore += Math.max(-15, Math.min(15, (24 - durationSeconds) * 1.15));
+        if (Number.isFinite(recoverySeconds)) rawScore += Math.max(-15, Math.min(15, (24 - recoverySeconds) * 0.9));
+        if (!stabilized) rawScore -= 8;
         rawScore = Math.round(Math.max(0, Math.min(100, rawScore)));
-        return { marker, center, durationSeconds, entrySpeed, exitSpeed, minimumSpeed, speedLoss, headingBefore, headingAfter, recoverySeconds, rawScore };
+        return { marker, center, startIndex, endIndex, durationSeconds, entrySpeed, exitSpeed, minimumSpeed, speedLoss, headingBefore, headingAfter, recoverySeconds, rawScore, stabilized };
     }
 
     function getManeuverReference(type, excludedNavigation, excludedMarker) {
@@ -3045,7 +3114,7 @@
         const analyses = getNavigationManeuverAnalyses(navigation);
         const scores = analyses.map(item => item.score).filter(Number.isFinite);
         const averageScore = scores.length ? Math.round(mean(scores)) : null;
-        const trackSpeeds = (navigation?.track || []).map(point => Number(point.speedKn)).filter(Number.isFinite);
+        const trackSpeeds = (navigation?.track || []).filter(point => Number(point.accuracy) <= 15).map(point => Number(point.speedKn)).filter(value => Number.isFinite(value) && value >= 0.3);
         let regularityScore = null;
         if (trackSpeeds.length >= 5) {
             const avg = mean(trackSpeeds);
@@ -3247,7 +3316,7 @@
         state.replayMap = map;
         L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles © Esri' }).addTo(map);
         const latlngs = track.map(point => [point.latitude, point.longitude]);
-        L.polyline(latlngs, { color: '#42a5ff', weight: 5, opacity: .9 }).addTo(map);
+        addPerformanceTrack(map, navigation, 0.9);
         state.replayBoatMarker = L.circleMarker(latlngs[0], { radius: 9, color: '#fff', weight: 3, fillColor: '#12b76a', fillOpacity: 1 }).addTo(map).bindTooltip('Bateau', { permanent: false });
         (navigation.markers || []).filter(marker => marker.position).forEach((marker, markerIndex) => {
             const analysis = ['tack','gybe'].includes(marker.type) ? maneuverAnalysis(navigation, marker) : null;
@@ -3299,7 +3368,7 @@
         const maneuvers = (navigation.markers || []).filter(marker => ['tack','gybe'].includes(marker.type));
         container.innerHTML = maneuvers.map((marker, index) => {
             const a = maneuverAnalysis(navigation, marker);
-            return `<article class="maneuverReplayCard" data-marker-index="${index}" data-track-index="${a.center}"><button type="button" class="maneuverReplayJump"><strong>${escapeHTML(MARKER_LABELS[marker.type])}</strong><span>${escapeHTML(formatDateTime(marker.timestamp))}</span><em class="maneuverScore">${a.score}/100</em></button><div class="maneuverLearningLine"><span>${escapeHTML(a.maturity.label)}</span><small>${a.referenceCount} référence${a.referenceCount > 1 ? 's' : ''}${Number.isFinite(a.comparison) ? ` · ${a.comparison >= 0 ? '+' : ''}${a.comparison} pt vs moyenne` : ''}</small></div><div class="maneuverMetrics"><span>Durée <b>${a.durationSeconds ?? '—'} s</b></span><span>Entrée <b>${a.entrySpeed?.toFixed(1) ?? '—'} nd</b></span><span>Mini <b>${a.minimumSpeed?.toFixed(1) ?? '—'} nd</b></span><span>Sortie <b>${a.exitSpeed?.toFixed(1) ?? '—'} nd</b></span><span>Perte <b>${a.speedLoss?.toFixed(1) ?? '—'} nd</b></span><span>Relance <b>${a.recoverySeconds ?? '—'} s</b></span></div><label>Note<textarea rows="2" class="maneuverNote" placeholder="Conditions, qualité, réglage…">${escapeHTML(marker.note || '')}</textarea></label><button type="button" class="secondaryButton compactButton saveManeuverNote">Enregistrer la note</button></article>`;
+            return `<article class="maneuverReplayCard" data-marker-index="${index}" data-track-index="${a.center}"><button type="button" class="maneuverReplayJump"><strong>${escapeHTML(MARKER_LABELS[marker.type])}</strong><span>${escapeHTML(formatDateTime(marker.timestamp))}</span><em class="maneuverScore">${a.score}/100</em></button><div class="maneuverLearningLine"><span>${escapeHTML(a.maturity.label)}</span><small>${a.referenceCount} référence${a.referenceCount > 1 ? 's' : ''}${Number.isFinite(a.comparison) ? ` · ${a.comparison >= 0 ? '+' : ''}${a.comparison} pt vs moyenne` : ''}</small></div><div class="maneuverMetrics"><span>Durée <b>${a.durationSeconds ?? '—'} s</b></span><span>Entrée <b>${a.entrySpeed?.toFixed(1) ?? '—'} nd</b></span><span>Mini <b>${a.minimumSpeed?.toFixed(1) ?? '—'} nd</b></span><span>Sortie <b>${a.exitSpeed?.toFixed(1) ?? '—'} nd</b></span><span>Perte <b>${a.speedLoss?.toFixed(1) ?? '—'} nd</b></span><span>Relance <b>${a.recoverySeconds ?? '—'} s</b></span><span>Fin <b>${a.stabilized ? 'détectée' : 'incertaine'}</b></span></div><label>Note<textarea rows="2" class="maneuverNote" placeholder="Conditions, qualité, réglage…">${escapeHTML(marker.note || '')}</textarea></label><button type="button" class="secondaryButton compactButton saveManeuverNote">Enregistrer la note</button></article>`;
         }).join('') || '<p>Aucun virement ou empannage enregistré.</p>';
         container.querySelectorAll('.maneuverReplayCard').forEach(card => {
             const markerIndex = Number(card.dataset.markerIndex);
@@ -3502,6 +3571,7 @@
                 <h3>Source GPS</h3>
                 <div class="vccStatus">${navigation.speedPuck ? `SpeedPuck — ${escapeHTML(navigation.speedPuck.fileName)} · ${navigation.speedPuck.pointCount} points` : "Téléphone — aucun fichier VCC importé"}</div>
                 <div class="historyActionBar">
+                    <button type="button" id="btnExportSingleNavigation" class="secondaryButton">Exporter cette navigation</button>
                     <button type="button" id="btnImportNavigationVCC" class="secondaryButton">Importer un fichier VCC SpeedPuck</button>
                     <button type="button" id="btnDeleteNavigation" class="dangerButton">Supprimer cette navigation</button>
                 </div>
@@ -3522,6 +3592,7 @@
         `;
 
         getElement("btnWeatherThumbnail")?.addEventListener("click", () => openWeatherImage(preparation.weatherImageData, preparation.weatherImageName));
+        getElement("btnExportSingleNavigation")?.addEventListener("click", () => exportSingleNavigation(navigation));
         getElement("btnImportNavigationVCC")?.addEventListener("click", () => importVCCForNavigation(navigation.id));
         getElement("btnDeleteNavigation")?.addEventListener("click", () => deleteNavigation(navigation.id));
 
@@ -4119,6 +4190,37 @@
         }
     }
 
+    function safeFilePart(value) {
+        return String(value || "navigation").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "navigation";
+    }
+
+    function exportSingleNavigation(navigation) {
+        try {
+            const payload = {
+                format: "speedfeet-navigation",
+                formatVersion: 1,
+                appVersion: APP_VERSION,
+                exportedAt: new Date().toISOString(),
+                navigation: cloneValue(navigation)
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            const date = new Date(navigation.startedAt || Date.now()).toISOString().slice(0, 10);
+            const time = new Date(navigation.startedAt || Date.now()).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }).replace(":", "h");
+            link.href = url;
+            link.download = `${safeFilePart(navigation.boatName)}_navigation_${date}_${time}.json`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            showToast("Navigation exportée");
+        } catch (error) {
+            console.error(error);
+            showToast("Export impossible");
+        }
+    }
+
     function validateBackup(parsed) {
         if (!parsed || parsed.format !== "speedfeet-analyzer-backup" || parsed.formatVersion !== 1 || !parsed.data) {
             throw new Error("Format de sauvegarde non reconnu.");
@@ -4297,7 +4399,7 @@ bindClick(
             updateGPSIndicator("searching");
             showToast("Actualisation GPS…");
             navigator.geolocation.getCurrentPosition(
-                position => { handleGPSPosition(position); updateNavigationDashboard(); showToast("Vitesse GPS actualisée"); },
+                position => { handleGPSPosition(position); updateNavigationDashboard(); showToast("GPS actualisé"); },
                 error => { handleGPSError(error); showToast("Actualisation GPS impossible"); },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 12000 }
             );
