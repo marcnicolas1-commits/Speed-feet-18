@@ -4,13 +4,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>SpeedFeet V3.3.0</title>
+<title>SpeedFeet V3.3.1</title>
 <meta content="#07111f" name="theme-color"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
-<link href="styles.css?v=3300" rel="stylesheet"/>
+<link href="styles.css?v=3310" rel="stylesheet"/>
 </head>
 <body>
 <div class="v3AppShell" id="app">
@@ -20,7 +20,7 @@
 <section class="page active v3DashboardPage" id="homePage">
 <header class="speedfeetBrandHeader">
   <div class="speedfeetWordmark"><span>SPEEDFEET</span><b> ANALYZER</b></div>
-  <small>V3.3.0</small>
+  <small>V3.3.1</small>
 </header>
 <section class="activeNavigationHome" id="activeNavigationHome" hidden>
   <div><span class="activeNavigationDot"></span><strong>NAVIGATION EN COURS</strong></div>
@@ -164,6 +164,9 @@
     <button class="spiDown" id="btnSpiDown" type="button"><span>⛵</span><strong>AFFALER SPI</strong></button>
     <button class="spiUp" id="btnSpiUp" type="button"><span>⛵</span><strong>ENVOYER SPI</strong></button>
   </section>
+  <div class="trimLearningProgress" id="trimLearningProgress" role="button" tabindex="0" aria-label="Progression de l’analyse du réglage" hidden>
+    <div class="trimLearningProgressFill" id="trimLearningProgressFill"></div>
+  </div>
   <section class="navUtilityGrid">
     <button id="btnWind" type="button"><span>🌬</span><strong>PRISE DE VENT</strong></button>
     <button id="btnTrim" type="button"><span>☷</span><strong>RÉGLAGES</strong></button>
@@ -589,11 +592,11 @@
 </div>
 </div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=3300"></script>
+<script src="app.js?v=3310"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=3240')
+    navigator.serviceWorker.register('./sw.js?v=3310')
       .catch(error => console.error('Service Worker non enregistré :', error));
   });
 }

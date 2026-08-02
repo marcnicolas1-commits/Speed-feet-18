@@ -1,4 +1,4 @@
-# SpeedFeet V3.3.0
+# SpeedFeet V3.3.1
 
 Évolutions :
 - Retour fiable au cadran après enregistrement des paramètres pendant une navigation.
@@ -60,3 +60,12 @@
 - Traces du débriefing et de la relecture colorées selon le pourcentage de polaire.
 - Analyse des virements et empannages basée sur la détection de la nouvelle route stabilisée.
 - Faux zéros et points GPS de mauvaise précision moins pénalisants dans les notes.
+
+
+## V3.3.1
+- Barre lumineuse au-dessus des commandes de navigation après chaque changement de réglage.
+- Orange pendant les 2 minutes de stabilisation, puis verte pendant les 2 minutes de mesure.
+- Progression fondée sur l'heure réelle, y compris après verrouillage ou reprise de l'application.
+- Toucher la barre affiche la phase et le temps restant.
+- Nouveau réglage : cycle remis à zéro et confirmation temporaire.
+- Fin du cycle : message « Réglage enregistré ».

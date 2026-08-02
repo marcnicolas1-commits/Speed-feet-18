@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.3.0";
+    const APP_VERSION = "3.3.1";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -1561,9 +1561,64 @@
         dot.title = label;
     }
 
+    function getActiveTrimLearningCycle(navigation = state.currentNavigation) {
+        const record = navigation?.trimRecords?.slice(-1)[0];
+        if (!record?.timestamp) return null;
+        const startedAt = new Date(record.timestamp).getTime();
+        if (!Number.isFinite(startedAt)) return null;
+        const elapsedMs = Math.max(0, Date.now() - startedAt);
+        if (elapsedMs >= 240000) return { record, elapsedMs, phase: "complete", progress: 1, remainingMs: 0 };
+        if (elapsedMs < 120000) return { record, elapsedMs, phase: "waiting", progress: elapsedMs / 120000, remainingMs: 120000 - elapsedMs };
+        return { record, elapsedMs, phase: "measuring", progress: (elapsedMs - 120000) / 120000, remainingMs: 240000 - elapsedMs };
+    }
+
+    function formatTrimCountdown(milliseconds) {
+        const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function updateTrimLearningProgress() {
+        const container = getElement("trimLearningProgress");
+        const fill = getElement("trimLearningProgressFill");
+        if (!container || !fill) return;
+        const cycle = getActiveTrimLearningCycle();
+        if (!cycle || cycle.phase === "complete") {
+            container.hidden = true;
+            container.classList.remove("waiting", "measuring");
+            fill.style.width = "0%";
+            if (cycle?.record && !cycle.record.learningCompletedNotified) {
+                cycle.record.learningCompletedNotified = true;
+                saveJSON(STORAGE_KEYS.currentNavigation, state.currentNavigation);
+                showToast("Réglage enregistré");
+            }
+            return;
+        }
+        container.hidden = false;
+        container.classList.toggle("waiting", cycle.phase === "waiting");
+        container.classList.toggle("measuring", cycle.phase === "measuring");
+        fill.style.width = `${Math.max(0, Math.min(100, cycle.progress * 100))}%`;
+        const phaseLabel = cycle.phase === "waiting" ? "Stabilisation" : "Mesure en cours";
+        const detail = `${phaseLabel} · ${formatTrimCountdown(cycle.remainingMs)} restantes`;
+        container.setAttribute("aria-label", detail);
+        container.title = detail;
+    }
+
+    function showTrimLearningProgressDetail() {
+        const cycle = getActiveTrimLearningCycle();
+        if (!cycle || cycle.phase === "complete") {
+            showToast("Aucun réglage en cours d’analyse");
+            return;
+        }
+        const label = cycle.phase === "waiting" ? "Stabilisation" : "Mesure en cours";
+        showToast(`${label} · ${formatTrimCountdown(cycle.remainingMs)} restantes`);
+    }
+
     function updateNavigationDashboard() {
         const navigation = state.currentNavigation;
         const now = new Date();
+        updateTrimLearningProgress();
         setText("navClock", now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }));
 
         if (!navigation) {
@@ -2147,6 +2202,8 @@
         state.currentNavigation.trimRecords.push(record);
         saveJSON(STORAGE_KEYS.currentNavigation, state.currentNavigation);
         closeAllModals();
+        updateTrimLearningProgress();
+        showToast("Nouveau réglage détecté");
     }
 
     const COMPASS_DIRECTIONS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO"];
@@ -4381,6 +4438,11 @@ bindClick(
             "btnTrim",
             openTrimModal
         );
+
+        bindClick("trimLearningProgress", showTrimLearningProgressDetail);
+        getElement("trimLearningProgress")?.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") { event.preventDefault(); showTrimLearningProgressDetail(); }
+        });
 
         bindClick(
             "btnMarker",
