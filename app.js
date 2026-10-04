@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.3.1";
+    const APP_VERSION = "3.3.2";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -198,7 +198,46 @@
         }
     }
 
+    const navigationStore = new NavigationStore();
+    let storageReady = false;
+    let finalizing = false;
+    let finalizationFailed = false;
+    let achievementIds = loadJSON("speedfeet_achievements", []);
+
+    function storageMessage(message) {
+        let banner = getElement("navigationStorageStatus");
+        if (!banner) {
+            banner = document.createElement("div");
+            banner.id = "navigationStorageStatus";
+            banner.setAttribute("role", "status");
+            document.body.prepend(banner);
+        }
+        banner.textContent = message;
+        banner.hidden = !message;
+    }
+
+    function persistNavigation() {
+        if (!storageReady || !state.currentNavigation || finalizing) return;
+        navigationStore.checkpoint(state.currentNavigation).then(() => { if (!finalizationFailed) storageMessage(""); })
+            .catch(error => {
+                console.error(error);
+                storageMessage("Sauvegarde interrompue — gardez l’app ouverte et exportez une sauvegarde dans Paramètres.");
+            });
+    }
+
     function saveJSON(key, value) {
+        if (key === STORAGE_KEYS.currentNavigation) {
+            persistNavigation();
+            return storageReady;
+        }
+        if (key === STORAGE_KEYS.history) {
+            if (!storageReady) return false;
+            navigationStore.saveHistory(value).catch(error => {
+                console.error(error);
+                storageMessage("Historique non sauvegardé — exportez une sauvegarde avant de fermer l’app.");
+            });
+            return true;
+        }
         try {
             localStorage.setItem(
                 key,
@@ -850,12 +889,16 @@
         }
     }
 
-    function resumeCurrentNavigation() {
+    async function resumeCurrentNavigation() {
+        if (!storageReady || finalizing) return;
         if (!hasActiveNavigation()) {
             renderHomeNavigationState();
             showToast("Aucune navigation en cours");
             return;
         }
+        try { await navigationStore.checkpoint(state.currentNavigation); }
+        catch (error) { storageMessage("Reprise non sauvegardée — réessayez avant de naviguer."); return; }
+        state.currentNavigation.status = "running";
         showPage("navigationPage");
         if (state.timerId === null || state.gpsWatchId === null) {
             startNavigationRuntime();
@@ -871,7 +914,12 @@
         beginNewPreparation();
     }
 
-    function abandonCurrentNavigationAndPrepare() {
+    async function abandonCurrentNavigationAndPrepare() {
+        if (finalizing || !storageReady) return;
+        finalizing = true;
+        try { await navigationStore.replace(null, state.history); }
+        catch (error) { finalizing = false; storageMessage("Abandon non sauvegardé — navigation conservée."); return; }
+        finalizing = false;
         closeAllModals();
         stopNavigationRuntime();
         state.currentNavigation = null;
@@ -1087,17 +1135,13 @@
         startNavigation(preparation);
     }
 
-    function startNavigation(preparation) {
-        if (
-            state.currentNavigation
-                ?.status === "running"
-        ) {
-            showPage(
-                "navigationPage"
-            );
-
-            startNavigationRuntime();
-
+    async function startNavigation(preparation) {
+        if (!storageReady || finalizing) {
+            storageMessage("Enregistrement indisponible — impossible de démarrer une navigation.");
+            return;
+        }
+        if (hasActiveNavigation()) {
+            await resumeCurrentNavigation();
             return;
         }
 
@@ -1148,11 +1192,14 @@
             windAxisTack: null
         };
 
-        saveJSON(
-            STORAGE_KEYS.currentNavigation,
-            state.currentNavigation
-        );
-
+        try {
+            await navigationStore.checkpoint(state.currentNavigation);
+        } catch (error) {
+            storageMessage("Départ non sauvegardé — réessayez avant de naviguer.");
+            state.currentNavigation.status = "paused";
+            return;
+        }
+        navigator.storage?.persist?.().catch(() => {});
         showPage("navigationPage");
 
         startNavigationRuntime();
@@ -1254,7 +1301,7 @@
     }
 
     function handleGPSPosition(position) {
-        if (!state.currentNavigation || state.currentNavigation.status !== "running") return;
+        if (finalizing || !state.currentNavigation || state.currentNavigation.status !== "running") return;
 
         const coordinates = position.coords;
         const timestamp = new Date(position.timestamp).toISOString();
@@ -1320,7 +1367,7 @@
 
         state.currentNavigation.gpsStatus = "active";
         track.push(point);
-        if (track.length % 3 === 0) saveJSON(STORAGE_KEYS.currentNavigation, state.currentNavigation);
+        if (track.length % 5 === 0) persistNavigation();
         updateNavigationDashboard();
         displayMapMessage("GPS actif — " + point.latitude.toFixed(5) + ", " + point.longitude.toFixed(5));
     }
@@ -1712,58 +1759,53 @@
         openModal("finishNavigationModal");
     }
 
-    function finishNavigation() {
+    async function finishNavigation() {
+        if (finalizing || !storageReady) return;
         if (!state.currentNavigation) {
             return;
         }
 
         const achievementsBefore = new Set(getUnlockedAchievements().unlocked.map(item => item.id));
+        finalizing = true;
         stopNavigationRuntime();
-
-        state.currentNavigation.status =
-            "completed";
-
-        state.currentNavigation.endedAt =
-            new Date().toISOString();
-
-        state.currentNavigation.review = {
+        const completedNavigation = cloneValue(state.currentNavigation);
+        completedNavigation.status = "completed";
+        completedNavigation.endedAt = new Date().toISOString();
+        completedNavigation.review = {
             rating: toNumberOrNull(getElement("finishRating")?.value),
             notes: getElement("finishNotes")?.value.trim() || "",
             nextNavigationNotes: getElement("finishNextNotes")?.value.trim() || ""
         };
-
-        if (state.currentNavigation.review.nextNavigationNotes) {
-            addBoatTask(state.currentNavigation.review.nextNavigationNotes, { silent: true });
+        const shouldPrepareSafetyMessage = Boolean(getElement("finishSendSafety")?.checked);
+        const history = [completedNavigation, ...state.history.filter(n => n.id !== completedNavigation.id)];
+        try {
+            await navigationStore.finalize(completedNavigation, history);
+        } catch (error) {
+            console.error(error);
+            finalizing = false;
+            finalizationFailed = true;
+            // The journal and the live object remain available for retry/export.
+            startNavigationRuntime();
+            storageMessage("Navigation non finalisée — données conservées. Réessayez ou exportez une sauvegarde.");
+            return;
+        }
+        state.history = history;
+        finalizationFailed = false;
+        state.currentNavigation = null;
+        finalizing = false;
+        storageMessage("");
+        localStorage.removeItem(STORAGE_KEYS.currentNavigation);
+        localStorage.removeItem(STORAGE_KEYS.history);
+        state.preparation = null;
+        localStorage.removeItem(STORAGE_KEYS.preparation);
+        if (completedNavigation.review.nextNavigationNotes) {
+            addBoatTask(completedNavigation.review.nextNavigationNotes, { silent: true });
         }
         saveNextNavigationNotes("");
-        const shouldPrepareSafetyMessage = Boolean(getElement("finishSendSafety")?.checked);
-        const completedNavigation = cloneValue(state.currentNavigation);
-
-        state.history.unshift(
-            cloneValue(
-                state.currentNavigation
-            )
-        );
-
-        saveJSON(
-            STORAGE_KEYS.history,
-            state.history
-        );
-
-        state.currentNavigation = null;
-
-        localStorage.removeItem(
-            STORAGE_KEYS.currentNavigation
-        );
-
-        state.preparation = null;
-
-        localStorage.removeItem(
-            STORAGE_KEYS.preparation
-        );
 
         closeAllModals();
         showPage("historyPage");
+        persistAchievements();
         const newlyUnlocked = getUnlockedAchievements().unlocked.filter(item => !achievementsBefore.has(item.id));
         window.setTimeout(() => {
             openNavigationDetails(completedNavigation.id);
@@ -2441,8 +2483,9 @@
         ];
     }
 
-    function getAchievementMetrics() {
+    function getAchievementMetrics(includeActive = false) {
         const completed = state.history.filter(item => item && item.status === "completed");
+        if (includeActive && hasActiveNavigation()) completed.push({ ...state.currentNavigation, endedAt: new Date().toISOString() });
         const totalDistance = completed.reduce((sum, item) => sum + (Number(item.distanceNm) || 0), 0);
         const totalMinutes = completed.reduce((sum, item) => sum + navigationDurationMinutes(item), 0);
         const maximumSpeed = completed.reduce((max, item) => Math.max(max, Number(item.maxSpeedKn) || 0), 0);
@@ -2577,11 +2620,24 @@
 
     function getUnlockedAchievements() {
         const definitions = getAchievementDefinitions();
-        const unlocked = definitions.filter(item => item.unlocked);
+        const unlocked = definitions.filter(item => item.unlocked || achievementIds.includes(item.id));
         return {
             unlocked,
             total: definitions.length
         };
+    }
+
+    function persistAchievements() {
+        const finalOnly = new Set(["return-start", "return-start-10", "secret-18-distance", "secret-18-maneuvers", "secret-all-tools"]);
+        const definitions = getAchievementDefinitions(getAchievementMetrics(true));
+        const fresh = definitions.filter(item => item.unlocked && !achievementIds.includes(item.id) &&
+            !(hasActiveNavigation() && finalOnly.has(item.id)));
+        if (!fresh.length) return;
+        const ids = [...new Set([...achievementIds, ...fresh.map(item => item.id)])];
+        if (saveJSON("speedfeet_achievements", ids)) {
+            achievementIds = ids;
+            if (hasActiveNavigation()) showToast(`${fresh.length} succès sauvegardé(s)`);
+        }
     }
 
     function showNewAchievements(items) {
@@ -4222,7 +4278,8 @@
                 preparation: cloneValue(state.preparation),
                 currentNavigation: cloneValue(state.currentNavigation),
                 history: cloneValue(state.history),
-                boatTasks: cloneValue(state.boatTasks)
+                boatTasks: cloneValue(state.boatTasks),
+                achievementIds: [...achievementIds]
             }
         };
     }
@@ -4291,23 +4348,42 @@
         return parsed.data;
     }
 
-    function applyImportedBackup(data) {
+    async function applyImportedBackup(data) {
         const importedSettings = { ...DEFAULT_SETTINGS, ...data.settings };
         const importedPreparation = data.preparation ?? null;
         const importedCurrentNavigation = data.currentNavigation ?? null;
         const importedHistory = data.history;
         const importedBoatTasks = normalizeBoatTasks(data.boatTasks || []);
 
-        if (!saveJSON(STORAGE_KEYS.settings, importedSettings)) return;
-        if (!saveJSON(STORAGE_KEYS.history, importedHistory)) return;
-        if (!saveJSON(STORAGE_KEYS.boatTasks, importedBoatTasks)) return;
-
-        if (importedPreparation === null) localStorage.removeItem(STORAGE_KEYS.preparation);
-        else if (!saveJSON(STORAGE_KEYS.preparation, importedPreparation)) return;
-
-        if (importedCurrentNavigation === null) localStorage.removeItem(STORAGE_KEYS.currentNavigation);
-        else if (!saveJSON(STORAGE_KEYS.currentNavigation, importedCurrentNavigation)) return;
-
+        if (!storageReady || finalizing) return;
+        finalizing = true;
+        stopNavigationRuntime();
+        const changes = {
+            [STORAGE_KEYS.settings]: importedSettings,
+            [STORAGE_KEYS.boatTasks]: importedBoatTasks,
+            [STORAGE_KEYS.preparation]: importedPreparation,
+            speedfeet_achievements: data.achievementIds || []
+        };
+        const previous = {};
+        try {
+            for (const [key, value] of Object.entries(changes)) {
+                previous[key] = localStorage.getItem(key);
+                if (value === null) localStorage.removeItem(key);
+                else localStorage.setItem(key, JSON.stringify(value));
+            }
+            await navigationStore.replace(importedCurrentNavigation, importedHistory);
+        } catch (error) {
+            for (const [key, value] of Object.entries(previous)) {
+                try { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); }
+                catch (rollbackError) { console.error(rollbackError); }
+            }
+            finalizing = false;
+            storageMessage("Import non sauvegardé — navigation précédente conservée.");
+            if (hasActiveNavigation()) startNavigationRuntime();
+            return;
+        }
+        localStorage.removeItem(STORAGE_KEYS.currentNavigation);
+        localStorage.removeItem(STORAGE_KEYS.history);
         alert(`${importedHistory.length} navigation(s) importée(s). L’application va se recharger.`);
         window.location.reload();
     }
@@ -4575,7 +4651,31 @@ document
         );
     }
 
-    function initializeApplication() {
+    async function initializeApplication() {
+        try {
+            await navigationStore.open();
+            const saved = await navigationStore.load();
+            if (!saved.initialized) {
+                await navigationStore.replace(state.currentNavigation, state.history);
+            } else {
+                state.currentNavigation = saved.current || null;
+                state.history = saved.history || [];
+            }
+            storageReady = true;
+            localStorage.removeItem(STORAGE_KEYS.currentNavigation);
+            localStorage.removeItem(STORAGE_KEYS.history);
+        } catch (error) {
+            console.error(error);
+            storageMessage("Stockage indisponible — vos anciennes données sont conservées. Relancez l’app avant de naviguer.");
+        }
+        window.setInterval(() => {
+            persistNavigation();
+            if (storageReady) persistAchievements();
+        }, 5000);
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") { persistNavigation(); persistAchievements(); }
+        });
+        window.addEventListener("pagehide", persistNavigation);
         initializeSelects();
 
         loadSettingsForm();
@@ -4601,6 +4701,7 @@ document
         }
         renderNextNavigationNotes();
         renderBoatTasksHome();
+        if (storageReady) persistAchievements();
         renderHomeStats();
 
         displayMapMessage(
@@ -4608,9 +4709,11 @@ document
         );
 
         if (
-            state.currentNavigation?.status === "running"
+            storageReady && hasActiveNavigation()
         ) {
             showPage("navigationPage");
+            state.currentNavigation.status = "running";
+            showToast("Navigation récupérée — trace sauvegardée retrouvée");
             startNavigationRuntime();
         } else {
             showPage("homePage");

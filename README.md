@@ -1,4 +1,4 @@
-# SpeedFeet V3.3.1
+# SpeedFeet V3.3.2
 
 Évolutions :
 - Retour fiable au cadran après enregistrement des paramètres pendant une navigation.
@@ -69,3 +69,16 @@
 - Toucher la barre affiche la phase et le temps restant.
 - Nouveau réglage : cycle remis à zéro et confirmation temporaire.
 - Fin du cycle : message « Réglage enregistré ».
+
+## V3.3.2 — Sauvegarde robuste (4 octobre 2026)
+- Journal IndexedDB : seuls les nouveaux points GPS sont écrits, avec les métadonnées dans la même transaction, toutes les 5 secondes et tous les 5 points.
+- Reprise automatique de la navigation sauvegardée après fermeture ; nouvelle sauvegarde au passage en arrière-plan.
+- Fin de navigation atomique : historique enregistré et journal supprimé dans une seule transaction. En cas d’échec, navigation conservée, message visible et possibilité de réessayer/exporter.
+- Succès conservés séparément dès leur détection, y compris pendant la navigation, et inclus dans les exports/imports.
+- Migration automatique de l’ancien historique et de la navigation active. Les anciennes données ne sont retirées qu’après confirmation de l’écriture.
+- Demande de stockage persistant au navigateur ; démarrage bloqué si le stockage est indisponible.
+- Cache PWA mis à jour ; conserver la même adresse de l’application pour retrouver ses données.
+
+Validation automatisée : 10 800 points (3 h à 1 Hz), fermeture sans terminer, reprise, transaction finale avortée, réessai sans doublon, migration, checkpoint avorté et réessayé, abandon et stockage indisponible. Exécution dans Chromium ; essai réel iPhone/PWA et en mer restant à faire. La fermeture brutale peut perdre les derniers points depuis la dernière transaction. Les restrictions iOS en arrière-plan peuvent interrompre le GPS et les temporisateurs.
+
+Tests : `npm install --no-save playwright`, `npx playwright install chromium`, puis `node tests/persistence.cjs`. Le test lance son propre serveur local. `CHROMIUM_EXECUTABLE` permet de fournir un navigateur déjà installé.
