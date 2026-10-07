@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.3.6";
+    const APP_VERSION = "3.3.7";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
