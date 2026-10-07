@@ -2651,3 +2651,172 @@ body{padding-bottom:env(safe-area-inset-bottom)}
     text-align: center;
 }
 #navigationStorageStatus[hidden] { display: none; }
+
+
+/* Signal K / NASA NC70 */
+.navNasaStatus { grid-column:3; justify-self:end; margin-right:10px; font-size:.62rem; font-weight:800; color:#7890a4; white-space:nowrap; }
+.navNasaStatus.live { color:#4ee58a; }
+
+/* V3.3.4 — batterie mallette */
+.boxBatteryPanel { grid-column:1 / -1; }
+.boxBatteryRow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.boxBatteryGauge { flex:1 1 220px; min-width:200px; }
+.boxBatteryGauge > div { height:10px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.10); margin-bottom:8px; }
+#boxBatteryFill { display:block; height:100%; width:100%; border-radius:inherit; background:#4ee58a; transition:width .25s ease; }
+.boxBatteryGauge strong { display:block; font-size:1.25rem; }
+.boxBatteryGauge small { color:var(--v3-muted,#aebfd1); }
+.boxBatteryPanel .secondaryButton { width:auto; margin:0; }
+
+
+
+/* V3.3.8 — reproduction stricte du visuel validé */
+.navigationV3Page{max-width:none!important;width:100%!important}.mockNav{display:none}.sfRotateHint{display:none}
+@media(orientation:portrait){.navigationV3Page.active{position:fixed;inset:0;z-index:100;background:#020c13;display:flex!important;align-items:center;justify-content:center}.navigationV3Page.active .sfRotateHint{display:flex;flex-direction:column;align-items:center;color:#fff;font-size:1.5rem}.sfRotateHint span{font-size:4rem;color:#38caff}}
+@media(orientation:landscape){
+body:has(.navigationV3Page.active){overflow:hidden;padding:0;background:#020c13}
+.navigationV3Page.active{position:fixed;inset:0;z-index:100;padding:0!important;background:#020c13;display:block!important;overflow:hidden}
+.navigationV3Page.active .mockNav{display:grid;height:100dvh;width:100vw;box-sizing:border-box;grid-template-rows:48px minmax(0,1fr) 78px;padding:max(3px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));gap:7px}
+.mockTop{display:grid;grid-template-columns:170px 110px 1fr 105px 42px;align-items:center;border-bottom:1px solid #31404a;padding:0 3px;min-height:0}
+.mockBrand{font-size:clamp(1.35rem,3vw,2rem);font-weight:950;font-style:italic;color:#fff}.mockBrand span{color:#38caff}.mockNasa{justify-self:start;border:2px solid #29df55;border-radius:10px;padding:5px 12px;color:#fff;font-size:.92rem;font-weight:900}.mockNasa.connected{color:#fff}.mockNasa.offline{border-color:#6b7780;color:#aab5bd}.mockNasa span{color:#29df55}.mockClock{justify-self:center;font-size:1.25rem;color:#fff}.mockBattery{justify-self:end;color:#fff;font-size:.9rem;display:flex;gap:7px;align-items:center}.mockBattery:first-letter{font-size:1.35rem}.mockGear{border:0;border-left:1px solid #53606a;background:transparent;color:#fff;font-size:1.7rem;height:32px;padding:0 0 0 10px}
+.mockBody{display:grid;grid-template-columns:33% 36% 31%;gap:8px;min-height:0}
+.mockLeft{display:grid;grid-template-rows:56% 44%;gap:7px;min-height:0}.mockCard{border:2px solid #13aee9;border-radius:11px;background:#020d14;color:#fff;padding:8px 14px;box-sizing:border-box;overflow:hidden}.mockSpeed{width:100%;text-align:left;font:inherit}.mockCard>span{display:block;font-size:clamp(.82rem,2vw,1.15rem);font-weight:900}.mockSpeed>small{display:block;color:#9badbd;font-weight:800;font-size:.9rem}.mockSpeed>strong{display:block;font-size:clamp(4.4rem,19vh,7.4rem);line-height:.85;letter-spacing:-.06em;white-space:nowrap;text-align:center;margin:2px 0 4px}.mockSpeed>div{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:clamp(.72rem,1.55vw,.9rem)}.mockSpeed>div b{white-space:nowrap}.mockSpeed em{font-style:normal;color:#4cd6ff;font-size:1.3em}.mockSpeed b:last-child em{color:#5de66e}.mockSpeed>div i{height:23px;width:1px;background:#7a8791}
+.mockWind>strong{display:block;color:#4cd6ff;font-size:clamp(4.6rem,20vh,7.8rem);line-height:.9;letter-spacing:-.06em;white-space:nowrap;text-align:center;margin-top:6px}
+.mockGauge{position:relative;border:0;background:transparent;padding:0;width:100%;height:100%;min-height:0;color:#fff;overflow:hidden}.mockGauge svg{position:absolute;inset:0;width:100%;height:100%}.gBase{fill:#020d14;stroke:#e9eef2;stroke-width:5}.gRed,.gGreen{fill:none;stroke-width:9}.gRed{stroke:#ff5a68}.gGreen{stroke:#42d66d}.gTicks line{stroke:#fff;stroke-width:3}.gLabels text{fill:#fff;font-size:18px;font-weight:900;text-anchor:middle;dominant-baseline:middle}.gBoat{fill:#08121a;stroke:#fff;stroke-width:7;stroke-linejoin:round}
+.mockNeedle{position:absolute!important;left:50%!important;top:50%!important;height:40%!important;width:4px!important;transform-origin:50% 100%!important;z-index:4!important}.mockNeedle i{display:block;width:5px;height:100%;background:#fff;border-radius:99px}
+.mockTrim{display:grid;grid-template-rows:repeat(5,1fr);gap:6px;min-height:0;padding:2px 0}.mockTrim .navTrimTile{display:grid!important;grid-template-columns:1.4fr .45fr .45fr 18px!important;grid-template-rows:1fr!important;align-items:center!important;width:100%!important;height:auto!important;min-height:0!important;border-radius:10px!important;padding:4px 10px!important;overflow:hidden!important}.mockTrim .navTrimTile span{font-size:clamp(.7rem,1.55vw,.92rem)!important;font-weight:850!important;white-space:nowrap!important}.mockTrim .navTrimTile strong{grid-column:2!important;grid-row:1!important;font-size:clamp(1.35rem,3vw,2rem)!important;text-align:center!important}.mockTrim .navTrimTile small{grid-column:3!important;font-size:.62rem!important;letter-spacing:.08em!important;white-space:nowrap}.mockTrim .navTrimTile i{grid-column:4;font-style:normal;font-size:1.7rem;color:#dce6ed}.navTrimTile.good{border:2px solid #2de650!important;background:linear-gradient(180deg,#087323,#064c19)!important}.navTrimTile.bad{border:2px solid #ff4050!important;background:linear-gradient(180deg,#7d1722,#4b1018)!important}.navTrimTile.pending{border:2px solid #f5a623!important;background:linear-gradient(180deg,#76500d,#4c340b)!important}.navTrimTile.neutral{border:2px solid #7791a4!important;background:linear-gradient(180deg,#334b5e,#263b4d)!important}
+.mockActions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;min-height:0}.mockActions button{border:2px solid #60798e;border-radius:10px;background:linear-gradient(180deg,#243747,#172735);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px}.mockActions span{font-size:2rem;line-height:.8}.mockActions strong{font-size:clamp(.7rem,1.5vw,.9rem);margin-top:7px}.mockActions .spiUp{border-color:#08b9f5;background:linear-gradient(180deg,#07648b,#064466)}.mockActions .spiDown{border-color:#ff3547;background:linear-gradient(180deg,#771824,#4d1018)}.mockActions .spiUp span{color:#42d7ff}.mockActions .spiDown span{color:#fff}
+.mockNav>.trimLearningProgress{position:absolute;left:34%;right:32%;bottom:3px;height:3px;margin:0}
+}
+
+/* V3.3.9 — géométrie stricte de la maquette validée */
+@media (orientation:landscape){
+  .navigationV3Page.active .mockNav{
+    grid-template-rows:54px minmax(0,1fr) 108px!important;
+    gap:10px!important;
+    padding:max(4px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))!important;
+  }
+  .mockTop{
+    grid-template-columns:250px 165px 1fr 145px 54px!important;
+    padding:0 5px!important;
+  }
+  .mockBrand{font-size:clamp(1.55rem,3.2vw,2.25rem)!important}
+  .mockNasa{font-size:clamp(.7rem,1.35vw,.95rem)!important;padding:5px 12px!important;white-space:nowrap}
+  .mockNasa.offline{border-color:#526270!important;color:#91a0ab!important;background:#0b1720!important}
+  .mockNasa.offline span{color:#91a0ab!important}
+  .mockNasa.connected{border-color:#29df55!important;color:#fff!important;background:#061b10!important}
+  .mockClock{font-size:clamp(1rem,2.1vw,1.4rem)!important}
+  .mockBattery{font-size:clamp(.75rem,1.5vw,1rem)!important}
+  .mockBody{
+    grid-template-columns:34% 36% 30%!important;
+    gap:12px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  .mockLeft{grid-template-rows:56% 44%!important;gap:10px!important;min-width:0}
+  .mockCard{padding:10px 16px!important;min-width:0}
+  .mockSpeed>span{font-size:clamp(.9rem,1.8vw,1.2rem)!important}
+  .mockSpeed>small{font-size:clamp(.72rem,1.35vw,.95rem)!important}
+  .mockSpeed>strong{
+    font-size:clamp(4.2rem,18vh,7.3rem)!important;
+    margin:3px 0 5px!important;
+    overflow:visible!important;
+  }
+  .mockSpeed>div{font-size:clamp(.7rem,1.35vw,.95rem)!important}
+  .mockWind>strong{font-size:clamp(4.4rem,18.5vh,7.5rem)!important;margin-top:5px!important}
+  .mockGauge{min-width:0!important;overflow:visible!important}
+  .mockGauge svg{inset:0!important;width:100%!important;height:100%!important;max-width:none!important}
+  .mockTrim{gap:8px!important;padding:0!important;min-width:0!important}
+  .mockTrim .navTrimTile{
+    grid-template-columns:minmax(0,1.4fr) minmax(42px,.42fr) minmax(58px,.48fr) 18px!important;
+    padding:5px 12px!important;
+    min-width:0!important;
+  }
+  .mockTrim .navTrimTile span{overflow:hidden;text-overflow:ellipsis}
+  .mockActions{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:10px!important;
+    min-width:0!important;
+    position:relative!important;
+    z-index:3!important;
+  }
+  .mockActions button{min-width:0!important;height:100%!important}
+  .mockActions span{font-size:clamp(1.7rem,4.2vh,2.4rem)!important}
+  .mockActions strong{font-size:clamp(.72rem,1.45vw,1rem)!important}
+}
+@media (orientation:landscape) and (max-height:500px){
+  .navigationV3Page.active .mockNav{grid-template-rows:44px minmax(0,1fr) 82px!important;gap:6px!important}
+  .mockTop{grid-template-columns:210px 145px 1fr 125px 48px!important}
+  .mockBody{gap:8px!important}
+  .mockLeft{gap:7px!important}
+  .mockTrim{gap:6px!important}
+  .mockActions{gap:7px!important}
+  .mockCard{padding:6px 12px!important}
+  .mockSpeed>strong{font-size:clamp(3.5rem,17vh,5.4rem)!important}
+  .mockWind>strong{font-size:clamp(3.7rem,18vh,5.7rem)!important}
+}
+
+/* V3.3.10 — proportions du visuel final validé */
+@media (orientation:landscape){
+  .navigationV3Page.active .mockNav{
+    grid-template-rows:48px minmax(0,1fr) 72px!important;
+    gap:7px!important;
+    padding:max(3px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))!important;
+  }
+  .mockTop{
+    grid-template-columns:245px 165px 1fr 140px 50px!important;
+    min-height:0!important;
+  }
+  .mockBody{
+    grid-template-columns:35% minmax(0,1fr) 23%!important;
+    gap:10px!important;
+  }
+  .mockLeft{gap:7px!important}
+  .mockTrim{gap:6px!important}
+  .mockTrim .navTrimTile{
+    grid-template-columns:minmax(0,1fr) 48px!important;
+    grid-template-rows:1fr!important;
+    padding:4px 12px!important;
+  }
+  .mockTrim .navTrimTile span{
+    grid-column:1!important;
+    font-size:clamp(.67rem,1.35vw,.88rem)!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+  }
+  .mockTrim .navTrimTile strong{
+    grid-column:2!important;
+    grid-row:1!important;
+    font-size:clamp(1.25rem,2.7vw,1.8rem)!important;
+    text-align:right!important;
+  }
+  .mockTrim .navTrimTile small,.mockTrim .navTrimTile i{display:none!important}
+  .mockActions{gap:7px!important}
+  .mockActions button{padding:2px 6px!important;flex-direction:row!important;gap:12px!important}
+  .mockActions span{font-size:clamp(1.35rem,3.5vh,1.9rem)!important;line-height:1!important}
+  .mockActions strong{margin-top:0!important;font-size:clamp(.66rem,1.25vw,.88rem)!important}
+  #navGPSDot{display:none!important}
+}
+@media (orientation:landscape) and (max-height:500px){
+  .navigationV3Page.active .mockNav{grid-template-rows:42px minmax(0,1fr) 60px!important;gap:5px!important}
+  .mockTop{grid-template-columns:210px 145px 1fr 120px 44px!important}
+  .mockBody{grid-template-columns:35% minmax(0,1fr) 22%!important;gap:7px!important}
+  .mockTrim{gap:4px!important}
+  .mockActions{gap:5px!important}
+}
+
+/* V3.3.11 — tuiles réglages instrument + sélecteur direct */
+@media (orientation:landscape){
+ .mockTrim .navTrimTile{grid-template-columns:32px minmax(0,1fr) 48px!important;position:relative!important;background:linear-gradient(135deg,#0a2132 0%,#071824 58%,#0b2639 100%)!important;border:1.5px solid #4daee4!important;box-shadow:inset 0 0 18px rgba(31,151,220,.08)!important}
+ .mockTrim .navTrimTile::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:1px;background:linear-gradient(90deg,transparent,#39c9ff,transparent);opacity:.65}
+ .mockTrim .trimGlyph{grid-column:1;color:#67cfff;font-size:1.25rem;font-weight:500;text-align:left;filter:drop-shadow(0 0 4px rgba(57,201,255,.25))}
+ .mockTrim .navTrimTile span{grid-column:2!important;color:#67cfff!important;font-weight:850!important}
+ .mockTrim .navTrimTile strong{grid-column:3!important;color:#fff!important;font-size:clamp(1.45rem,3vw,2rem)!important}
+ .mockTrim .navTrimTile.good{border-color:#31e66b!important;box-shadow:inset 0 0 18px rgba(49,230,107,.10),0 0 10px rgba(49,230,107,.30)!important}
+ .mockTrim .navTrimTile.good::after{background:linear-gradient(90deg,transparent,#31e66b,transparent)}
+ .mockTrim .navTrimTile.bad{border-color:#ff4556!important;box-shadow:inset 0 0 18px rgba(255,69,86,.10),0 0 10px rgba(255,69,86,.28)!important}
+ .mockTrim .navTrimTile.bad::after{background:linear-gradient(90deg,transparent,#ff4556,transparent)}
+ .mockTrim .navTrimTile.pending{border-color:#f4a62a!important;box-shadow:inset 0 0 18px rgba(244,166,42,.10),0 0 10px rgba(244,166,42,.28)!important}
+}
+.quickTrimModal{z-index:250!important}.quickTrimContent{width:min(560px,82vw)!important;max-height:80vh!important;padding:14px!important;border:1px solid #3b789f!important;background:linear-gradient(145deg,#0b2133,#071521)!important;border-radius:18px!important}
+.quickTrimHeader{display:grid;grid-template-columns:42px 1fr 38px;align-items:center;gap:8px;margin-bottom:14px}.quickTrimHeader h2{margin:0!important;font-size:1.3rem}.quickTrimGlyph{color:#58cfff;font-size:1.65rem;text-align:center}.quickTrimHeader button{border:0;background:transparent;color:#b9cad6;font-size:1.25rem}
+.quickTrimChoices{display:grid;grid-template-columns:repeat(6,minmax(52px,1fr));gap:8px}.quickTrimChoices button{min-height:54px;border:1px solid #45657c;border-radius:11px;background:#0b1c2b;color:#eaf5fb;font-size:1.15rem;font-weight:850;padding:7px}.quickTrimChoices button.selected{border:2px solid #31d8ff;background:#0b5272;box-shadow:0 0 12px rgba(49,216,255,.3);color:#fff}

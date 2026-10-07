@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.3.2";
+    const APP_VERSION = "3.3.12";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -10,7 +10,8 @@
         history: "speedfeet_history",
         nextNavigationNotes: "speedfeet_next_navigation_notes",
         checklistItems: "speedfeet_checklist_items",
-        boatTasks: "speedfeet_boat_tasks"
+        boatTasks: "speedfeet_boat_tasks",
+        boxBattery: "speedfeet_box_battery"
     };
 
     const DEFAULT_SETTINGS = {
@@ -23,6 +24,8 @@
         safetyContactPhone: "",
         closeHauledAngle: 37.5,
         gpsWindThreshold: 0.3,
+        signalKUrl: "ws://signalk.local:3000/signalk/v1/stream?subscribe=none",
+        boxBatteryHours: 15,
         windZones: [
             { start: 0, end: 35, color: "#f33441", label: "Zone rouge" },
             { start: 35, end: 170, color: "#18b54c", label: "Zone verte" },
@@ -51,7 +54,7 @@
 
         travelerJib: ["1", "2", "3", "4", "5"],
 
-        mastRotation: ["1", "2", "3", "4", "5"],
+        mastRotation: ["0", "1", "2", "3", "4", "5"],
 
         cunningham: ["1", "2", "3", "4", "5"],
 
@@ -102,6 +105,11 @@
             []
         ),
 
+        boxBattery: loadJSON(
+            STORAGE_KEYS.boxBattery,
+            { chargedAt: null, usedMs: 0, runningSince: null }
+        ),
+
         currentPage: "homePage",
         timerId: null,
         gpsWatchId: null,
@@ -111,7 +119,11 @@
         replayBoatMarker: null,
         replayCursorIndex: 0,
         replayNavigationId: null,
-        toastTimerId: null
+        toastTimerId: null,
+        signalKSocket: null,
+        signalKReconnectTimer: null,
+        signalKRuntimeWanted: false,
+        signalKWind: { speedKn: null, angleDeg: null, lastUpdate: 0, connected: false }
     };
 
     const GPS_HEADING_MIN_SPEED_KN = 0.3;
@@ -727,6 +739,7 @@
         updateObjectiveButtons();
         updatePrepareMeta();
         updateNotesCounter();
+        renderBoxBattery();
 
         setInputValue(
             "nextNavigationNotes",
@@ -1030,6 +1043,35 @@
         savePreparationDraft();
     }
 
+    function normalizeBoxBattery(value) {
+        return { chargedAt: value?.chargedAt || null, usedMs: Math.max(0, Number(value?.usedMs) || 0), runningSince: value?.runningSince || null };
+    }
+    function saveBoxBattery() { state.boxBattery = normalizeBoxBattery(state.boxBattery); saveJSON(STORAGE_KEYS.boxBattery, state.boxBattery); }
+    function getBoxBatteryUsedMs() {
+        const battery = normalizeBoxBattery(state.boxBattery);
+        const liveMs = battery.runningSince ? Math.max(0, Date.now() - new Date(battery.runningSince).getTime()) : 0;
+        return battery.usedMs + (Number.isFinite(liveMs) ? liveMs : 0);
+    }
+    function getBoxBatteryEstimate() {
+        const capacityHours = clamp(Number(state.settings?.boxBatteryHours) || 15, 1, 48);
+        const usedHours = getBoxBatteryUsedMs() / 3600000;
+        return { capacityHours, usedHours, remainingHours: Math.max(0, capacityHours - usedHours), percent: Math.max(0, Math.min(100, Math.round((1 - usedHours / capacityHours) * 100))) };
+    }
+    function renderBoxBattery() {
+        const estimate = getBoxBatteryEstimate();
+        setText("boxBatteryPercent", estimate.percent + " %");
+        setText("boxBatteryRemaining", "≈ " + estimate.remainingHours.toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " h restantes");
+        const fill = getElement("boxBatteryFill"); if (fill) fill.style.width = estimate.percent + "%";
+        const charged = getElement("boxBatteryChargedAt");
+        if (charged) charged.textContent = state.boxBattery?.chargedAt ? "Remise à 100 % : " + new Date(state.boxBattery.chargedAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "Estimation non initialisée";
+    }
+    function markBoxBatteryCharged() { state.boxBattery = { chargedAt: new Date().toISOString(), usedMs: 0, runningSince: null }; saveBoxBattery(); renderBoxBattery(); showToast("Batterie mallette remise à 100 %"); }
+    function startBoxBatterySession() { state.boxBattery = normalizeBoxBattery(state.boxBattery); if (!state.boxBattery.runningSince) { state.boxBattery.runningSince = new Date().toISOString(); saveBoxBattery(); } renderBoxBattery(); }
+    function stopBoxBatterySession() {
+        state.boxBattery = normalizeBoxBattery(state.boxBattery);
+        if (state.boxBattery.runningSince) { const started = new Date(state.boxBattery.runningSince).getTime(); if (Number.isFinite(started)) state.boxBattery.usedMs += Math.max(0, Date.now() - started); state.boxBattery.runningSince = null; saveBoxBattery(); }
+        renderBoxBattery();
+    }
     function updatePrepareMeta() {
         const now = new Date();
         setText("prepareBoatName", state.settings.boatName || "Speed Feet 18");
@@ -1205,8 +1247,122 @@
         startNavigationRuntime();
     }
 
+    const SIGNALK_STALE_MS = 5000;
+    const SIGNALK_RECONNECT_MS = 3000;
+    const SIGNALK_SIMULATOR_PREFIX = "sim://";
+    let signalKSimulatorTimer = null;
+
+    function isSignalKWindFresh() {
+        return state.signalKWind.connected &&
+            Number.isFinite(state.signalKWind.speedKn) &&
+            Number.isFinite(state.signalKWind.angleDeg) &&
+            Date.now() - state.signalKWind.lastUpdate <= SIGNALK_STALE_MS;
+    }
+
+    function updateSignalKWindStatus() {
+        const status = getElement("navNasaStatus");
+        const fresh = isSignalKWindFresh();
+        if (status) {
+            status.textContent = fresh ? "NASA CONNECTÉ" : "NASA HORS LIGNE";
+            status.classList.toggle("live", fresh);
+        }
+    }
+
+    function handleSignalKMessage(event) {
+        let message;
+        try { message = JSON.parse(event.data); } catch (_) { return; }
+        const updates = Array.isArray(message?.updates) ? message.updates : [];
+        let changed = false;
+        updates.forEach(update => {
+            (update?.values || []).forEach(item => {
+                const value = Number(item?.value);
+                if (!Number.isFinite(value)) return;
+                if (item.path === "environment.wind.speedApparent") {
+                    state.signalKWind.speedKn = value * 1.943844;
+                    changed = true;
+                }
+                if (item.path === "environment.wind.angleApparent") {
+                    state.signalKWind.angleDeg = ((value * 180 / Math.PI + 540) % 360) - 180;
+                    changed = true;
+                }
+            });
+        });
+        if (changed) {
+            state.signalKWind.lastUpdate = Date.now();
+            updateNavigationDashboard();
+        }
+    }
+
+    function connectSignalK() {
+        if (!state.signalKRuntimeWanted) return;
+        const url = String(state.settings?.signalKUrl || DEFAULT_SETTINGS.signalKUrl || "").trim();
+        if (url.startsWith(SIGNALK_SIMULATOR_PREFIX)) {
+            state.signalKWind.connected = true;
+            if (signalKSimulatorTimer === null) signalKSimulatorTimer = window.setInterval(() => {
+                if (!state.signalKRuntimeWanted) return;
+                const t = Date.now() / 1000;
+                state.signalKWind.speedKn = 11.5 + Math.sin(t / 3) * 2.2;
+                state.signalKWind.angleDeg = 38 + Math.sin(t / 5) * 8;
+                state.signalKWind.lastUpdate = Date.now();
+                updateNavigationDashboard();
+            }, 1000);
+            updateSignalKWindStatus();
+            return;
+        }
+        if (!url || !("WebSocket" in window)) return;
+        if (state.signalKSocket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(state.signalKSocket.readyState)) return;
+        try {
+            const socket = new WebSocket(url);
+            state.signalKSocket = socket;
+            socket.addEventListener("open", () => {
+                state.signalKWind.connected = true;
+                socket.send(JSON.stringify({
+                    context: "vessels.self",
+                    subscribe: [
+                        { path: "environment.wind.speedApparent", period: 0 },
+                        { path: "environment.wind.angleApparent", period: 0 }
+                    ]
+                }));
+                updateSignalKWindStatus();
+            });
+            socket.addEventListener("message", handleSignalKMessage);
+            socket.addEventListener("close", () => {
+                if (state.signalKSocket === socket) state.signalKSocket = null;
+                state.signalKWind.connected = false;
+                updateSignalKWindStatus();
+                if (state.signalKRuntimeWanted && hasActiveNavigation() && state.signalKReconnectTimer === null) {
+                    state.signalKReconnectTimer = window.setTimeout(() => {
+                        state.signalKReconnectTimer = null;
+                        connectSignalK();
+                    }, SIGNALK_RECONNECT_MS);
+                }
+            });
+            socket.addEventListener("error", () => socket.close());
+        } catch (error) {
+            console.warn("Signal K indisponible :", error);
+        }
+    }
+
+    function disconnectSignalK() {
+        state.signalKRuntimeWanted = false;
+        if (signalKSimulatorTimer !== null) { clearInterval(signalKSimulatorTimer); signalKSimulatorTimer = null; }
+        if (state.signalKReconnectTimer !== null) {
+            clearTimeout(state.signalKReconnectTimer);
+            state.signalKReconnectTimer = null;
+        }
+        if (state.signalKSocket) {
+            const socket = state.signalKSocket;
+            state.signalKSocket = null;
+            socket.close();
+        }
+        state.signalKWind.connected = false;
+        updateSignalKWindStatus();
+    }
+
     function startNavigationRuntime() {
         stopNavigationRuntime();
+        state.signalKRuntimeWanted = true;
+        startBoxBatterySession();
 
         state.timerId =
             window.setInterval(
@@ -1239,6 +1395,7 @@
             );
         }
 
+        connectSignalK();
         updateNavigationDashboard();
     }
 
@@ -1262,6 +1419,8 @@
 
             state.gpsWatchId = null;
         }
+        disconnectSignalK();
+        stopBoxBatterySession();
     }
 
     function findTrackPointSecondsAgo(track, timestampMs, seconds) {
@@ -1614,9 +1773,9 @@
         const startedAt = new Date(record.timestamp).getTime();
         if (!Number.isFinite(startedAt)) return null;
         const elapsedMs = Math.max(0, Date.now() - startedAt);
-        if (elapsedMs >= 240000) return { record, elapsedMs, phase: "complete", progress: 1, remainingMs: 0 };
-        if (elapsedMs < 120000) return { record, elapsedMs, phase: "waiting", progress: elapsedMs / 120000, remainingMs: 120000 - elapsedMs };
-        return { record, elapsedMs, phase: "measuring", progress: (elapsedMs - 120000) / 120000, remainingMs: 240000 - elapsedMs };
+        if (elapsedMs >= 180000) return { record, elapsedMs, phase: "complete", progress: 1, remainingMs: 0 };
+        if (elapsedMs < 60000) return { record, elapsedMs, phase: "waiting", progress: elapsedMs / 60000, remainingMs: 60000 - elapsedMs };
+        return { record, elapsedMs, phase: "measuring", progress: (elapsedMs - 60000) / 120000, remainingMs: 180000 - elapsedMs };
     }
 
     function formatTrimCountdown(milliseconds) {
@@ -1700,11 +1859,24 @@
             ? Number(navigation.windAxisDirection)
             : Number(lastWind?.direction);
         const needle = getElement("navWindNeedle");
-        if (Number.isFinite(windAxisDirection) && Number.isFinite(navigation.currentHeading)) {
+        const liveWind = isSignalKWindFresh();
+        if (liveWind) {
+            const angle = state.signalKWind.angleDeg;
+            setText("navWindAngle", "");
+            setText("navTack", "");
+            setText("navWindSpeed", state.signalKWind.speedKn.toFixed(1) + " nd");
+            setText("navWindSpeedLabel", "VENT NASA");
+            if (needle) {
+                needle.style.transform = `translate(-50%, -100%) rotate(${angle}deg)`;
+                needle.classList.add("active");
+            }
+        } else if (Number.isFinite(windAxisDirection) && Number.isFinite(navigation.currentHeading)) {
             const angle = ((windAxisDirection - navigation.currentHeading + 540) % 360) - 180;
             const side = angle >= 0 ? "TRIBORD" : "BÂBORD";
             setText("navWindAngle", Math.round(Math.abs(angle)) + "°");
             setText("navTack", side);
+            setText("navWindSpeed", Number.isFinite(Number(lastWind?.speed)) ? Number(lastWind.speed).toFixed(1) + " nd" : "— nd");
+            setText("navWindSpeedLabel", "VENT MANUEL");
             if (needle) {
                 needle.style.transform = `translate(-50%, -100%) rotate(${angle}deg)`;
                 needle.classList.add("active");
@@ -1712,11 +1884,15 @@
         } else {
             setText("navWindAngle", "—°");
             setText("navTack", "VENT NON CALIBRÉ");
+            setText("navWindSpeed", Number.isFinite(Number(lastWind?.speed)) ? Number(lastWind.speed).toFixed(1) + " nd" : "— nd");
+            setText("navWindSpeedLabel", "VENT MANUEL");
             if (needle) {
                 needle.style.transform = "translate(-50%, -100%) rotate(0deg)";
                 needle.classList.remove("active");
             }
         }
+        updateSignalKWindStatus();
+        renderNavigationTrimTiles();
     }
 
     function setText(id, value) {
@@ -1759,6 +1935,15 @@
         openModal("finishNavigationModal");
     }
 
+    async function syncCompletedNavigationWithBox(navigation) {
+        const result = { status: "unavailable", navigation };
+        if (!state.signalKWind.connected) return result;
+        if (String(state.settings?.signalKUrl || "").startsWith(SIGNALK_SIMULATOR_PREFIX)) {
+            await new Promise(resolve => window.setTimeout(resolve, 250));
+            return { status: "synced", navigation, simulated: true };
+        }
+        return result;
+    }
     async function finishNavigation() {
         if (finalizing || !storageReady) return;
         if (!state.currentNavigation) {
@@ -1790,6 +1975,8 @@
             return;
         }
         state.history = history;
+        let boxSync = { status: "unavailable", navigation: completedNavigation };
+        try { boxSync = await syncCompletedNavigationWithBox(completedNavigation); } catch (error) { console.warn("Synchronisation mallette différée :", error); }
         finalizationFailed = false;
         state.currentNavigation = null;
         finalizing = false;
@@ -1805,6 +1992,8 @@
 
         closeAllModals();
         showPage("historyPage");
+        if (boxSync.status === "synced") showToast("Sortie sauvegardée et synchronisée avec la mallette");
+        else showToast("Sortie sauvegardée sur l’iPhone · mallette non synchronisée");
         persistAchievements();
         const newlyUnlocked = getUnlockedAchievements().unlocked.filter(item => !achievementsBefore.has(item.id));
         window.setTimeout(() => {
@@ -1988,7 +2177,6 @@
         { key: "rotation", label: "Rotation du mât", elementId: "trimRecommendationRotation" },
         { key: "cunningham", label: "Cunningham", elementId: "trimRecommendationCunningham" },
         { key: "outhaul", label: "Bordure", elementId: "trimRecommendationOuthaul" },
-        { key: "sheet", label: "Écoute de grand-voile", elementId: "trimRecommendationSheet" }
     ];
 
     function normalizeAngleDifference(a, b) {
@@ -2054,7 +2242,7 @@
             const recordMs = new Date(record.timestamp).getTime();
             if (!Number.isFinite(recordMs)) return;
             const nextMs = records[index + 1] ? new Date(records[index + 1].timestamp).getTime() : endNavigationMs;
-            const startMs = recordMs + 120000;
+            const startMs = recordMs + 60000;
             const endMs = Math.min(Number.isFinite(nextMs) ? nextMs : startMs + 600000, startMs + 600000);
             if (endMs - startMs < 60000) return;
             const points = trackPointsInWindow(track, startMs, endMs);
@@ -2115,12 +2303,13 @@
         const navigation = state.currentNavigation;
         if (!navigation) return null;
         const latestWind = navigation.windRecords?.slice(-1)[0];
-        const windSpeed = Number(latestWind?.speed ?? navigation.preparation?.windAverage);
+        const liveNasa = isSignalKWindFresh();
+        const windSpeed = liveNasa ? Number(state.signalKWind.speedKn) : Number(latestWind?.speed ?? navigation.preparation?.windAverage);
         const windDirection = Number(latestWind?.direction ?? navigation.preparation?.windDirection ?? navigation.windAxisDirection);
         const heading = Number(navigation.currentHeading);
         const bin = getWindBin(windSpeed);
         if (!bin) return { reason: "wind", bin: null };
-        const angle = normalizeAngleDifference(heading, windDirection);
+        const angle = liveNasa ? Math.abs(Number(state.signalKWind.angleDeg)) : normalizeAngleDifference(heading, windDirection);
         if (!Number.isFinite(angle) || angle > getCloseHauledAngle() + 15) return { reason: "allure", bin, angle };
         return { reason: null, bin, angle, windSpeed };
     }
@@ -2151,6 +2340,37 @@
             const dot = recommendation.confidence === "validated" ? "🟢" : "🟡";
             element.className = `trimRecommendation ${recommendation.confidence}`;
             element.textContent = `⭐ Recommandé : ${recommendation.value} ${dot}`;
+        });
+    }
+
+    function renderNavigationTrimTiles() {
+        const navigation = state.currentNavigation;
+        if (!navigation) return;
+        const current = navigation.trimRecords?.slice(-1)[0] || {};
+        const context = getCurrentTrimRecommendationContext();
+        const samples = getAllTrimLearningSamples();
+        const recommendations = context?.bin && !context.reason ? summarizeTrimRecommendations(samples, context.bin.key) : {};
+        const map = [
+            ["rotation","navTrimRotation","navTrimRotationAdvice"],
+            ["travelerMain","navTrimTravelerMain","navTrimTravelerMainAdvice"],
+            ["travelerJib","navTrimTravelerJib","navTrimTravelerJibAdvice"],
+            ["cunningham","navTrimCunningham","navTrimCunninghamAdvice"],
+            ["outhaul","navTrimOuthaul","navTrimOuthaulAdvice"]
+        ];
+        map.forEach(([key,valueId,adviceId]) => {
+            const tile = document.querySelector(`.navTrimTile[data-trim-key="${key}"]`);
+            const value = String(current[key] ?? "—");
+            setText(valueId, value);
+            if (!tile) return;
+            tile.classList.remove("good","bad","neutral","pending");
+            const cycle = getActiveTrimLearningCycle();
+            if (cycle && cycle.phase !== "complete" && String(cycle.record?.[key] ?? "") === value) {
+                tile.classList.add("pending"); setText(adviceId, "ANALYSE"); return;
+            }
+            const rec = recommendations[key];
+            if (!rec) { tile.classList.add("neutral"); setText(adviceId, "●●●"); return; }
+            if (String(rec.value) === value) { tile.classList.add("good"); setText(adviceId, "✓ OK"); }
+            else { tile.classList.add("bad"); setText(adviceId, "→ " + rec.value); }
         });
     }
 
@@ -2238,7 +2458,7 @@
                 rotation: previous.rotation,
                 cunningham: previous.cunningham
             } : null,
-            stabilizationSeconds: 120
+            stabilizationSeconds: 60
         };
 
         state.currentNavigation.trimRecords.push(record);
@@ -2322,6 +2542,7 @@
         state.settings.windZones = current;
         renderWindZonesEditor();
         setInputValue("gpsWindThreshold", state.settings.gpsWindThreshold ?? DEFAULT_SETTINGS.gpsWindThreshold);
+        setInputValue("signalKUrl", state.settings.signalKUrl || DEFAULT_SETTINGS.signalKUrl);
     }
 
     function loadSettingsForm() {
@@ -2359,6 +2580,8 @@
         setInputValue("closeHauledAngle", getCloseHauledAngle());
         renderWindZonesEditor();
         setInputValue("gpsWindThreshold", state.settings.gpsWindThreshold ?? DEFAULT_SETTINGS.gpsWindThreshold);
+        setInputValue("signalKUrl", state.settings.signalKUrl || DEFAULT_SETTINGS.signalKUrl);
+        setInputValue("boxBatteryHours", state.settings.boxBatteryHours ?? DEFAULT_SETTINGS.boxBatteryHours);
 
         setText(
             "appVersion",
@@ -2434,6 +2657,8 @@
             safetyContactPhone: getElement("safetyContactPhone")?.value.trim() || "",
             closeHauledAngle: clamp(toNumberOrNull(getElement("closeHauledAngle")?.value) || 37.5, 20, 60),
             gpsWindThreshold: clamp(toNumberOrNull(getElement("gpsWindThreshold")?.value) || DEFAULT_SETTINGS.gpsWindThreshold, 0.1, 2),
+            signalKUrl: getElement("signalKUrl")?.value.trim() || DEFAULT_SETTINGS.signalKUrl,
+            boxBatteryHours: clamp(toNumberOrNull(getElement("boxBatteryHours")?.value) || DEFAULT_SETTINGS.boxBatteryHours, 1, 48),
             windZones: readWindZonesEditor()
         };
 
@@ -4279,6 +4504,7 @@
                 currentNavigation: cloneValue(state.currentNavigation),
                 history: cloneValue(state.history),
                 boatTasks: cloneValue(state.boatTasks),
+                boxBattery: cloneValue(state.boxBattery),
                 achievementIds: [...achievementIds]
             }
         };
@@ -4354,6 +4580,7 @@
         const importedCurrentNavigation = data.currentNavigation ?? null;
         const importedHistory = data.history;
         const importedBoatTasks = normalizeBoatTasks(data.boatTasks || []);
+        const importedBoxBattery = normalizeBoxBattery(data.boxBattery || {});
 
         if (!storageReady || finalizing) return;
         finalizing = true;
@@ -4361,6 +4588,7 @@
         const changes = {
             [STORAGE_KEYS.settings]: importedSettings,
             [STORAGE_KEYS.boatTasks]: importedBoatTasks,
+            [STORAGE_KEYS.boxBattery]: importedBoxBattery,
             [STORAGE_KEYS.preparation]: importedPreparation,
             speedfeet_achievements: data.achievementIds || []
         };
@@ -4485,6 +4713,8 @@ bindClick(
             setInputValue("navigationObjective", button.dataset.objective || "Entraînement"); updateObjectiveButtons(); savePreparationDraft();
         }));
 
+        bindClick("btnBoxBatteryCharged", markBoxBatteryCharged);
+
         bindClick(
             "btnStartPreparedNavigation",
             startPreparedNavigation
@@ -4543,7 +4773,70 @@ bindClick(
             );
         };
         bindClick("navSpeedRefresh", refreshGPSNow);
-        bindClick("navWindRefresh", openWindAxisModal);
+
+        const openMastTrim = () => {
+            openTrimModal();
+            window.setTimeout(() => {
+                const select = getElement("trimRotation");
+                if (select) { select.focus(); select.scrollIntoView({ block: "center", behavior: "smooth" }); }
+            }, 80);
+        };
+        let windLongPressTimer = null;
+        let windLongPressTriggered = false;
+        const windGauge = getElement("navWindRefresh");
+        const startWindPress = () => {
+            windLongPressTriggered = false;
+            if (isSignalKWindFresh()) return;
+            windLongPressTimer = window.setTimeout(() => {
+                windLongPressTriggered = true;
+                openWindModal();
+                if (navigator.vibrate) navigator.vibrate(40);
+            }, 3000);
+        };
+        const cancelWindPress = () => {
+            if (windLongPressTimer !== null) { clearTimeout(windLongPressTimer); windLongPressTimer = null; }
+        };
+        windGauge?.addEventListener("pointerdown", startWindPress);
+        ["pointerup","pointercancel","pointerleave"].forEach(type => windGauge?.addEventListener(type, cancelWindPress));
+        windGauge?.addEventListener("click", event => {
+            if (windLongPressTriggered) { windLongPressTriggered = false; event.preventDefault(); return; }
+            if (isSignalKWindFresh()) openMastTrim(); else openWindAxisModal();
+        });
+        const quickTrimMeta = {
+            rotation: { label:"MÂT", glyph:"◭", source:"trimRotation" },
+            travelerMain: { label:"Chariot GV", glyph:"◢", source:"trimTravelerMain" },
+            travelerJib: { label:"Chariot FOC", glyph:"◩", source:"trimTravelerJib" },
+            cunningham: { label:"Cunningham", glyph:"⌁", source:"trimCunningham" },
+            outhaul: { label:"Bordure", glyph:"⌟", source:"trimOuthaul" }
+        };
+        const openQuickTrim = key => {
+            if (!state.currentNavigation || !quickTrimMeta[key]) return;
+            const meta = quickTrimMeta[key];
+            const source = getElement(meta.source);
+            const choices = getElement("quickTrimChoices");
+            if (!source || !choices) return;
+            setText("quickTrimTitle", meta.label);
+            setText("quickTrimGlyph", meta.glyph);
+            const current = String(state.currentNavigation.trimRecords?.slice(-1)[0]?.[key] ?? "");
+            choices.innerHTML = [...source.options].map(option => {
+                const value = String(option.value);
+                return `<button type="button" data-quick-trim-value="${escapeHTML(value)}" class="${value === current ? "selected" : ""}">${escapeHTML(option.textContent || value)}</button>`;
+            }).join("");
+            choices.dataset.trimKey = key;
+            openModal("quickTrimModal");
+        };
+        document.querySelectorAll(".navTrimTile").forEach(tile => tile.addEventListener("click", () => openQuickTrim(tile.dataset.trimKey)));
+        getElement("quickTrimChoices")?.addEventListener("click", event => {
+            const button = event.target.closest("[data-quick-trim-value]");
+            if (!button || !state.currentNavigation) return;
+            const key = getElement("quickTrimChoices")?.dataset.trimKey;
+            const meta = quickTrimMeta[key];
+            if (!meta) return;
+            const source = getElement(meta.source);
+            if (source) source.value = button.dataset.quickTrimValue;
+            saveTrimRecord();
+        });
+        bindClick("btnCloseQuickTrim", closeAllModals);
         const bindKeyboardRefresh = (id, callback) => {
             const el = getElement(id);
             if (!el) return;
@@ -4552,7 +4845,7 @@ bindClick(
             });
         };
         bindKeyboardRefresh("navSpeedRefresh", refreshGPSNow);
-        bindKeyboardRefresh("navWindRefresh", openWindAxisModal);
+        bindKeyboardRefresh("navWindRefresh", () => isSignalKWindFresh() ? openMastTrim() : openWindAxisModal());
 
         bindClick("btnNavigationMenu", () => openModal("navigationOptionsModal"));
         bindClick("btnCloseNavigationMenu", closeAllModals);
@@ -4676,6 +4969,9 @@ document
             if (document.visibilityState === "hidden") { persistNavigation(); persistAchievements(); }
         });
         window.addEventListener("pagehide", persistNavigation);
+        state.boxBattery = normalizeBoxBattery(state.boxBattery);
+        state.boxBattery.runningSince = null;
+        saveBoxBattery();
         initializeSelects();
 
         loadSettingsForm();
