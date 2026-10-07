@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.3.4";
+    const APP_VERSION = "3.3.5";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -1260,16 +1260,11 @@
     }
 
     function updateSignalKWindStatus() {
-        const status = getElement("navWindSource");
-        const speed = getElement("navLiveWindSpeed");
+        const status = getElement("navNasaStatus");
         const fresh = isSignalKWindFresh();
         if (status) {
-            status.textContent = fresh ? "NASA • DIRECT" : "VENT ESTIMÉ";
+            status.textContent = fresh ? "NASA CONNECTÉ" : "NASA HORS LIGNE";
             status.classList.toggle("live", fresh);
-        }
-        if (speed) {
-            speed.textContent = fresh ? state.signalKWind.speedKn.toFixed(1) + " nd" : "";
-            speed.hidden = !fresh;
         }
     }
 
@@ -1867,9 +1862,8 @@
         const liveWind = isSignalKWindFresh();
         if (liveWind) {
             const angle = state.signalKWind.angleDeg;
-            const side = angle >= 0 ? "TRIBORD" : "BÂBORD";
-            setText("navWindAngle", Math.round(Math.abs(angle)) + "°");
-            setText("navTack", side);
+            setText("navWindAngle", state.signalKWind.speedKn.toFixed(1) + " nd");
+            setText("navTack", "VENT APPARENT");
             if (needle) {
                 needle.style.transform = `translate(-50%, -100%) rotate(${angle}deg)`;
                 needle.classList.add("active");
