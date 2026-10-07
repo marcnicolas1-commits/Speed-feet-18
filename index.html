@@ -4,13 +4,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>SpeedFeet V3.3.10</title>
+<title>SpeedFeet V3.3.11</title>
 <meta content="#07111f" name="theme-color"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
-<link href="styles.css?v=33100" rel="stylesheet"/>
+<link href="styles.css?v=33110" rel="stylesheet"/>
 </head>
 <body>
 <div class="v3AppShell" id="app">
@@ -20,7 +20,7 @@
 <section class="page active v3DashboardPage" id="homePage">
 <header class="speedfeetBrandHeader">
   <div class="speedfeetWordmark"><span>SPEEDFEET</span><b> ANALYZER</b></div>
-  <small>V3.3.10</small>
+  <small>V3.3.11</small>
 </header>
 <section class="activeNavigationHome" id="activeNavigationHome" hidden>
   <div><span class="activeNavigationDot"></span><strong>NAVIGATION EN COURS</strong></div>
@@ -184,11 +184,11 @@
     </button>
 
     <aside class="mockTrim">
-      <button class="navTrimTile neutral" data-trim-key="rotation" type="button"><span>MÂT</span><strong id="navTrimRotation">—</strong><small id="navTrimRotationAdvice" hidden></small></button>
-      <button class="navTrimTile neutral" data-trim-key="travelerMain" type="button"><span>Chariot GV</span><strong id="navTrimTravelerMain">—</strong><small id="navTrimTravelerMainAdvice" hidden></small></button>
-      <button class="navTrimTile neutral" data-trim-key="travelerJib" type="button"><span>Chariot FOC</span><strong id="navTrimTravelerJib">—</strong><small id="navTrimTravelerJibAdvice" hidden></small></button>
-      <button class="navTrimTile neutral" data-trim-key="cunningham" type="button"><span>Cunningham</span><strong id="navTrimCunningham">—</strong><small id="navTrimCunninghamAdvice" hidden></small></button>
-      <button class="navTrimTile neutral" data-trim-key="outhaul" type="button"><span>Bordure</span><strong id="navTrimOuthaul">—</strong><small id="navTrimOuthaulAdvice" hidden></small></button>
+      <button class="navTrimTile neutral" data-trim-key="rotation" type="button"><b class="trimGlyph">◭</b><span>MÂT</span><strong id="navTrimRotation">—</strong><small id="navTrimRotationAdvice" hidden></small></button>
+      <button class="navTrimTile neutral" data-trim-key="travelerMain" type="button"><b class="trimGlyph">◢</b><span>Chariot GV</span><strong id="navTrimTravelerMain">—</strong><small id="navTrimTravelerMainAdvice" hidden></small></button>
+      <button class="navTrimTile neutral" data-trim-key="travelerJib" type="button"><b class="trimGlyph">◩</b><span>Chariot FOC</span><strong id="navTrimTravelerJib">—</strong><small id="navTrimTravelerJibAdvice" hidden></small></button>
+      <button class="navTrimTile neutral" data-trim-key="cunningham" type="button"><b class="trimGlyph">⌁</b><span>Cunningham</span><strong id="navTrimCunningham">—</strong><small id="navTrimCunninghamAdvice" hidden></small></button>
+      <button class="navTrimTile neutral" data-trim-key="outhaul" type="button"><b class="trimGlyph">⌟</b><span>Bordure</span><strong id="navTrimOuthaul">—</strong><small id="navTrimOuthaulAdvice" hidden></small></button>
     </aside>
   </main>
 
@@ -205,6 +205,12 @@
 </div>
 <div class="sfRotateHint"><span>↻</span><strong>Tournez l’iPhone</strong></div>
 </section>
+<div class="modal quickTrimModal" id="quickTrimModal">
+  <div class="modalContent quickTrimContent">
+    <div class="quickTrimHeader"><span class="quickTrimGlyph" id="quickTrimGlyph">◭</span><h2 id="quickTrimTitle">Réglage</h2><button id="btnCloseQuickTrim" type="button">✕</button></div>
+    <div class="quickTrimChoices" id="quickTrimChoices"></div>
+  </div>
+</div>
 <div class="modal navOptionsModal" id="navigationOptionsModal">
   <div class="modalContent navOptionsContent">
     <div class="modalHeader"><h2>Options de navigation</h2><button class="iconButton" id="btnCloseNavigationMenu" type="button" aria-label="Fermer">✕</button></div>
@@ -623,12 +629,12 @@
 </div>
 </div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="navigation-store.js?v=33100"></script>
-<script src="app.js?v=33100"></script>
+<script src="navigation-store.js?v=33110"></script>
+<script src="app.js?v=33110"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=33100')
+    navigator.serviceWorker.register('./sw.js?v=33110')
       .catch(error => console.error('Service Worker non enregistré :', error));
   });
 }
