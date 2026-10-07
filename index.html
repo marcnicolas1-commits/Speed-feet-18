@@ -4,13 +4,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
-<title>SpeedFeet V3.3.7</title>
+<title>SpeedFeet V3.3.8</title>
 <meta content="#07111f" name="theme-color"/>
 <meta content="yes" name="apple-mobile-web-app-capable"/>
 <meta content="default" name="apple-mobile-web-app-status-bar-style"/>
 <link href="manifest.webmanifest" rel="manifest"/>
 <link crossorigin="" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" rel="stylesheet"/>
-<link href="styles.css?v=3370" rel="stylesheet"/>
+<link href="styles.css?v=3380" rel="stylesheet"/>
 </head>
 <body>
 <div class="v3AppShell" id="app">
@@ -20,7 +20,7 @@
 <section class="page active v3DashboardPage" id="homePage">
 <header class="speedfeetBrandHeader">
   <div class="speedfeetWordmark"><span>SPEEDFEET</span><b> ANALYZER</b></div>
-  <small>V3.3.7</small>
+  <small>V3.3.8</small>
 </header>
 <section class="activeNavigationHome" id="activeNavigationHome" hidden>
   <div><span class="activeNavigationDot"></span><strong>NAVIGATION EN COURS</strong></div>
@@ -146,71 +146,64 @@
 <!-- NAVIGATION -->
 <!-- ====================================================== -->
 <section class="page navigationV3Page" id="navigationPage">
-<div class="sfNav">
-  <header class="sfNavHeader">
-    <button class="sfNavMenu" id="btnNavigationMenu" type="button" aria-label="Menu">☰</button>
-    <div class="sfNavRunning"><i class="gpsMiniDot searching" id="navGPSDot"></i><strong>Navigation en cours</strong></div>
-    <span class="navNasaStatus" id="navNasaStatus">NASA HORS LIGNE</span>
+<div class="mockNav">
+  <header class="mockTop">
+    <div class="mockBrand">Speed<span>Feet</span></div>
+    <div class="mockNasa" id="navNasaStatus"><span>▥</span> NASA</div>
+    <strong class="mockClock" id="navClock">--:--</strong>
+    <div class="mockBattery">▭ <span>100 %</span></div>
+    <button class="mockGear" id="btnNavigationMenu" type="button" aria-label="Réglages">⚙</button>
   </header>
 
-  <main class="sfNavMain">
-    <section class="sfNavLeft">
-      <button class="sfMetric sfBoatSpeed" id="navSpeedRefresh" type="button">
-        <span>VITESSE BATEAU <b>GPS</b></span>
+  <main class="mockBody">
+    <section class="mockLeft">
+      <button class="mockCard mockSpeed" id="navSpeedRefresh" type="button">
+        <span>VITESSE BATEAU</span><small>GPS</small>
         <strong id="navSpeed">0.0 nd</strong>
-        <div><small>Cible <b id="navTargetSpeed">— nd</b></small><small>Polaire <b id="navPolar">— %</b></small></div>
-        <i hidden><b id="targetProgress"></b><b id="polarProgress"></b></i>
+        <div><b>Cible <em id="navTargetSpeed">— nd</em></b><i></i><b>Polaire <em id="navPolar">— %</em></b></div>
+        <u hidden><b id="targetProgress"></b><b id="polarProgress"></b></u>
       </button>
-      <div class="sfMetric sfWindSpeed">
-        <span id="navWindSpeedLabel">VENT</span>
-        <strong id="navWindSpeed">— nd</strong>
-      </div>
+      <div class="mockCard mockWind"><span id="navWindSpeedLabel">VENT NASA</span><strong id="navWindSpeed">— nd</strong></div>
     </section>
 
-    <section class="sfNavCenter">
-      <button class="sfWindGauge" id="navWindRefresh" type="button" aria-label="Cadran vent">
-        <svg class="sfWindDial" viewBox="0 0 320 250" aria-hidden="true">
-          <ellipse cx="160" cy="125" rx="112" ry="116" class="dialOuter"/>
-          <path d="M160 9 C105 10 59 50 49 104" class="dialPort"/>
-          <path d="M160 9 C215 10 261 50 271 104" class="dialStarboard"/>
-          <path d="M49 146 C59 200 105 240 160 241 C215 240 261 200 271 146" class="dialRear"/>
-          <g class="dialTicks">
-            <line x1="160" y1="9" x2="160" y2="22"/><line x1="104" y1="24" x2="111" y2="36"/><line x1="63" y1="66" x2="76" y2="73"/><line x1="48" y1="125" x2="62" y2="125"/>
-            <line x1="216" y1="24" x2="209" y2="36"/><line x1="257" y1="66" x2="244" y2="73"/><line x1="272" y1="125" x2="258" y2="125"/>
-            <line x1="63" y1="184" x2="76" y2="177"/><line x1="104" y1="226" x2="111" y2="214"/><line x1="160" y1="241" x2="160" y2="228"/>
-            <line x1="257" y1="184" x2="244" y2="177"/><line x1="216" y1="226" x2="209" y2="214"/>
-          </g>
-          <g class="dialLabels">
-            <text x="160" y="18">0°</text><text x="103" y="37">30°</text><text x="61" y="78">60°</text><text x="48" y="130">90°</text><text x="63" y="187">120°</text><text x="106" y="225">150°</text><text x="160" y="242">180°</text>
-            <text x="217" y="37">30°</text><text x="259" y="78">60°</text><text x="272" y="130">90°</text><text x="257" y="187">120°</text><text x="214" y="225">150°</text>
-          </g>
-          <path class="sfBoatIcon" d="M160 82 L178 146 L160 137 L142 146 Z"/>
-        </svg>
-        <div class="windNeedle sfWindNeedle" id="navWindNeedle" aria-hidden="true"><i></i></div>
-        <div class="sfWindText"><strong id="navWindAngle"></strong><span id="navTack"></span></div>
-      </button>
-      <div class="sfManeuvers">
-        <button class="tack" id="btnQuickTack" type="button"><span>↻</span><strong>VIREMENT</strong></button>
-        <button class="gybe" id="btnQuickGybe" type="button"><span>↺</span><strong>EMPANNAGE</strong></button>
-        <button class="spiUp" id="btnSpiUp" type="button"><span>△</span><strong>ENVOYER SPI</strong></button>
-        <button class="spiDown" id="btnSpiDown" type="button"><span>▽</span><strong>AFFALER SPI</strong></button>
-      </div>
-    </section>
+    <button class="mockGauge" id="navWindRefresh" type="button" aria-label="Cadran vent">
+      <svg viewBox="0 0 360 360" aria-hidden="true">
+        <defs><linearGradient id="nasaBeam" x1="0" x2="1"><stop offset="0" stop-color="#008ed1" stop-opacity=".18"/><stop offset="1" stop-color="#38d7ff" stop-opacity=".95"/></linearGradient></defs>
+        <circle cx="180" cy="180" r="143" class="gBase"/>
+        <path d="M180 37 A143 143 0 0 0 56 108" class="gRed"/><path d="M56 108 A143 143 0 0 0 56 252" class="gGreen"/><path d="M304 108 A143 143 0 0 1 304 252" class="gGreen"/><path d="M180 37 A143 143 0 0 1 304 108" class="gRed"/>
+        <g class="gTicks">
+          <line x1="180" y1="38" x2="180" y2="62"/><line x1="109" y1="57" x2="120" y2="78"/><line x1="57" y1="109" x2="78" y2="120"/><line x1="38" y1="180" x2="62" y2="180"/>
+          <line x1="251" y1="57" x2="240" y2="78"/><line x1="303" y1="109" x2="282" y2="120"/><line x1="322" y1="180" x2="298" y2="180"/>
+          <line x1="57" y1="251" x2="78" y2="240"/><line x1="109" y1="303" x2="120" y2="282"/><line x1="180" y1="322" x2="180" y2="298"/><line x1="251" y1="303" x2="240" y2="282"/><line x1="303" y1="251" x2="282" y2="240"/>
+        </g>
+        <g class="gLabels"><text x="180" y="22">0°</text><text x="105" y="45">30°</text><text x="48" y="103">60°</text><text x="24" y="185">90°</text><text x="48" y="266">120°</text><text x="105" y="325">150°</text><text x="180" y="349">180°</text><text x="255" y="45">30°</text><text x="312" y="103">60°</text><text x="336" y="185">90°</text><text x="312" y="266">120°</text><text x="255" y="325">150°</text></g>
+        <path d="M180 128 C160 157 157 210 162 243 C174 249 186 249 198 243 C203 210 200 157 180 128 Z" class="gBoat"/>
+      </svg>
+      <div class="windNeedle mockNeedle" id="navWindNeedle" aria-hidden="true"><i></i></div>
+      <span id="navWindAngle" hidden></span><span id="navTack" hidden></span>
+    </button>
 
-    <aside class="sfTrim">
-      <button class="navTrimTile neutral" data-trim-key="rotation" type="button"><span>MÂT</span><strong id="navTrimRotation">—</strong><small id="navTrimRotationAdvice">●●●</small></button>
-      <button class="navTrimTile neutral" data-trim-key="travelerMain" type="button"><span>Chariot GV</span><strong id="navTrimTravelerMain">—</strong><small id="navTrimTravelerMainAdvice">●●●</small></button>
-      <button class="navTrimTile neutral" data-trim-key="travelerJib" type="button"><span>Chariot FOC</span><strong id="navTrimTravelerJib">—</strong><small id="navTrimTravelerJibAdvice">●●●</small></button>
-      <button class="navTrimTile neutral" data-trim-key="cunningham" type="button"><span>Cunningham</span><strong id="navTrimCunningham">—</strong><small id="navTrimCunninghamAdvice">●●●</small></button>
-      <button class="navTrimTile neutral" data-trim-key="outhaul" type="button"><span>Bordure</span><strong id="navTrimOuthaul">—</strong><small id="navTrimOuthaulAdvice">●●●</small></button>
+    <aside class="mockTrim">
+      <button class="navTrimTile neutral" data-trim-key="rotation" type="button"><span>MÂT</span><strong id="navTrimRotation">—</strong><small id="navTrimRotationAdvice">●●●</small><i>›</i></button>
+      <button class="navTrimTile neutral" data-trim-key="travelerMain" type="button"><span>Chariot GV</span><strong id="navTrimTravelerMain">—</strong><small id="navTrimTravelerMainAdvice">●●●</small><i>›</i></button>
+      <button class="navTrimTile neutral" data-trim-key="travelerJib" type="button"><span>Chariot FOC</span><strong id="navTrimTravelerJib">—</strong><small id="navTrimTravelerJibAdvice">●●●</small><i>›</i></button>
+      <button class="navTrimTile neutral" data-trim-key="cunningham" type="button"><span>Cunningham</span><strong id="navTrimCunningham">—</strong><small id="navTrimCunninghamAdvice">●●●</small><i>›</i></button>
+      <button class="navTrimTile neutral" data-trim-key="outhaul" type="button"><span>Bordure</span><strong id="navTrimOuthaul">—</strong><small id="navTrimOuthaulAdvice">●●●</small><i>›</i></button>
     </aside>
   </main>
 
+  <footer class="mockActions">
+    <button class="tack" id="btnQuickTack" type="button"><span>↶</span><strong>VIREMENT</strong></button>
+    <button class="gybe" id="btnQuickGybe" type="button"><span>↷</span><strong>EMPANNAGE</strong></button>
+    <button class="spiUp" id="btnSpiUp" type="button"><span>◒</span><strong>ENVOYER SPI</strong></button>
+    <button class="spiDown" id="btnSpiDown" type="button"><span>◒</span><strong>AFFALER SPI</strong></button>
+  </footer>
+
   <div class="trimLearningProgress" id="trimLearningProgress" role="button" tabindex="0" hidden><div class="trimLearningProgressFill" id="trimLearningProgressFill"></div></div>
-  <span id="navHeading" hidden>---°</span><span id="navElapsed" hidden>00:00:00</span><span id="navGPS" hidden></span><span id="navClock" hidden></span>
+  <i class="gpsMiniDot searching" id="navGPSDot" hidden></i><span id="navHeading" hidden></span><span id="navElapsed" hidden></span><span id="navGPS" hidden></span>
   <button id="btnWind" hidden type="button"></button><button id="btnTrim" hidden type="button"></button><button id="btnMarker" hidden type="button"></button>
 </div>
-<div class="sfRotateHint"><span>↻</span><strong>Tournez l’iPhone</strong><small>L’écran de navigation est conçu pour le mode paysage.</small></div>
+<div class="sfRotateHint"><span>↻</span><strong>Tournez l’iPhone</strong></div>
 </section>
 <div class="modal navOptionsModal" id="navigationOptionsModal">
   <div class="modalContent navOptionsContent">
@@ -630,12 +623,12 @@
 </div>
 </div>
 <script crossorigin="" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="navigation-store.js?v=3370"></script>
-<script src="app.js?v=3370"></script>
+<script src="navigation-store.js?v=3380"></script>
+<script src="app.js?v=3380"></script>
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=3370')
+    navigator.serviceWorker.register('./sw.js?v=3380')
       .catch(error => console.error('Service Worker non enregistré :', error));
   });
 }
