@@ -1,11 +1,11 @@
-const CACHE = 'speedfeet-v3-3320';
+const CACHE = 'speedfeet-v3-3330';
 
 const CORE = [
   './',
   './index.html',
-  './styles.css?v=3320',
-  './navigation-store.js?v=3320',
-  './app.js?v=3320',
+  './styles.css?v=3330',
+  './navigation-store.js?v=3330',
+  './app.js?v=3330',
   './manifest.webmanifest',
   './icon-180.png',
   './icon-192.png',
