@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.3.2";
+    const APP_VERSION = "3.3.3";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -23,6 +23,7 @@
         safetyContactPhone: "",
         closeHauledAngle: 37.5,
         gpsWindThreshold: 0.3,
+        signalKUrl: "ws://signalk.local:3000/signalk/v1/stream?subscribe=none",
         windZones: [
             { start: 0, end: 35, color: "#f33441", label: "Zone rouge" },
             { start: 35, end: 170, color: "#18b54c", label: "Zone verte" },
@@ -111,7 +112,10 @@
         replayBoatMarker: null,
         replayCursorIndex: 0,
         replayNavigationId: null,
-        toastTimerId: null
+        toastTimerId: null,
+        signalKSocket: null,
+        signalKReconnectTimer: null,
+        signalKWind: { speedKn: null, angleDeg: null, lastUpdate: 0, connected: false }
     };
 
     const GPS_HEADING_MIN_SPEED_KN = 0.3;
@@ -1205,6 +1209,105 @@
         startNavigationRuntime();
     }
 
+    const SIGNALK_STALE_MS = 5000;
+    const SIGNALK_RECONNECT_MS = 3000;
+
+    function isSignalKWindFresh() {
+        return state.signalKWind.connected &&
+            Number.isFinite(state.signalKWind.speedKn) &&
+            Number.isFinite(state.signalKWind.angleDeg) &&
+            Date.now() - state.signalKWind.lastUpdate <= SIGNALK_STALE_MS;
+    }
+
+    function updateSignalKWindStatus() {
+        const status = getElement("navWindSource");
+        const speed = getElement("navLiveWindSpeed");
+        const fresh = isSignalKWindFresh();
+        if (status) {
+            status.textContent = fresh ? "NASA • DIRECT" : "VENT ESTIMÉ";
+            status.classList.toggle("live", fresh);
+        }
+        if (speed) {
+            speed.textContent = fresh ? state.signalKWind.speedKn.toFixed(1) + " nd" : "";
+            speed.hidden = !fresh;
+        }
+    }
+
+    function handleSignalKMessage(event) {
+        let message;
+        try { message = JSON.parse(event.data); } catch (_) { return; }
+        const updates = Array.isArray(message?.updates) ? message.updates : [];
+        let changed = false;
+        updates.forEach(update => {
+            (update?.values || []).forEach(item => {
+                const value = Number(item?.value);
+                if (!Number.isFinite(value)) return;
+                if (item.path === "environment.wind.speedApparent") {
+                    state.signalKWind.speedKn = value * 1.943844;
+                    changed = true;
+                }
+                if (item.path === "environment.wind.angleApparent") {
+                    state.signalKWind.angleDeg = ((value * 180 / Math.PI + 540) % 360) - 180;
+                    changed = true;
+                }
+            });
+        });
+        if (changed) {
+            state.signalKWind.lastUpdate = Date.now();
+            updateNavigationDashboard();
+        }
+    }
+
+    function connectSignalK() {
+        const url = String(state.settings?.signalKUrl || DEFAULT_SETTINGS.signalKUrl || "").trim();
+        if (!url || !("WebSocket" in window)) return;
+        if (state.signalKSocket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(state.signalKSocket.readyState)) return;
+        try {
+            const socket = new WebSocket(url);
+            state.signalKSocket = socket;
+            socket.addEventListener("open", () => {
+                state.signalKWind.connected = true;
+                socket.send(JSON.stringify({
+                    context: "vessels.self",
+                    subscribe: [
+                        { path: "environment.wind.speedApparent", period: 0 },
+                        { path: "environment.wind.angleApparent", period: 0 }
+                    ]
+                }));
+                updateSignalKWindStatus();
+            });
+            socket.addEventListener("message", handleSignalKMessage);
+            socket.addEventListener("close", () => {
+                if (state.signalKSocket === socket) state.signalKSocket = null;
+                state.signalKWind.connected = false;
+                updateSignalKWindStatus();
+                if (hasActiveNavigation() && state.signalKReconnectTimer === null) {
+                    state.signalKReconnectTimer = window.setTimeout(() => {
+                        state.signalKReconnectTimer = null;
+                        connectSignalK();
+                    }, SIGNALK_RECONNECT_MS);
+                }
+            });
+            socket.addEventListener("error", () => socket.close());
+        } catch (error) {
+            console.warn("Signal K indisponible :", error);
+        }
+    }
+
+    function disconnectSignalK() {
+        if (state.signalKReconnectTimer !== null) {
+            clearTimeout(state.signalKReconnectTimer);
+            state.signalKReconnectTimer = null;
+        }
+        if (state.signalKSocket) {
+            const socket = state.signalKSocket;
+            state.signalKSocket = null;
+            socket.close();
+        }
+        state.signalKWind.connected = false;
+        updateSignalKWindStatus();
+    }
+
     function startNavigationRuntime() {
         stopNavigationRuntime();
 
@@ -1239,6 +1342,7 @@
             );
         }
 
+        connectSignalK();
         updateNavigationDashboard();
     }
 
@@ -1262,6 +1366,7 @@
 
             state.gpsWatchId = null;
         }
+        disconnectSignalK();
     }
 
     function findTrackPointSecondsAgo(track, timestampMs, seconds) {
@@ -1700,7 +1805,17 @@
             ? Number(navigation.windAxisDirection)
             : Number(lastWind?.direction);
         const needle = getElement("navWindNeedle");
-        if (Number.isFinite(windAxisDirection) && Number.isFinite(navigation.currentHeading)) {
+        const liveWind = isSignalKWindFresh();
+        if (liveWind) {
+            const angle = state.signalKWind.angleDeg;
+            const side = angle >= 0 ? "TRIBORD" : "BÂBORD";
+            setText("navWindAngle", Math.round(Math.abs(angle)) + "°");
+            setText("navTack", side);
+            if (needle) {
+                needle.style.transform = `translate(-50%, -100%) rotate(${angle}deg)`;
+                needle.classList.add("active");
+            }
+        } else if (Number.isFinite(windAxisDirection) && Number.isFinite(navigation.currentHeading)) {
             const angle = ((windAxisDirection - navigation.currentHeading + 540) % 360) - 180;
             const side = angle >= 0 ? "TRIBORD" : "BÂBORD";
             setText("navWindAngle", Math.round(Math.abs(angle)) + "°");
@@ -1717,6 +1832,7 @@
                 needle.classList.remove("active");
             }
         }
+        updateSignalKWindStatus();
     }
 
     function setText(id, value) {
@@ -2322,6 +2438,7 @@
         state.settings.windZones = current;
         renderWindZonesEditor();
         setInputValue("gpsWindThreshold", state.settings.gpsWindThreshold ?? DEFAULT_SETTINGS.gpsWindThreshold);
+        setInputValue("signalKUrl", state.settings.signalKUrl || DEFAULT_SETTINGS.signalKUrl);
     }
 
     function loadSettingsForm() {
@@ -2434,6 +2551,7 @@
             safetyContactPhone: getElement("safetyContactPhone")?.value.trim() || "",
             closeHauledAngle: clamp(toNumberOrNull(getElement("closeHauledAngle")?.value) || 37.5, 20, 60),
             gpsWindThreshold: clamp(toNumberOrNull(getElement("gpsWindThreshold")?.value) || DEFAULT_SETTINGS.gpsWindThreshold, 0.1, 2),
+            signalKUrl: getElement("signalKUrl")?.value.trim() || DEFAULT_SETTINGS.signalKUrl,
             windZones: readWindZonesEditor()
         };
 
