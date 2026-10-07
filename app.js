@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.3.5";
+    const APP_VERSION = "3.3.6";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -54,7 +54,7 @@
 
         travelerJib: ["1", "2", "3", "4", "5"],
 
-        mastRotation: ["1", "2", "3", "4", "5"],
+        mastRotation: ["B5", "B4", "B3", "B2", "B1", "0", "T1", "T2", "T3", "T4", "T5"],
 
         cunningham: ["1", "2", "3", "4", "5"],
 
@@ -1773,9 +1773,9 @@
         const startedAt = new Date(record.timestamp).getTime();
         if (!Number.isFinite(startedAt)) return null;
         const elapsedMs = Math.max(0, Date.now() - startedAt);
-        if (elapsedMs >= 240000) return { record, elapsedMs, phase: "complete", progress: 1, remainingMs: 0 };
-        if (elapsedMs < 120000) return { record, elapsedMs, phase: "waiting", progress: elapsedMs / 120000, remainingMs: 120000 - elapsedMs };
-        return { record, elapsedMs, phase: "measuring", progress: (elapsedMs - 120000) / 120000, remainingMs: 240000 - elapsedMs };
+        if (elapsedMs >= 180000) return { record, elapsedMs, phase: "complete", progress: 1, remainingMs: 0 };
+        if (elapsedMs < 60000) return { record, elapsedMs, phase: "waiting", progress: elapsedMs / 60000, remainingMs: 60000 - elapsedMs };
+        return { record, elapsedMs, phase: "measuring", progress: (elapsedMs - 60000) / 120000, remainingMs: 180000 - elapsedMs };
     }
 
     function formatTrimCountdown(milliseconds) {
@@ -1862,8 +1862,10 @@
         const liveWind = isSignalKWindFresh();
         if (liveWind) {
             const angle = state.signalKWind.angleDeg;
-            setText("navWindAngle", state.signalKWind.speedKn.toFixed(1) + " nd");
-            setText("navTack", "VENT APPARENT");
+            setText("navWindAngle", "");
+            setText("navTack", "");
+            setText("navWindSpeed", state.signalKWind.speedKn.toFixed(1) + " nd");
+            setText("navWindSpeedLabel", "VENT NASA");
             if (needle) {
                 needle.style.transform = `translate(-50%, -100%) rotate(${angle}deg)`;
                 needle.classList.add("active");
@@ -1873,6 +1875,8 @@
             const side = angle >= 0 ? "TRIBORD" : "BÂBORD";
             setText("navWindAngle", Math.round(Math.abs(angle)) + "°");
             setText("navTack", side);
+            setText("navWindSpeed", Number.isFinite(Number(lastWind?.speed)) ? Number(lastWind.speed).toFixed(1) + " nd" : "— nd");
+            setText("navWindSpeedLabel", "VENT MANUEL");
             if (needle) {
                 needle.style.transform = `translate(-50%, -100%) rotate(${angle}deg)`;
                 needle.classList.add("active");
@@ -1880,12 +1884,15 @@
         } else {
             setText("navWindAngle", "—°");
             setText("navTack", "VENT NON CALIBRÉ");
+            setText("navWindSpeed", Number.isFinite(Number(lastWind?.speed)) ? Number(lastWind.speed).toFixed(1) + " nd" : "— nd");
+            setText("navWindSpeedLabel", "VENT MANUEL");
             if (needle) {
                 needle.style.transform = "translate(-50%, -100%) rotate(0deg)";
                 needle.classList.remove("active");
             }
         }
         updateSignalKWindStatus();
+        renderNavigationTrimTiles();
     }
 
     function setText(id, value) {
@@ -2170,7 +2177,6 @@
         { key: "rotation", label: "Rotation du mât", elementId: "trimRecommendationRotation" },
         { key: "cunningham", label: "Cunningham", elementId: "trimRecommendationCunningham" },
         { key: "outhaul", label: "Bordure", elementId: "trimRecommendationOuthaul" },
-        { key: "sheet", label: "Écoute de grand-voile", elementId: "trimRecommendationSheet" }
     ];
 
     function normalizeAngleDifference(a, b) {
@@ -2236,7 +2242,7 @@
             const recordMs = new Date(record.timestamp).getTime();
             if (!Number.isFinite(recordMs)) return;
             const nextMs = records[index + 1] ? new Date(records[index + 1].timestamp).getTime() : endNavigationMs;
-            const startMs = recordMs + 120000;
+            const startMs = recordMs + 60000;
             const endMs = Math.min(Number.isFinite(nextMs) ? nextMs : startMs + 600000, startMs + 600000);
             if (endMs - startMs < 60000) return;
             const points = trackPointsInWindow(track, startMs, endMs);
@@ -2297,12 +2303,13 @@
         const navigation = state.currentNavigation;
         if (!navigation) return null;
         const latestWind = navigation.windRecords?.slice(-1)[0];
-        const windSpeed = Number(latestWind?.speed ?? navigation.preparation?.windAverage);
+        const liveNasa = isSignalKWindFresh();
+        const windSpeed = liveNasa ? Number(state.signalKWind.speedKn) : Number(latestWind?.speed ?? navigation.preparation?.windAverage);
         const windDirection = Number(latestWind?.direction ?? navigation.preparation?.windDirection ?? navigation.windAxisDirection);
         const heading = Number(navigation.currentHeading);
         const bin = getWindBin(windSpeed);
         if (!bin) return { reason: "wind", bin: null };
-        const angle = normalizeAngleDifference(heading, windDirection);
+        const angle = liveNasa ? Math.abs(Number(state.signalKWind.angleDeg)) : normalizeAngleDifference(heading, windDirection);
         if (!Number.isFinite(angle) || angle > getCloseHauledAngle() + 15) return { reason: "allure", bin, angle };
         return { reason: null, bin, angle, windSpeed };
     }
@@ -2333,6 +2340,37 @@
             const dot = recommendation.confidence === "validated" ? "🟢" : "🟡";
             element.className = `trimRecommendation ${recommendation.confidence}`;
             element.textContent = `⭐ Recommandé : ${recommendation.value} ${dot}`;
+        });
+    }
+
+    function renderNavigationTrimTiles() {
+        const navigation = state.currentNavigation;
+        if (!navigation) return;
+        const current = navigation.trimRecords?.slice(-1)[0] || {};
+        const context = getCurrentTrimRecommendationContext();
+        const samples = getAllTrimLearningSamples();
+        const recommendations = context?.bin && !context.reason ? summarizeTrimRecommendations(samples, context.bin.key) : {};
+        const map = [
+            ["rotation","navTrimRotation","navTrimRotationAdvice"],
+            ["travelerMain","navTrimTravelerMain","navTrimTravelerMainAdvice"],
+            ["travelerJib","navTrimTravelerJib","navTrimTravelerJibAdvice"],
+            ["cunningham","navTrimCunningham","navTrimCunninghamAdvice"],
+            ["outhaul","navTrimOuthaul","navTrimOuthaulAdvice"]
+        ];
+        map.forEach(([key,valueId,adviceId]) => {
+            const tile = document.querySelector(`.navTrimTile[data-trim-key="${key}"]`);
+            const value = String(current[key] ?? "—");
+            setText(valueId, value);
+            if (!tile) return;
+            tile.classList.remove("good","bad","neutral","pending");
+            const cycle = getActiveTrimLearningCycle();
+            if (cycle && cycle.phase !== "complete" && String(cycle.record?.[key] ?? "") === value) {
+                tile.classList.add("pending"); setText(adviceId, "ANALYSE"); return;
+            }
+            const rec = recommendations[key];
+            if (!rec) { tile.classList.add("neutral"); setText(adviceId, "●●●"); return; }
+            if (String(rec.value) === value) { tile.classList.add("good"); setText(adviceId, "✓ OK"); }
+            else { tile.classList.add("bad"); setText(adviceId, "→ " + rec.value); }
         });
     }
 
@@ -4735,7 +4773,40 @@ bindClick(
             );
         };
         bindClick("navSpeedRefresh", refreshGPSNow);
-        bindClick("navWindRefresh", openWindAxisModal);
+
+        const openMastTrim = () => {
+            openTrimModal();
+            window.setTimeout(() => {
+                const select = getElement("trimRotation");
+                if (select) { select.focus(); select.scrollIntoView({ block: "center", behavior: "smooth" }); }
+            }, 80);
+        };
+        let windLongPressTimer = null;
+        let windLongPressTriggered = false;
+        const windGauge = getElement("navWindRefresh");
+        const startWindPress = () => {
+            windLongPressTriggered = false;
+            if (isSignalKWindFresh()) return;
+            windLongPressTimer = window.setTimeout(() => {
+                windLongPressTriggered = true;
+                openWindModal();
+                if (navigator.vibrate) navigator.vibrate(40);
+            }, 3000);
+        };
+        const cancelWindPress = () => {
+            if (windLongPressTimer !== null) { clearTimeout(windLongPressTimer); windLongPressTimer = null; }
+        };
+        windGauge?.addEventListener("pointerdown", startWindPress);
+        ["pointerup","pointercancel","pointerleave"].forEach(type => windGauge?.addEventListener(type, cancelWindPress));
+        windGauge?.addEventListener("click", event => {
+            if (windLongPressTriggered) { windLongPressTriggered = false; event.preventDefault(); return; }
+            if (isSignalKWindFresh()) openMastTrim(); else openWindAxisModal();
+        });
+        document.querySelectorAll(".navTrimTile").forEach(tile => tile.addEventListener("click", () => {
+            openTrimModal();
+            const ids = { rotation:"trimRotation", travelerMain:"trimTravelerMain", travelerJib:"trimTravelerJib", cunningham:"trimCunningham", outhaul:"trimOuthaul" };
+            window.setTimeout(() => { const el=getElement(ids[tile.dataset.trimKey]); if(el){el.focus();el.scrollIntoView({block:"center",behavior:"smooth"});} },80);
+        }));
         const bindKeyboardRefresh = (id, callback) => {
             const el = getElement(id);
             if (!el) return;
@@ -4744,7 +4815,7 @@ bindClick(
             });
         };
         bindKeyboardRefresh("navSpeedRefresh", refreshGPSNow);
-        bindKeyboardRefresh("navWindRefresh", openWindAxisModal);
+        bindKeyboardRefresh("navWindRefresh", () => isSignalKWindFresh() ? openMastTrim() : openWindAxisModal());
 
         bindClick("btnNavigationMenu", () => openModal("navigationOptionsModal"));
         bindClick("btnCloseNavigationMenu", closeAllModals);
