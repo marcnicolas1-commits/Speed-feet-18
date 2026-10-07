@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.3.3";
+    const APP_VERSION = "3.3.4";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -10,7 +10,8 @@
         history: "speedfeet_history",
         nextNavigationNotes: "speedfeet_next_navigation_notes",
         checklistItems: "speedfeet_checklist_items",
-        boatTasks: "speedfeet_boat_tasks"
+        boatTasks: "speedfeet_boat_tasks",
+        boxBattery: "speedfeet_box_battery"
     };
 
     const DEFAULT_SETTINGS = {
@@ -24,6 +25,7 @@
         closeHauledAngle: 37.5,
         gpsWindThreshold: 0.3,
         signalKUrl: "ws://signalk.local:3000/signalk/v1/stream?subscribe=none",
+        boxBatteryHours: 15,
         windZones: [
             { start: 0, end: 35, color: "#f33441", label: "Zone rouge" },
             { start: 35, end: 170, color: "#18b54c", label: "Zone verte" },
@@ -103,6 +105,11 @@
             []
         ),
 
+        boxBattery: loadJSON(
+            STORAGE_KEYS.boxBattery,
+            { chargedAt: null, usedMs: 0, runningSince: null }
+        ),
+
         currentPage: "homePage",
         timerId: null,
         gpsWatchId: null,
@@ -115,6 +122,7 @@
         toastTimerId: null,
         signalKSocket: null,
         signalKReconnectTimer: null,
+        signalKRuntimeWanted: false,
         signalKWind: { speedKn: null, angleDeg: null, lastUpdate: 0, connected: false }
     };
 
@@ -731,6 +739,7 @@
         updateObjectiveButtons();
         updatePrepareMeta();
         updateNotesCounter();
+        renderBoxBattery();
 
         setInputValue(
             "nextNavigationNotes",
@@ -1034,6 +1043,35 @@
         savePreparationDraft();
     }
 
+    function normalizeBoxBattery(value) {
+        return { chargedAt: value?.chargedAt || null, usedMs: Math.max(0, Number(value?.usedMs) || 0), runningSince: value?.runningSince || null };
+    }
+    function saveBoxBattery() { state.boxBattery = normalizeBoxBattery(state.boxBattery); saveJSON(STORAGE_KEYS.boxBattery, state.boxBattery); }
+    function getBoxBatteryUsedMs() {
+        const battery = normalizeBoxBattery(state.boxBattery);
+        const liveMs = battery.runningSince ? Math.max(0, Date.now() - new Date(battery.runningSince).getTime()) : 0;
+        return battery.usedMs + (Number.isFinite(liveMs) ? liveMs : 0);
+    }
+    function getBoxBatteryEstimate() {
+        const capacityHours = clamp(Number(state.settings?.boxBatteryHours) || 15, 1, 48);
+        const usedHours = getBoxBatteryUsedMs() / 3600000;
+        return { capacityHours, usedHours, remainingHours: Math.max(0, capacityHours - usedHours), percent: Math.max(0, Math.min(100, Math.round((1 - usedHours / capacityHours) * 100))) };
+    }
+    function renderBoxBattery() {
+        const estimate = getBoxBatteryEstimate();
+        setText("boxBatteryPercent", estimate.percent + " %");
+        setText("boxBatteryRemaining", "≈ " + estimate.remainingHours.toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " h restantes");
+        const fill = getElement("boxBatteryFill"); if (fill) fill.style.width = estimate.percent + "%";
+        const charged = getElement("boxBatteryChargedAt");
+        if (charged) charged.textContent = state.boxBattery?.chargedAt ? "Remise à 100 % : " + new Date(state.boxBattery.chargedAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "Estimation non initialisée";
+    }
+    function markBoxBatteryCharged() { state.boxBattery = { chargedAt: new Date().toISOString(), usedMs: 0, runningSince: null }; saveBoxBattery(); renderBoxBattery(); showToast("Batterie mallette remise à 100 %"); }
+    function startBoxBatterySession() { state.boxBattery = normalizeBoxBattery(state.boxBattery); if (!state.boxBattery.runningSince) { state.boxBattery.runningSince = new Date().toISOString(); saveBoxBattery(); } renderBoxBattery(); }
+    function stopBoxBatterySession() {
+        state.boxBattery = normalizeBoxBattery(state.boxBattery);
+        if (state.boxBattery.runningSince) { const started = new Date(state.boxBattery.runningSince).getTime(); if (Number.isFinite(started)) state.boxBattery.usedMs += Math.max(0, Date.now() - started); state.boxBattery.runningSince = null; saveBoxBattery(); }
+        renderBoxBattery();
+    }
     function updatePrepareMeta() {
         const now = new Date();
         setText("prepareBoatName", state.settings.boatName || "Speed Feet 18");
@@ -1211,6 +1249,8 @@
 
     const SIGNALK_STALE_MS = 5000;
     const SIGNALK_RECONNECT_MS = 3000;
+    const SIGNALK_SIMULATOR_PREFIX = "sim://";
+    let signalKSimulatorTimer = null;
 
     function isSignalKWindFresh() {
         return state.signalKWind.connected &&
@@ -1259,7 +1299,21 @@
     }
 
     function connectSignalK() {
+        if (!state.signalKRuntimeWanted) return;
         const url = String(state.settings?.signalKUrl || DEFAULT_SETTINGS.signalKUrl || "").trim();
+        if (url.startsWith(SIGNALK_SIMULATOR_PREFIX)) {
+            state.signalKWind.connected = true;
+            if (signalKSimulatorTimer === null) signalKSimulatorTimer = window.setInterval(() => {
+                if (!state.signalKRuntimeWanted) return;
+                const t = Date.now() / 1000;
+                state.signalKWind.speedKn = 11.5 + Math.sin(t / 3) * 2.2;
+                state.signalKWind.angleDeg = 38 + Math.sin(t / 5) * 8;
+                state.signalKWind.lastUpdate = Date.now();
+                updateNavigationDashboard();
+            }, 1000);
+            updateSignalKWindStatus();
+            return;
+        }
         if (!url || !("WebSocket" in window)) return;
         if (state.signalKSocket && [WebSocket.OPEN, WebSocket.CONNECTING].includes(state.signalKSocket.readyState)) return;
         try {
@@ -1281,7 +1335,7 @@
                 if (state.signalKSocket === socket) state.signalKSocket = null;
                 state.signalKWind.connected = false;
                 updateSignalKWindStatus();
-                if (hasActiveNavigation() && state.signalKReconnectTimer === null) {
+                if (state.signalKRuntimeWanted && hasActiveNavigation() && state.signalKReconnectTimer === null) {
                     state.signalKReconnectTimer = window.setTimeout(() => {
                         state.signalKReconnectTimer = null;
                         connectSignalK();
@@ -1295,6 +1349,8 @@
     }
 
     function disconnectSignalK() {
+        state.signalKRuntimeWanted = false;
+        if (signalKSimulatorTimer !== null) { clearInterval(signalKSimulatorTimer); signalKSimulatorTimer = null; }
         if (state.signalKReconnectTimer !== null) {
             clearTimeout(state.signalKReconnectTimer);
             state.signalKReconnectTimer = null;
@@ -1310,6 +1366,8 @@
 
     function startNavigationRuntime() {
         stopNavigationRuntime();
+        state.signalKRuntimeWanted = true;
+        startBoxBatterySession();
 
         state.timerId =
             window.setInterval(
@@ -1367,6 +1425,7 @@
             state.gpsWatchId = null;
         }
         disconnectSignalK();
+        stopBoxBatterySession();
     }
 
     function findTrackPointSecondsAgo(track, timestampMs, seconds) {
@@ -1875,6 +1934,15 @@
         openModal("finishNavigationModal");
     }
 
+    async function syncCompletedNavigationWithBox(navigation) {
+        const result = { status: "unavailable", navigation };
+        if (!state.signalKWind.connected) return result;
+        if (String(state.settings?.signalKUrl || "").startsWith(SIGNALK_SIMULATOR_PREFIX)) {
+            await new Promise(resolve => window.setTimeout(resolve, 250));
+            return { status: "synced", navigation, simulated: true };
+        }
+        return result;
+    }
     async function finishNavigation() {
         if (finalizing || !storageReady) return;
         if (!state.currentNavigation) {
@@ -1906,6 +1974,8 @@
             return;
         }
         state.history = history;
+        let boxSync = { status: "unavailable", navigation: completedNavigation };
+        try { boxSync = await syncCompletedNavigationWithBox(completedNavigation); } catch (error) { console.warn("Synchronisation mallette différée :", error); }
         finalizationFailed = false;
         state.currentNavigation = null;
         finalizing = false;
@@ -1921,6 +1991,8 @@
 
         closeAllModals();
         showPage("historyPage");
+        if (boxSync.status === "synced") showToast("Sortie sauvegardée et synchronisée avec la mallette");
+        else showToast("Sortie sauvegardée sur l’iPhone · mallette non synchronisée");
         persistAchievements();
         const newlyUnlocked = getUnlockedAchievements().unlocked.filter(item => !achievementsBefore.has(item.id));
         window.setTimeout(() => {
@@ -2476,6 +2548,8 @@
         setInputValue("closeHauledAngle", getCloseHauledAngle());
         renderWindZonesEditor();
         setInputValue("gpsWindThreshold", state.settings.gpsWindThreshold ?? DEFAULT_SETTINGS.gpsWindThreshold);
+        setInputValue("signalKUrl", state.settings.signalKUrl || DEFAULT_SETTINGS.signalKUrl);
+        setInputValue("boxBatteryHours", state.settings.boxBatteryHours ?? DEFAULT_SETTINGS.boxBatteryHours);
 
         setText(
             "appVersion",
@@ -2552,6 +2626,7 @@
             closeHauledAngle: clamp(toNumberOrNull(getElement("closeHauledAngle")?.value) || 37.5, 20, 60),
             gpsWindThreshold: clamp(toNumberOrNull(getElement("gpsWindThreshold")?.value) || DEFAULT_SETTINGS.gpsWindThreshold, 0.1, 2),
             signalKUrl: getElement("signalKUrl")?.value.trim() || DEFAULT_SETTINGS.signalKUrl,
+            boxBatteryHours: clamp(toNumberOrNull(getElement("boxBatteryHours")?.value) || DEFAULT_SETTINGS.boxBatteryHours, 1, 48),
             windZones: readWindZonesEditor()
         };
 
@@ -4397,6 +4472,7 @@
                 currentNavigation: cloneValue(state.currentNavigation),
                 history: cloneValue(state.history),
                 boatTasks: cloneValue(state.boatTasks),
+                boxBattery: cloneValue(state.boxBattery),
                 achievementIds: [...achievementIds]
             }
         };
@@ -4472,6 +4548,7 @@
         const importedCurrentNavigation = data.currentNavigation ?? null;
         const importedHistory = data.history;
         const importedBoatTasks = normalizeBoatTasks(data.boatTasks || []);
+        const importedBoxBattery = normalizeBoxBattery(data.boxBattery || {});
 
         if (!storageReady || finalizing) return;
         finalizing = true;
@@ -4479,6 +4556,7 @@
         const changes = {
             [STORAGE_KEYS.settings]: importedSettings,
             [STORAGE_KEYS.boatTasks]: importedBoatTasks,
+            [STORAGE_KEYS.boxBattery]: importedBoxBattery,
             [STORAGE_KEYS.preparation]: importedPreparation,
             speedfeet_achievements: data.achievementIds || []
         };
@@ -4602,6 +4680,8 @@ bindClick(
         document.querySelectorAll("#objectiveChoices button").forEach(button => button.addEventListener("click", () => {
             setInputValue("navigationObjective", button.dataset.objective || "Entraînement"); updateObjectiveButtons(); savePreparationDraft();
         }));
+
+        bindClick("btnBoxBatteryCharged", markBoxBatteryCharged);
 
         bindClick(
             "btnStartPreparedNavigation",
@@ -4794,6 +4874,9 @@ document
             if (document.visibilityState === "hidden") { persistNavigation(); persistAchievements(); }
         });
         window.addEventListener("pagehide", persistNavigation);
+        state.boxBattery = normalizeBoxBattery(state.boxBattery);
+        state.boxBattery.runningSince = null;
+        saveBoxBattery();
         initializeSelects();
 
         loadSettingsForm();
