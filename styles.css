@@ -2654,15 +2654,8 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 
 
 /* Signal K / NASA NC70 */
-#navWindSource.live { color: #4ee58a; }
-.navLiveWindSpeed {
-    display: block;
-    margin-top: .15rem;
-    font-size: 1rem;
-    letter-spacing: .04em;
-    color: #4ee58a;
-}
-.navLiveWindSpeed[hidden] { display: none !important; }
+.navNasaStatus { grid-column:3; justify-self:end; margin-right:10px; font-size:.62rem; font-weight:800; color:#7890a4; white-space:nowrap; }
+.navNasaStatus.live { color:#4ee58a; }
 
 /* V3.3.4 — batterie mallette */
 .boxBatteryPanel { grid-column:1 / -1; }
