@@ -2663,3 +2663,13 @@ body{padding-bottom:env(safe-area-inset-bottom)}
     color: #4ee58a;
 }
 .navLiveWindSpeed[hidden] { display: none !important; }
+
+/* V3.3.4 — batterie mallette */
+.boxBatteryPanel { grid-column:1 / -1; }
+.boxBatteryRow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.boxBatteryGauge { flex:1 1 220px; min-width:200px; }
+.boxBatteryGauge > div { height:10px; overflow:hidden; border-radius:999px; background:rgba(255,255,255,.10); margin-bottom:8px; }
+#boxBatteryFill { display:block; height:100%; width:100%; border-radius:inherit; background:#4ee58a; transition:width .25s ease; }
+.boxBatteryGauge strong { display:block; font-size:1.25rem; }
+.boxBatteryGauge small { color:var(--v3-muted,#aebfd1); }
+.boxBatteryPanel .secondaryButton { width:auto; margin:0; }
