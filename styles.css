@@ -2687,3 +2687,70 @@ body:has(.navigationV3Page.active){overflow:hidden;padding:0;background:#020c13}
 .mockActions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;min-height:0}.mockActions button{border:2px solid #60798e;border-radius:10px;background:linear-gradient(180deg,#243747,#172735);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px}.mockActions span{font-size:2rem;line-height:.8}.mockActions strong{font-size:clamp(.7rem,1.5vw,.9rem);margin-top:7px}.mockActions .spiUp{border-color:#08b9f5;background:linear-gradient(180deg,#07648b,#064466)}.mockActions .spiDown{border-color:#ff3547;background:linear-gradient(180deg,#771824,#4d1018)}.mockActions .spiUp span{color:#42d7ff}.mockActions .spiDown span{color:#fff}
 .mockNav>.trimLearningProgress{position:absolute;left:34%;right:32%;bottom:3px;height:3px;margin:0}
 }
+
+/* V3.3.9 — géométrie stricte de la maquette validée */
+@media (orientation:landscape){
+  .navigationV3Page.active .mockNav{
+    grid-template-rows:54px minmax(0,1fr) 108px!important;
+    gap:10px!important;
+    padding:max(4px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))!important;
+  }
+  .mockTop{
+    grid-template-columns:250px 165px 1fr 145px 54px!important;
+    padding:0 5px!important;
+  }
+  .mockBrand{font-size:clamp(1.55rem,3.2vw,2.25rem)!important}
+  .mockNasa{font-size:clamp(.7rem,1.35vw,.95rem)!important;padding:5px 12px!important;white-space:nowrap}
+  .mockNasa.offline{border-color:#526270!important;color:#91a0ab!important;background:#0b1720!important}
+  .mockNasa.offline span{color:#91a0ab!important}
+  .mockNasa.connected{border-color:#29df55!important;color:#fff!important;background:#061b10!important}
+  .mockClock{font-size:clamp(1rem,2.1vw,1.4rem)!important}
+  .mockBattery{font-size:clamp(.75rem,1.5vw,1rem)!important}
+  .mockBody{
+    grid-template-columns:34% 36% 30%!important;
+    gap:12px!important;
+    width:100%!important;
+    min-width:0!important;
+  }
+  .mockLeft{grid-template-rows:56% 44%!important;gap:10px!important;min-width:0}
+  .mockCard{padding:10px 16px!important;min-width:0}
+  .mockSpeed>span{font-size:clamp(.9rem,1.8vw,1.2rem)!important}
+  .mockSpeed>small{font-size:clamp(.72rem,1.35vw,.95rem)!important}
+  .mockSpeed>strong{
+    font-size:clamp(4.2rem,18vh,7.3rem)!important;
+    margin:3px 0 5px!important;
+    overflow:visible!important;
+  }
+  .mockSpeed>div{font-size:clamp(.7rem,1.35vw,.95rem)!important}
+  .mockWind>strong{font-size:clamp(4.4rem,18.5vh,7.5rem)!important;margin-top:5px!important}
+  .mockGauge{min-width:0!important;overflow:visible!important}
+  .mockGauge svg{inset:0!important;width:100%!important;height:100%!important;max-width:none!important}
+  .mockTrim{gap:8px!important;padding:0!important;min-width:0!important}
+  .mockTrim .navTrimTile{
+    grid-template-columns:minmax(0,1.4fr) minmax(42px,.42fr) minmax(58px,.48fr) 18px!important;
+    padding:5px 12px!important;
+    min-width:0!important;
+  }
+  .mockTrim .navTrimTile span{overflow:hidden;text-overflow:ellipsis}
+  .mockActions{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:10px!important;
+    min-width:0!important;
+    position:relative!important;
+    z-index:3!important;
+  }
+  .mockActions button{min-width:0!important;height:100%!important}
+  .mockActions span{font-size:clamp(1.7rem,4.2vh,2.4rem)!important}
+  .mockActions strong{font-size:clamp(.72rem,1.45vw,1rem)!important}
+}
+@media (orientation:landscape) and (max-height:500px){
+  .navigationV3Page.active .mockNav{grid-template-rows:44px minmax(0,1fr) 82px!important;gap:6px!important}
+  .mockTop{grid-template-columns:210px 145px 1fr 125px 48px!important}
+  .mockBody{gap:8px!important}
+  .mockLeft{gap:7px!important}
+  .mockTrim{gap:6px!important}
+  .mockActions{gap:7px!important}
+  .mockCard{padding:6px 12px!important}
+  .mockSpeed>strong{font-size:clamp(3.5rem,17vh,5.4rem)!important}
+  .mockWind>strong{font-size:clamp(3.7rem,18vh,5.7rem)!important}
+}
