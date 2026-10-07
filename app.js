@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.3.10";
+    const APP_VERSION = "3.3.11";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -2458,7 +2458,7 @@
                 rotation: previous.rotation,
                 cunningham: previous.cunningham
             } : null,
-            stabilizationSeconds: 120
+            stabilizationSeconds: 60
         };
 
         state.currentNavigation.trimRecords.push(record);
@@ -4802,11 +4802,41 @@ bindClick(
             if (windLongPressTriggered) { windLongPressTriggered = false; event.preventDefault(); return; }
             if (isSignalKWindFresh()) openMastTrim(); else openWindAxisModal();
         });
-        document.querySelectorAll(".navTrimTile").forEach(tile => tile.addEventListener("click", () => {
-            openTrimModal();
-            const ids = { rotation:"trimRotation", travelerMain:"trimTravelerMain", travelerJib:"trimTravelerJib", cunningham:"trimCunningham", outhaul:"trimOuthaul" };
-            window.setTimeout(() => { const el=getElement(ids[tile.dataset.trimKey]); if(el){el.focus();el.scrollIntoView({block:"center",behavior:"smooth"});} },80);
-        }));
+        const quickTrimMeta = {
+            rotation: { label:"MÂT", glyph:"◭", source:"trimRotation" },
+            travelerMain: { label:"Chariot GV", glyph:"◢", source:"trimTravelerMain" },
+            travelerJib: { label:"Chariot FOC", glyph:"◩", source:"trimTravelerJib" },
+            cunningham: { label:"Cunningham", glyph:"⌁", source:"trimCunningham" },
+            outhaul: { label:"Bordure", glyph:"⌟", source:"trimOuthaul" }
+        };
+        const openQuickTrim = key => {
+            if (!state.currentNavigation || !quickTrimMeta[key]) return;
+            const meta = quickTrimMeta[key];
+            const source = getElement(meta.source);
+            const choices = getElement("quickTrimChoices");
+            if (!source || !choices) return;
+            setText("quickTrimTitle", meta.label);
+            setText("quickTrimGlyph", meta.glyph);
+            const current = String(state.currentNavigation.trimRecords?.slice(-1)[0]?.[key] ?? "");
+            choices.innerHTML = [...source.options].map(option => {
+                const value = String(option.value);
+                return `<button type="button" data-quick-trim-value="${escapeHTML(value)}" class="${value === current ? "selected" : ""}">${escapeHTML(option.textContent || value)}</button>`;
+            }).join("");
+            choices.dataset.trimKey = key;
+            openModal("quickTrimModal");
+        };
+        document.querySelectorAll(".navTrimTile").forEach(tile => tile.addEventListener("click", () => openQuickTrim(tile.dataset.trimKey)));
+        getElement("quickTrimChoices")?.addEventListener("click", event => {
+            const button = event.target.closest("[data-quick-trim-value]");
+            if (!button || !state.currentNavigation) return;
+            const key = getElement("quickTrimChoices")?.dataset.trimKey;
+            const meta = quickTrimMeta[key];
+            if (!meta) return;
+            const source = getElement(meta.source);
+            if (source) source.value = button.dataset.quickTrimValue;
+            saveTrimRecord();
+        });
+        bindClick("btnCloseQuickTrim", closeAllModals);
         const bindKeyboardRefresh = (id, callback) => {
             const el = getElement(id);
             if (!el) return;
