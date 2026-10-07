@@ -2667,42 +2667,45 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 .boxBatteryGauge small { color:var(--v3-muted,#aebfd1); }
 .boxBatteryPanel .secondaryButton { width:auto; margin:0; }
 
-/* V3.3.6 — navigation iPhone paysage, lisible à distance */
-.navLandscapeClock{font-variant-numeric:tabular-nums;color:#dbe9f7;font-size:.82rem}
-.navLandscapeGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) minmax(150px,.82fr);gap:10px;min-height:0}
-.navLandscapeLeft{display:grid;grid-template-rows:1fr 1fr;gap:10px;min-width:0}
-.navLandscapeSpeed,.navLandscapeWindSpeed{border:1px solid #28516d;border-radius:16px;background:linear-gradient(180deg,#0b2034,#071624);padding:12px 14px;min-width:0;overflow:hidden}
-.navLandscapeSpeed>small,.navLandscapeWindSpeed>small{display:block;color:#f4f8fc;font-weight:900;letter-spacing:.04em;font-size:clamp(.72rem,2.2vw,1rem)}
-.navLandscapeSpeed>small b{color:#90a7ba;font-weight:800}
-.navLandscapeSpeed>strong,.navLandscapeWindSpeed>strong{display:block;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.05em;line-height:.92}
-.navLandscapeSpeed>strong{font-size:clamp(3.2rem,10vw,7.2rem);margin:8px 0 6px}
-.navLandscapeWindSpeed>strong{font-size:clamp(3.2rem,9.5vw,6.8rem);color:#52d8ff;margin-top:12px}
-.navSpeedSub{display:flex;gap:16px;justify-content:space-between;align-items:center;color:#d8e4ee;font-size:clamp(.7rem,1.7vw,.92rem);font-weight:800}
-.navSpeedSub b{font-size:1.25em;color:#55d8ff}.navSpeedSub span:last-child b{color:#65e572}
-.navLandscapeCenter{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:8px;min-width:0}
-.navLandscapeCenter .windCompassCard{--gauge-size:auto;width:100%;height:100%;min-height:0;aspect-ratio:auto;border-radius:48% / 50%;background:radial-gradient(ellipse at center,#102b45 0 35%,#081a2c 68%,#061421 100%)}
-.navLandscapeCenter .compassScale{inset:5% 13%;border-radius:50%;-webkit-mask:radial-gradient(ellipse at center,transparent 69%,#000 70%);mask:radial-gradient(ellipse at center,transparent 69%,#000 70%)}
-.navLandscapeCenter .compassAngles{font-size:clamp(.52rem,1.3vw,.72rem)}
-.navLandscapeCenter .compassAngles .a0{top:2%}.navLandscapeCenter .compassAngles .a180{top:96%}
-.navLandscapeCenter .boatCompass{display:block!important;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;font-size:clamp(2.6rem,7vw,5rem);color:#fff;line-height:1}
-.navLandscapeCenter .windReadout{top:43%;left:20%;right:20%;z-index:6}.navLandscapeCenter .windReadout strong{font-size:clamp(1.25rem,3.5vw,2rem)}.navLandscapeCenter .windReadout span{font-size:.62rem}
-.navLandscapeCenter .windNeedle{height:43%;top:50%}
-.navLandscapeCenter .needleHub{display:none}
-.navLandscapeCenter .navCompassRefreshHint{display:none}
-.navLandscapeCenter .navManeuverGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0}
-.navLandscapeCenter .navManeuverGrid button{min-height:52px;padding:5px 4px;border-radius:11px}.navLandscapeCenter .navManeuverGrid button span{font-size:1.25rem}.navLandscapeCenter .navManeuverGrid strong{font-size:clamp(.55rem,1.2vw,.72rem)}
-.navTrimColumn{display:grid;grid-template-rows:repeat(5,minmax(0,1fr));gap:7px;min-width:0}
-.navTrimTile{display:grid;grid-template-columns:1fr auto;grid-template-rows:1fr 1fr;align-items:center;gap:0 8px;width:100%;min-height:0;padding:7px 10px;border:1px solid #496278;border-radius:12px;background:#263a4d;color:#fff;text-align:left}
-.navTrimTile span{font-size:clamp(.64rem,1.5vw,.82rem);font-weight:850}.navTrimTile strong{grid-row:1/3;grid-column:2;font-size:clamp(1.35rem,3.2vw,2rem);font-variant-numeric:tabular-nums}.navTrimTile small{font-size:.62rem;font-weight:900;letter-spacing:.06em;color:#a9c1d5}
-.navTrimTile.good{border-color:#27d763;background:linear-gradient(180deg,#096d2b,#06471e)}.navTrimTile.bad{border-color:#ff4050;background:linear-gradient(180deg,#7d1722,#4b1018)}.navTrimTile.pending{border-color:#f5a623;background:linear-gradient(180deg,#76500d,#4c340b)}.navTrimTile.neutral{border-color:#526a7e;background:linear-gradient(180deg,#31475a,#243746)}
-.navTrimTile.good small{color:#9cffb9}.navTrimTile.bad small{color:#ffb0b7}.navTrimTile.pending small{color:#ffe0a1}
-.navLandscapeShell>.trimLearningProgress{margin:5px 0 0}
-@media (orientation:landscape) and (max-height:600px){
-  .navigationV3Page{width:100%;max-width:none;height:100dvh;padding:max(4px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(4px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important;overflow:hidden}
-  .navLandscapeShell{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:5px}
-  .navControlBar{min-height:30px}
-  .navLandscapeGrid{height:100%}
-  .navLandscapeSpeed,.navLandscapeWindSpeed{padding:8px 10px}
-  .navLandscapeSpeed>strong{font-size:clamp(3rem,12vh,5.2rem)}
-  .navLandscapeWindSpeed>strong{font-size:clamp(3rem,11.5vh,5rem)}
+
+/* V3.3.7 — écran navigation reconstruit, dédié iPhone paysage */
+.navigationV3Page{max-width:none!important;width:100%!important}
+.sfRotateHint{display:none}
+.sfNav{display:none}
+@media (orientation:portrait){
+  .navigationV3Page.active{position:fixed;inset:0;z-index:100;background:#061321;display:flex!important;align-items:center;justify-content:center;padding:24px!important}
+  .navigationV3Page.active .sfRotateHint{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;color:#eaf5ff}
+  .sfRotateHint span{font-size:3.5rem;color:#45c9ff}.sfRotateHint strong{font-size:1.55rem}.sfRotateHint small{color:#91a9bc}
+}
+@media (orientation:landscape){
+  body:has(.navigationV3Page.active){overflow:hidden;padding:0}
+  .navigationV3Page.active{position:fixed;inset:0;z-index:100;background:#061321;padding:0!important;overflow:hidden;display:block!important}
+  .navigationV3Page.active .sfNav{height:100dvh;width:100vw;display:grid;grid-template-rows:42px minmax(0,1fr);padding:max(4px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));gap:5px;box-sizing:border-box}
+  .sfNavHeader{display:grid;grid-template-columns:70px 1fr 170px;align-items:center;border:1px solid #214762;border-radius:13px;background:#081d30;padding:0 10px;min-height:0}
+  .sfNavMenu{width:42px;height:32px;border:0;background:transparent;color:#3db9ff;font-size:1.6rem;padding:0}
+  .sfNavRunning{justify-self:center;display:flex;align-items:center;gap:9px;color:#51df78;font-size:clamp(.9rem,2.4vw,1.25rem);white-space:nowrap}
+  .sfNavHeader .navNasaStatus{justify-self:end;color:#51df78;font-weight:900;font-size:clamp(.65rem,1.5vw,.82rem);letter-spacing:.05em;white-space:nowrap}
+  .sfNavMain{display:grid;grid-template-columns:30% 42% 28%;gap:7px;min-height:0;height:100%}
+  .sfNavLeft{display:grid;grid-template-rows:52% 48%;gap:7px;min-height:0}
+  .sfMetric{border:1px solid #28526f;border-radius:14px;background:linear-gradient(180deg,#0a2034,#071827);color:#fff;min-height:0;box-sizing:border-box;text-align:left;padding:9px 12px;overflow:hidden}
+  button.sfMetric{width:100%;font:inherit}
+  .sfMetric>span{display:block;font-weight:900;font-size:clamp(.75rem,2vw,1rem);letter-spacing:.035em}.sfMetric>span b{color:#8ea7ba}
+  .sfMetric>strong{display:block;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:.95;letter-spacing:-.055em}
+  .sfBoatSpeed>strong{font-size:clamp(3.4rem,12.5vh,6rem);margin:8px 0 7px}
+  .sfBoatSpeed>div{display:grid;grid-template-columns:1fr 1fr;gap:7px}.sfBoatSpeed small{display:block;color:#e5eef6;font-size:clamp(.65rem,1.5vw,.82rem);font-weight:800}.sfBoatSpeed small b{display:block;color:#51d6ff;font-size:1.3em;margin-top:2px}.sfBoatSpeed small:last-child b{color:#61e576}
+  .sfWindSpeed>strong{font-size:clamp(3.7rem,13.5vh,6.3rem);color:#51d7ff;margin-top:10px}
+  .sfNavCenter{display:grid;grid-template-rows:minmax(0,1fr) 62px;gap:5px;min-height:0}
+  .sfWindGauge{position:relative;width:100%;height:100%;min-height:0;border:0;background:transparent;color:#fff;padding:0;overflow:hidden}
+  .sfWindDial{position:absolute;inset:0;width:100%;height:100%}
+  .dialOuter{fill:#0a2034;stroke:#28516e;stroke-width:2}.dialPort{fill:none;stroke:#f43f5e;stroke-width:4}.dialStarboard{fill:none;stroke:#26c65c;stroke-width:4}.dialRear{fill:none;stroke:#27b95a;stroke-width:2.5}
+  .dialTicks line{stroke:#dce8f1;stroke-width:2}.dialLabels text{fill:#f7fbff;font-size:13px;font-weight:800;text-anchor:middle;dominant-baseline:middle}.sfBoatIcon{fill:none;stroke:#9aafc0;stroke-width:6;stroke-linejoin:round}
+  .sfWindNeedle{position:absolute!important;left:50%!important;top:50%!important;height:44%!important;width:4px!important;transform-origin:50% 100%!important;z-index:5!important}.sfWindNeedle i{display:block;width:5px;height:100%;border-radius:99px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.35)}
+  .sfWindText{position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);z-index:4;pointer-events:none;text-align:center}.sfWindText strong{display:block;font-size:1rem}.sfWindText span{font-size:.6rem;color:#9db2c2}
+  .sfManeuvers{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;min-height:0}
+  .sfManeuvers button{border:1px solid #284c67;border-radius:10px;background:#0a1c2d;color:#fff;min-width:0;padding:3px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}.sfManeuvers span{font-size:1.35rem}.sfManeuvers strong{font-size:clamp(.55rem,1.2vw,.72rem);margin-top:4px;white-space:nowrap}.sfManeuvers .tack{color:#58e575}.sfManeuvers .gybe{color:#f4a62e}.sfManeuvers .spiUp{color:#58e575}.sfManeuvers .spiDown{color:#ff5c69}
+  .sfTrim{display:grid;grid-template-rows:repeat(5,1fr);gap:6px;min-height:0;padding-left:3px}
+  .sfTrim .navTrimTile{display:grid!important;grid-template-columns:1fr auto!important;grid-template-rows:auto auto!important;align-content:center!important;width:100%!important;height:auto!important;min-height:0!important;padding:5px 10px!important;border-radius:11px!important;text-align:left!important;overflow:hidden!important}
+  .sfTrim .navTrimTile span{font-size:clamp(.65rem,1.45vw,.8rem)!important;white-space:nowrap}.sfTrim .navTrimTile strong{grid-column:2!important;grid-row:1/3!important;font-size:clamp(1.25rem,3vw,1.8rem)!important;align-self:center}.sfTrim .navTrimTile small{font-size:.56rem!important;margin-top:2px!important}
+  .navTrimTile.good{border-color:#27d763!important;background:linear-gradient(180deg,#096d2b,#06471e)!important}.navTrimTile.bad{border-color:#ff4050!important;background:linear-gradient(180deg,#7d1722,#4b1018)!important}.navTrimTile.pending{border-color:#f5a623!important;background:linear-gradient(180deg,#76500d,#4c340b)!important}.navTrimTile.neutral{border-color:#526a7e!important;background:linear-gradient(180deg,#31475a,#243746)!important}
+  .sfNav>.trimLearningProgress{position:absolute;left:31%;right:29%;bottom:max(3px,env(safe-area-inset-bottom));height:3px;margin:0;z-index:10}
 }
