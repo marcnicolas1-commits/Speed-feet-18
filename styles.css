@@ -2651,3 +2651,15 @@ body{padding-bottom:env(safe-area-inset-bottom)}
     text-align: center;
 }
 #navigationStorageStatus[hidden] { display: none; }
+
+
+/* Signal K / NASA NC70 */
+#navWindSource.live { color: #4ee58a; }
+.navLiveWindSpeed {
+    display: block;
+    margin-top: .15rem;
+    font-size: 1rem;
+    letter-spacing: .04em;
+    color: #4ee58a;
+}
+.navLiveWindSpeed[hidden] { display: none !important; }
