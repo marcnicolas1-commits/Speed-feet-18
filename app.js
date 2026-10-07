@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const APP_VERSION = "3.3.11";
+    const APP_VERSION = "3.3.12";
 
     const STORAGE_KEYS = {
         settings: "speedfeet_settings",
@@ -54,7 +54,7 @@
 
         travelerJib: ["1", "2", "3", "4", "5"],
 
-        mastRotation: ["B5", "B4", "B3", "B2", "B1", "0", "T1", "T2", "T3", "T4", "T5"],
+        mastRotation: ["0", "1", "2", "3", "4", "5"],
 
         cunningham: ["1", "2", "3", "4", "5"],
 
