@@ -2803,3 +2803,20 @@ body:has(.navigationV3Page.active){overflow:hidden;padding:0;background:#020c13}
   .mockTrim{gap:4px!important}
   .mockActions{gap:5px!important}
 }
+
+/* V3.3.11 — tuiles réglages instrument + sélecteur direct */
+@media (orientation:landscape){
+ .mockTrim .navTrimTile{grid-template-columns:32px minmax(0,1fr) 48px!important;position:relative!important;background:linear-gradient(135deg,#0a2132 0%,#071824 58%,#0b2639 100%)!important;border:1.5px solid #4daee4!important;box-shadow:inset 0 0 18px rgba(31,151,220,.08)!important}
+ .mockTrim .navTrimTile::after{content:"";position:absolute;left:8px;right:8px;bottom:0;height:1px;background:linear-gradient(90deg,transparent,#39c9ff,transparent);opacity:.65}
+ .mockTrim .trimGlyph{grid-column:1;color:#67cfff;font-size:1.25rem;font-weight:500;text-align:left;filter:drop-shadow(0 0 4px rgba(57,201,255,.25))}
+ .mockTrim .navTrimTile span{grid-column:2!important;color:#67cfff!important;font-weight:850!important}
+ .mockTrim .navTrimTile strong{grid-column:3!important;color:#fff!important;font-size:clamp(1.45rem,3vw,2rem)!important}
+ .mockTrim .navTrimTile.good{border-color:#31e66b!important;box-shadow:inset 0 0 18px rgba(49,230,107,.10),0 0 10px rgba(49,230,107,.30)!important}
+ .mockTrim .navTrimTile.good::after{background:linear-gradient(90deg,transparent,#31e66b,transparent)}
+ .mockTrim .navTrimTile.bad{border-color:#ff4556!important;box-shadow:inset 0 0 18px rgba(255,69,86,.10),0 0 10px rgba(255,69,86,.28)!important}
+ .mockTrim .navTrimTile.bad::after{background:linear-gradient(90deg,transparent,#ff4556,transparent)}
+ .mockTrim .navTrimTile.pending{border-color:#f4a62a!important;box-shadow:inset 0 0 18px rgba(244,166,42,.10),0 0 10px rgba(244,166,42,.28)!important}
+}
+.quickTrimModal{z-index:250!important}.quickTrimContent{width:min(560px,82vw)!important;max-height:80vh!important;padding:14px!important;border:1px solid #3b789f!important;background:linear-gradient(145deg,#0b2133,#071521)!important;border-radius:18px!important}
+.quickTrimHeader{display:grid;grid-template-columns:42px 1fr 38px;align-items:center;gap:8px;margin-bottom:14px}.quickTrimHeader h2{margin:0!important;font-size:1.3rem}.quickTrimGlyph{color:#58cfff;font-size:1.65rem;text-align:center}.quickTrimHeader button{border:0;background:transparent;color:#b9cad6;font-size:1.25rem}
+.quickTrimChoices{display:grid;grid-template-columns:repeat(6,minmax(52px,1fr));gap:8px}.quickTrimChoices button{min-height:54px;border:1px solid #45657c;border-radius:11px;background:#0b1c2b;color:#eaf5fb;font-size:1.15rem;font-weight:850;padding:7px}.quickTrimChoices button.selected{border:2px solid #31d8ff;background:#0b5272;box-shadow:0 0 12px rgba(49,216,255,.3);color:#fff}
