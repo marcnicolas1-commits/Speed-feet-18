@@ -2754,3 +2754,52 @@ body:has(.navigationV3Page.active){overflow:hidden;padding:0;background:#020c13}
   .mockSpeed>strong{font-size:clamp(3.5rem,17vh,5.4rem)!important}
   .mockWind>strong{font-size:clamp(3.7rem,18vh,5.7rem)!important}
 }
+
+/* V3.3.10 — proportions du visuel final validé */
+@media (orientation:landscape){
+  .navigationV3Page.active .mockNav{
+    grid-template-rows:48px minmax(0,1fr) 72px!important;
+    gap:7px!important;
+    padding:max(3px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))!important;
+  }
+  .mockTop{
+    grid-template-columns:245px 165px 1fr 140px 50px!important;
+    min-height:0!important;
+  }
+  .mockBody{
+    grid-template-columns:35% minmax(0,1fr) 23%!important;
+    gap:10px!important;
+  }
+  .mockLeft{gap:7px!important}
+  .mockTrim{gap:6px!important}
+  .mockTrim .navTrimTile{
+    grid-template-columns:minmax(0,1fr) 48px!important;
+    grid-template-rows:1fr!important;
+    padding:4px 12px!important;
+  }
+  .mockTrim .navTrimTile span{
+    grid-column:1!important;
+    font-size:clamp(.67rem,1.35vw,.88rem)!important;
+    overflow:visible!important;
+    text-overflow:clip!important;
+  }
+  .mockTrim .navTrimTile strong{
+    grid-column:2!important;
+    grid-row:1!important;
+    font-size:clamp(1.25rem,2.7vw,1.8rem)!important;
+    text-align:right!important;
+  }
+  .mockTrim .navTrimTile small,.mockTrim .navTrimTile i{display:none!important}
+  .mockActions{gap:7px!important}
+  .mockActions button{padding:2px 6px!important;flex-direction:row!important;gap:12px!important}
+  .mockActions span{font-size:clamp(1.35rem,3.5vh,1.9rem)!important;line-height:1!important}
+  .mockActions strong{margin-top:0!important;font-size:clamp(.66rem,1.25vw,.88rem)!important}
+  #navGPSDot{display:none!important}
+}
+@media (orientation:landscape) and (max-height:500px){
+  .navigationV3Page.active .mockNav{grid-template-rows:42px minmax(0,1fr) 60px!important;gap:5px!important}
+  .mockTop{grid-template-columns:210px 145px 1fr 120px 44px!important}
+  .mockBody{grid-template-columns:35% minmax(0,1fr) 22%!important;gap:7px!important}
+  .mockTrim{gap:4px!important}
+  .mockActions{gap:5px!important}
+}
