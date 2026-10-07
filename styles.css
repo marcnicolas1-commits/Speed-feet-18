@@ -2668,44 +2668,22 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 .boxBatteryPanel .secondaryButton { width:auto; margin:0; }
 
 
-/* V3.3.7 — écran navigation reconstruit, dédié iPhone paysage */
-.navigationV3Page{max-width:none!important;width:100%!important}
-.sfRotateHint{display:none}
-.sfNav{display:none}
-@media (orientation:portrait){
-  .navigationV3Page.active{position:fixed;inset:0;z-index:100;background:#061321;display:flex!important;align-items:center;justify-content:center;padding:24px!important}
-  .navigationV3Page.active .sfRotateHint{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;color:#eaf5ff}
-  .sfRotateHint span{font-size:3.5rem;color:#45c9ff}.sfRotateHint strong{font-size:1.55rem}.sfRotateHint small{color:#91a9bc}
-}
-@media (orientation:landscape){
-  body:has(.navigationV3Page.active){overflow:hidden;padding:0}
-  .navigationV3Page.active{position:fixed;inset:0;z-index:100;background:#061321;padding:0!important;overflow:hidden;display:block!important}
-  .navigationV3Page.active .sfNav{height:100dvh;width:100vw;display:grid;grid-template-rows:42px minmax(0,1fr);padding:max(4px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));gap:5px;box-sizing:border-box}
-  .sfNavHeader{display:grid;grid-template-columns:70px 1fr 170px;align-items:center;border:1px solid #214762;border-radius:13px;background:#081d30;padding:0 10px;min-height:0}
-  .sfNavMenu{width:42px;height:32px;border:0;background:transparent;color:#3db9ff;font-size:1.6rem;padding:0}
-  .sfNavRunning{justify-self:center;display:flex;align-items:center;gap:9px;color:#51df78;font-size:clamp(.9rem,2.4vw,1.25rem);white-space:nowrap}
-  .sfNavHeader .navNasaStatus{justify-self:end;color:#51df78;font-weight:900;font-size:clamp(.65rem,1.5vw,.82rem);letter-spacing:.05em;white-space:nowrap}
-  .sfNavMain{display:grid;grid-template-columns:30% 42% 28%;gap:7px;min-height:0;height:100%}
-  .sfNavLeft{display:grid;grid-template-rows:52% 48%;gap:7px;min-height:0}
-  .sfMetric{border:1px solid #28526f;border-radius:14px;background:linear-gradient(180deg,#0a2034,#071827);color:#fff;min-height:0;box-sizing:border-box;text-align:left;padding:9px 12px;overflow:hidden}
-  button.sfMetric{width:100%;font:inherit}
-  .sfMetric>span{display:block;font-weight:900;font-size:clamp(.75rem,2vw,1rem);letter-spacing:.035em}.sfMetric>span b{color:#8ea7ba}
-  .sfMetric>strong{display:block;white-space:nowrap;font-variant-numeric:tabular-nums;line-height:.95;letter-spacing:-.055em}
-  .sfBoatSpeed>strong{font-size:clamp(3.4rem,12.5vh,6rem);margin:8px 0 7px}
-  .sfBoatSpeed>div{display:grid;grid-template-columns:1fr 1fr;gap:7px}.sfBoatSpeed small{display:block;color:#e5eef6;font-size:clamp(.65rem,1.5vw,.82rem);font-weight:800}.sfBoatSpeed small b{display:block;color:#51d6ff;font-size:1.3em;margin-top:2px}.sfBoatSpeed small:last-child b{color:#61e576}
-  .sfWindSpeed>strong{font-size:clamp(3.7rem,13.5vh,6.3rem);color:#51d7ff;margin-top:10px}
-  .sfNavCenter{display:grid;grid-template-rows:minmax(0,1fr) 62px;gap:5px;min-height:0}
-  .sfWindGauge{position:relative;width:100%;height:100%;min-height:0;border:0;background:transparent;color:#fff;padding:0;overflow:hidden}
-  .sfWindDial{position:absolute;inset:0;width:100%;height:100%}
-  .dialOuter{fill:#0a2034;stroke:#28516e;stroke-width:2}.dialPort{fill:none;stroke:#f43f5e;stroke-width:4}.dialStarboard{fill:none;stroke:#26c65c;stroke-width:4}.dialRear{fill:none;stroke:#27b95a;stroke-width:2.5}
-  .dialTicks line{stroke:#dce8f1;stroke-width:2}.dialLabels text{fill:#f7fbff;font-size:13px;font-weight:800;text-anchor:middle;dominant-baseline:middle}.sfBoatIcon{fill:none;stroke:#9aafc0;stroke-width:6;stroke-linejoin:round}
-  .sfWindNeedle{position:absolute!important;left:50%!important;top:50%!important;height:44%!important;width:4px!important;transform-origin:50% 100%!important;z-index:5!important}.sfWindNeedle i{display:block;width:5px;height:100%;border-radius:99px;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.35)}
-  .sfWindText{position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);z-index:4;pointer-events:none;text-align:center}.sfWindText strong{display:block;font-size:1rem}.sfWindText span{font-size:.6rem;color:#9db2c2}
-  .sfManeuvers{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;min-height:0}
-  .sfManeuvers button{border:1px solid #284c67;border-radius:10px;background:#0a1c2d;color:#fff;min-width:0;padding:3px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}.sfManeuvers span{font-size:1.35rem}.sfManeuvers strong{font-size:clamp(.55rem,1.2vw,.72rem);margin-top:4px;white-space:nowrap}.sfManeuvers .tack{color:#58e575}.sfManeuvers .gybe{color:#f4a62e}.sfManeuvers .spiUp{color:#58e575}.sfManeuvers .spiDown{color:#ff5c69}
-  .sfTrim{display:grid;grid-template-rows:repeat(5,1fr);gap:6px;min-height:0;padding-left:3px}
-  .sfTrim .navTrimTile{display:grid!important;grid-template-columns:1fr auto!important;grid-template-rows:auto auto!important;align-content:center!important;width:100%!important;height:auto!important;min-height:0!important;padding:5px 10px!important;border-radius:11px!important;text-align:left!important;overflow:hidden!important}
-  .sfTrim .navTrimTile span{font-size:clamp(.65rem,1.45vw,.8rem)!important;white-space:nowrap}.sfTrim .navTrimTile strong{grid-column:2!important;grid-row:1/3!important;font-size:clamp(1.25rem,3vw,1.8rem)!important;align-self:center}.sfTrim .navTrimTile small{font-size:.56rem!important;margin-top:2px!important}
-  .navTrimTile.good{border-color:#27d763!important;background:linear-gradient(180deg,#096d2b,#06471e)!important}.navTrimTile.bad{border-color:#ff4050!important;background:linear-gradient(180deg,#7d1722,#4b1018)!important}.navTrimTile.pending{border-color:#f5a623!important;background:linear-gradient(180deg,#76500d,#4c340b)!important}.navTrimTile.neutral{border-color:#526a7e!important;background:linear-gradient(180deg,#31475a,#243746)!important}
-  .sfNav>.trimLearningProgress{position:absolute;left:31%;right:29%;bottom:max(3px,env(safe-area-inset-bottom));height:3px;margin:0;z-index:10}
+
+/* V3.3.8 — reproduction stricte du visuel validé */
+.navigationV3Page{max-width:none!important;width:100%!important}.mockNav{display:none}.sfRotateHint{display:none}
+@media(orientation:portrait){.navigationV3Page.active{position:fixed;inset:0;z-index:100;background:#020c13;display:flex!important;align-items:center;justify-content:center}.navigationV3Page.active .sfRotateHint{display:flex;flex-direction:column;align-items:center;color:#fff;font-size:1.5rem}.sfRotateHint span{font-size:4rem;color:#38caff}}
+@media(orientation:landscape){
+body:has(.navigationV3Page.active){overflow:hidden;padding:0;background:#020c13}
+.navigationV3Page.active{position:fixed;inset:0;z-index:100;padding:0!important;background:#020c13;display:block!important;overflow:hidden}
+.navigationV3Page.active .mockNav{display:grid;height:100dvh;width:100vw;box-sizing:border-box;grid-template-rows:48px minmax(0,1fr) 78px;padding:max(3px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));gap:7px}
+.mockTop{display:grid;grid-template-columns:170px 110px 1fr 105px 42px;align-items:center;border-bottom:1px solid #31404a;padding:0 3px;min-height:0}
+.mockBrand{font-size:clamp(1.35rem,3vw,2rem);font-weight:950;font-style:italic;color:#fff}.mockBrand span{color:#38caff}.mockNasa{justify-self:start;border:2px solid #29df55;border-radius:10px;padding:5px 12px;color:#fff;font-size:.92rem;font-weight:900}.mockNasa.connected{color:#fff}.mockNasa.offline{border-color:#6b7780;color:#aab5bd}.mockNasa span{color:#29df55}.mockClock{justify-self:center;font-size:1.25rem;color:#fff}.mockBattery{justify-self:end;color:#fff;font-size:.9rem;display:flex;gap:7px;align-items:center}.mockBattery:first-letter{font-size:1.35rem}.mockGear{border:0;border-left:1px solid #53606a;background:transparent;color:#fff;font-size:1.7rem;height:32px;padding:0 0 0 10px}
+.mockBody{display:grid;grid-template-columns:33% 36% 31%;gap:8px;min-height:0}
+.mockLeft{display:grid;grid-template-rows:56% 44%;gap:7px;min-height:0}.mockCard{border:2px solid #13aee9;border-radius:11px;background:#020d14;color:#fff;padding:8px 14px;box-sizing:border-box;overflow:hidden}.mockSpeed{width:100%;text-align:left;font:inherit}.mockCard>span{display:block;font-size:clamp(.82rem,2vw,1.15rem);font-weight:900}.mockSpeed>small{display:block;color:#9badbd;font-weight:800;font-size:.9rem}.mockSpeed>strong{display:block;font-size:clamp(4.4rem,19vh,7.4rem);line-height:.85;letter-spacing:-.06em;white-space:nowrap;text-align:center;margin:2px 0 4px}.mockSpeed>div{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:clamp(.72rem,1.55vw,.9rem)}.mockSpeed>div b{white-space:nowrap}.mockSpeed em{font-style:normal;color:#4cd6ff;font-size:1.3em}.mockSpeed b:last-child em{color:#5de66e}.mockSpeed>div i{height:23px;width:1px;background:#7a8791}
+.mockWind>strong{display:block;color:#4cd6ff;font-size:clamp(4.6rem,20vh,7.8rem);line-height:.9;letter-spacing:-.06em;white-space:nowrap;text-align:center;margin-top:6px}
+.mockGauge{position:relative;border:0;background:transparent;padding:0;width:100%;height:100%;min-height:0;color:#fff;overflow:hidden}.mockGauge svg{position:absolute;inset:0;width:100%;height:100%}.gBase{fill:#020d14;stroke:#e9eef2;stroke-width:5}.gRed,.gGreen{fill:none;stroke-width:9}.gRed{stroke:#ff5a68}.gGreen{stroke:#42d66d}.gTicks line{stroke:#fff;stroke-width:3}.gLabels text{fill:#fff;font-size:18px;font-weight:900;text-anchor:middle;dominant-baseline:middle}.gBoat{fill:#08121a;stroke:#fff;stroke-width:7;stroke-linejoin:round}
+.mockNeedle{position:absolute!important;left:50%!important;top:50%!important;height:40%!important;width:4px!important;transform-origin:50% 100%!important;z-index:4!important}.mockNeedle i{display:block;width:5px;height:100%;background:#fff;border-radius:99px}
+.mockTrim{display:grid;grid-template-rows:repeat(5,1fr);gap:6px;min-height:0;padding:2px 0}.mockTrim .navTrimTile{display:grid!important;grid-template-columns:1.4fr .45fr .45fr 18px!important;grid-template-rows:1fr!important;align-items:center!important;width:100%!important;height:auto!important;min-height:0!important;border-radius:10px!important;padding:4px 10px!important;overflow:hidden!important}.mockTrim .navTrimTile span{font-size:clamp(.7rem,1.55vw,.92rem)!important;font-weight:850!important;white-space:nowrap!important}.mockTrim .navTrimTile strong{grid-column:2!important;grid-row:1!important;font-size:clamp(1.35rem,3vw,2rem)!important;text-align:center!important}.mockTrim .navTrimTile small{grid-column:3!important;font-size:.62rem!important;letter-spacing:.08em!important;white-space:nowrap}.mockTrim .navTrimTile i{grid-column:4;font-style:normal;font-size:1.7rem;color:#dce6ed}.navTrimTile.good{border:2px solid #2de650!important;background:linear-gradient(180deg,#087323,#064c19)!important}.navTrimTile.bad{border:2px solid #ff4050!important;background:linear-gradient(180deg,#7d1722,#4b1018)!important}.navTrimTile.pending{border:2px solid #f5a623!important;background:linear-gradient(180deg,#76500d,#4c340b)!important}.navTrimTile.neutral{border:2px solid #7791a4!important;background:linear-gradient(180deg,#334b5e,#263b4d)!important}
+.mockActions{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;min-height:0}.mockActions button{border:2px solid #60798e;border-radius:10px;background:linear-gradient(180deg,#243747,#172735);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px}.mockActions span{font-size:2rem;line-height:.8}.mockActions strong{font-size:clamp(.7rem,1.5vw,.9rem);margin-top:7px}.mockActions .spiUp{border-color:#08b9f5;background:linear-gradient(180deg,#07648b,#064466)}.mockActions .spiDown{border-color:#ff3547;background:linear-gradient(180deg,#771824,#4d1018)}.mockActions .spiUp span{color:#42d7ff}.mockActions .spiDown span{color:#fff}
+.mockNav>.trimLearningProgress{position:absolute;left:34%;right:32%;bottom:3px;height:3px;margin:0}
 }
